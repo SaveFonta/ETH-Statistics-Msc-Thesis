@@ -1,0 +1,782 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsfonts} 
+\usepackage{amsmath} 
+\usepackage{amsthm}
+\usepackage{mdframed} 
+
+\newenvironment{boxedproof}[1][Proof]
+  {\begin{mdframed}\begin{proof}[#1]}
+  {\end{proof}\end{mdframed}}
+\usepackage[numbers,sort&compress]{natbib} % For professional numerical citations
+
+\bibliographystyle{plainnat}  
+
+\newcommand{\E}[2][]{\mathbb{E}_{#1}\left[#2\right]}
+\newcommand{\Var}[2][]{\mathrm{Var}_{#1}\left(#2\right)}
+\newcommand{\Prob}[1]{\mathbb{P}\left(#1\right)}
+
+\title{EUII with Dual Criterion and Bayesian Design}
+\author{Saverio Fontana} 
+ 
+\begin{document}    
+\maketitle   
+  
+<<setup, echo=FALSE, message=FALSE, warning=FALSE>>=
+library(dplyr)
+library(gsbDesign)  
+library(xtable) 
+library(tidyr)
+library(ggplot2)
+@
+
+\section*{Dual Criterion with a frequentist approach}
+\subsection{Fixed Design}
+\textit{Here you should put the EUII calculation for Dual criterion fixed design}
+TO DO 
+Implement this in the example from "Beyond p-values: a phase II dual-criterion design with statistical significance and clinical relevance" on
+Hazard Ratios.
+
+\subsection{Sequential Design}
+What about using sequential design in a frequentist framwork with dual criterion? I didn't find any examples of that anywhere
+
+
+\section*{Dual Criterion with a bayesian approach}
+
+
+Now we reproduce \textbf{Example 3.1} from the paper from Gsponer \cite{gsponer2014bayesian}
+
+<<design, echo=TRUE, cache=TRUE>>=
+design <- gsbDesign(nr.stages = 2,   
+                    patients = c(10,20),
+                    sigma=88,
+                    criteria.success = c(0,0.95,50,0.5),
+                    criteria.futility = c(40,0.9),
+                    prior.control = c(49,20),
+                    prior.treatment = c(49,0))
+@
+
+<<simulation, echo=TRUE, cache=TRUE>>=
+simulation <- gsbSimulation(
+  truth=list(49,c(0,40,50,60,70)),
+  grid.type="sliced",
+  method = "both",
+  type.update="per arm",
+  nr.sim=100000, 
+  warnings.sensitivity = 500,
+  seed=1)
+@
+
+<<run-gsb, echo=TRUE, cache=TRUE>>=
+result_new <- gsb(design=design,simulation=simulation)
+@
+
+To extract the results, we use \texttt{what = "cumulative all"} to obtain the cumulative probabilities of success and futility across stages.
+
+<<tables, echo=TRUE>>=
+table_total <- tab(result_new, what = "cumulative all")
+table_n <- tab(result_new, what = "sample size")
+T1E <- table_total[1, "stage2.suc"]
+powers <- table_total[2:5, c("delta", "stage2.suc")]
+@
+
+The Type I error rate is $\mathit{T1E} = \Prob{+|H_0} = \Sexpr{round(T1E*100, 3)}\%$.
+
+<<power_table, echo=FALSE, results='asis'>>=
+print(xtable(powers, caption="Power at various effect sizes"), 
+      table.placement="h", include.rownames=FALSE)
+@
+
+\vspace{0.5cm}
+\noindent \textbf{Note on notation:}
+\begin{itemize}
+    \item \textbf{+} means we reject the null hypothesis (\textit{success}).
+    \item \textbf{-} means we fail to reject the null (currently including both No-Go and Inconclusive outcomes). 
+\end{itemize}
+
+\textbf{SEE the end for discussion about this}
+
+
+
+
+\section*{Likelihood Ratios and Information Indices}
+
+We define the Positive Likelihood Ratio ($LR_+$) and Negative Likelihood Ratio ($LR_-$) as:
+
+\begin{equation}
+    LR_+ = \frac{\mathit{Power}}{\mathit{T1E}} = \frac{\Prob{+|H_1}}{\Prob{+|H_0}}
+\end{equation}
+
+\begin{equation} 
+    LR_- = \frac{1 - \mathit{Power}}{1 - \mathit{T1E}} = \frac{\Prob{-|H_1}}{\Prob{-|H_0}}
+\end{equation}
+
+The Diagnostic Odds Ratio ($DOR$), is:
+\begin{equation}
+    DOR = \frac{LR_+}{LR_-}
+\end{equation}
+
+<<likelihood-ratios, echo=TRUE, results='hide'>>=
+LR_pos <- cbind(powers[,"delta"], powers[, "stage2.suc"] / T1E)
+LR_neg <- cbind(powers[,"delta"], (1 - powers[, "stage2.suc"]) / (1 - T1E))
+DOR <- cbind(delta = LR_pos[, 1], DOR = LR_pos[, 2] / LR_neg[, 2])
+@
+
+\begin{figure}[h]
+\centering
+<<lr-pos-plot, echo=FALSE, fig.height=4, fig.width=6>>=
+plot(LR_pos[, 1], LR_pos[, 2], type="o", col="blue", lwd=2, xaxt="n", ylim = c(30,83),
+     xlab = "Delta", ylab = "Positive Likelihood Ratio (LR+)", cex.main=1.2)
+axis(1, at=c(40, 50, 60, 70))
+text(LR_pos[, 1] - 1.3, LR_pos[, 2] + 3, 
+     labels = round(LR_pos[, 2], 2), pos = 4, cex = 0.8, col = "red")
+@
+\caption{Positive Likelihood Ratio vs Delta}
+\end{figure}
+
+
+<<lr-neg-plot, echo=FALSE, fig.height=4, fig.width=6, fig.cap="Negative Likelihood Ratio vs Delta", fig.pos="h">>=
+plot(LR_neg[, 1], LR_neg[, 2], type="o", col="blue", lwd=2, xaxt="n", ylim = c(0,1),
+     xlab = "Delta", ylab = "Negative Likelihood Ratio (LR-)")
+axis(1, at=c(40, 50, 60, 70))
+text(LR_neg[, 1] - 1, LR_neg[, 2] + 0.05, 
+     labels = round(LR_neg[, 2], 2), pos = 4, cex = 0.8, col = "red")
+@
+
+
+<<DOR_table, echo=FALSE, results='asis'>>=
+print(xtable(DOR, caption="DOR at various effect sizes"), 
+      table.placement="h", include.rownames=FALSE)
+@ 
+
+\clearpage
+
+\section*{Experimental Unit Information Index (EUII)}
+
+The (first-order) Experimental Unit Information Index (EUII) is:
+
+\begin{equation}
+    EUII \approx \frac{LR_+^{1/\E{N_+}}}{LR_-^{1/\E{N_-}}}
+\end{equation}
+
+It is important to notice that \texttt{gsbDesign} only provides $\E{N|H_1}$ and $\E{N|H_0}$, 
+but with a bit of calculation we can get $\E{N_+}$ and $\E{N_-}$.\\ 
+
+Define $n_j$ the sample size we'd have if we stop at stage $j$. 
+\textit{We only have $n_1$ and $n_2$ in this example, respectively 30 and 60, since we have 10 placebo and 20 tratments each step.} \\ 
+
+
+Denote $\E{N  \mid +} := \E{N_+} = \E{\text{sample size} \mid \text{success}}$, which is the expected sample size given that the trial ends in a rejection (\textit{success}). 
+
+Similarly, $\E{N  \mid +, H_0 } := \E{N_{0+}} = \E{\text{sample size} \mid \text{success under } H_0}$ is the expected sample size given a successful result, assuming the Null is true. \\
+
+We can then use the formula of the Expected Value:
+$$ \E{N  \mid +, H_0} = n_1 \times \Prob{\text{stop at 1} \mid +, H_0} + n_2 \times \Prob{\text{stop at 2} \mid +, H_0} $$
+where:
+$$ \Prob{\text{stop at } i \mid +, H_0} = \frac{\Prob{\text{success at } i \mid H_0}}{\Prob{\text{success at 1 or 2} \mid H_0}} $$
+
+Next, we need the posterior probabilities $\Prob{H_0  \mid +}$ and $\Prob{H_1  \mid +}$. Those can be obtained using the property of $LR_+$:
+$$ Odds(H_1  \mid +) = LR_+ \times Odds(H_1) $$ 
+where the prior odds are $Odds(H_1) = \frac{\Prob{H_1}}{1 - \Prob{H_1}}$ and we need to specify $\Prob{H_1}$ (\textit{usually $\{0.01, 0.1, 0.5\}$})
+ 
+We then back-transform the Odds into a Probability:
+$$ \Prob{H_1  \mid +} = \frac{Odds(H_1  \mid +)}{1 + Odds(H_1  \mid +)} $$
+and simply obtain $\Prob{H_0  \mid +} = 1 - \Prob{H_1  \mid +}$.
+
+Finally, we apply the law of total expectation to find the overall expected sample size for a significant result:
+$$ \E{N  \mid +} = \E{N  \mid +, H_0} \times \Prob{H_0  \mid +} + \E{N  \mid +, H_1} \times \Prob{H_1  \mid +} $$
+
+An analogous method is used to obtain $\E{N  \mid -}$ for nonsignificant results.\\
+ 
+
+
+
+<<compute_euii_function, echo=FALSE, message=FALSE, warning=FALSE>>=
+compute_euii <- function(table_total, N1 = 30, N2 = 60, Pr_H1 = 0.1, first_order= TRUE, strict_futility = FALSE, exact = FALSE, separate = FALSE, second_order= FALSE) {
+  
+  delta <- table_total[, "delta"]
+  
+  # Extract exact probabilities from the 'cumulative all' table
+  # here, success is "+"
+  P_S1 <- table_total[, "stage1.suc"] 
+  P_S_cum <- table_total[, "stage2.suc"]
+  P_S2 <- P_S_cum - P_S1
+  
+  T1E <- P_S_cum[1]
+  Power <- P_S_cum[-1]
+  LR_pos <- Power / T1E
+  
+  P_F1 <- table_total[, "stage1.fut"]
+  
+  if (strict_futility) {
+    P_neg_cum <- table_total[, "stage2.fut"]
+    P_neg2    <- P_neg_cum - P_F1
+    
+    Fut0 <- P_neg_cum[1]
+    Fut1 <- P_neg_cum[-1]
+    LR_neg <- Fut1 / Fut0 # P(- | H1) / P (-|H0)
+    
+  } else {
+    # Now we put on the same bucket all those that are not + (both ind at last stage and fut).
+    P_neg_cum <- 1 - P_S_cum
+    P_neg2    <- P_neg_cum - P_F1
+    
+    LR_neg <- (1 - Power) / (1 - T1E)
+  }
+  
+  DOR <- LR_pos / LR_neg
+  
+
+  E_N_cond_plus  <- (N1 * P_S1 + N2 * P_S2) / P_S_cum
+  E_N_cond_minus <- (N1 * P_F1 + N2 * P_neg2) / P_neg_cum
+  
+  
+  
+  # Split into H0 (row 1) and H1 (rows 2:5)
+  E_N0_plus  <- E_N_cond_plus[1]   # E[N|+, H0] 
+  E_N0_minus <- E_N_cond_minus[1]  # E[N|-, H0]
+  E_N1_plus  <- E_N_cond_plus[-1]  # E[N|+, H1]
+  E_N1_minus <- E_N_cond_minus[-1] # E[N|-, H1]
+  
+  
+  # Define prior and Odds
+  Pr_H0 <- 1 - Pr_H1
+  O_H1 <- Pr_H1 / (1 - Pr_H1)
+  
+  O_H1_given_sig    <- LR_pos * O_H1
+  O_H1_given_nonsig <- LR_neg * O_H1
+  
+  # Do back transform to get posteriors
+  Pr_H1_given_sig <- O_H1_given_sig / (O_H1_given_sig + 1)
+  Pr_H0_given_sig <- 1 - Pr_H1_given_sig
+  
+  Pr_H1_given_nonsig <- O_H1_given_nonsig / (O_H1_given_nonsig + 1)
+  Pr_H0_given_nonsig <- 1 - Pr_H1_given_nonsig
+  
+
+  # E(N+) and E(N-) (Equations 16 and 17 from the paper [cite: 322])
+  E_N_plus  <- E_N0_plus * Pr_H0_given_sig + E_N1_plus * Pr_H1_given_sig
+  E_N_minus <- E_N0_minus * Pr_H0_given_nonsig + E_N1_minus * Pr_H1_given_nonsig
+
+
+  # First-Order EUII 
+  EUII_1st_Order <- (LR_pos ^ (1 / E_N_plus)) / (LR_neg ^ (1 / E_N_minus))
+  
+  
+  # -------------------------------------------------------------------
+  # E[1/N | +, H0] = (1/n1) * P(stop at 1 | +, H0) + (1/n2) * P(stop at 2 | +, H0)
+  # -------------------------------------------------------------------
+  
+  E_invN_cond_plus  <- ((1/N1) * P_S1 + (1/N2) * P_S2) / P_S_cum
+  E_invN_cond_minus <- ((1/N1) * P_F1 + (1/N2) * P_neg2) / P_neg_cum
+  
+  E_invN0_plus  <- E_invN_cond_plus[1]   # E[1/N|+, H0]
+  E_invN0_minus <- E_invN_cond_minus[1]  # E[1/N|-, H0]
+  E_invN1_plus  <- E_invN_cond_plus[-1]  # E[1/N|+, H1]
+  E_invN1_minus <- E_invN_cond_minus[-1] # E[1/N|-, H1]
+  
+  E_invN_plus  <- E_invN0_plus * Pr_H0_given_sig + E_invN1_plus * Pr_H1_given_sig
+  E_invN_minus <- E_invN0_minus * Pr_H0_given_nonsig + E_invN1_minus * Pr_H1_given_nonsig
+  
+  
+  # Exact EUII 
+   EUII_Exact <- (LR_pos ^ E_invN_plus) / (LR_neg ^ E_invN_minus)
+  
+  #Another adding: we can remove the choice of how much I believe in P(H_0), just need to 
+  # create two different EUII
+  
+   EUII_H0 <- (LR_pos ^ (1 / E_N0_plus)) / (LR_neg ^ (1 / E_N0_minus))
+   EUII_H1 <- (LR_pos ^ (1 / E_N1_plus)) / (LR_neg ^ (1 / E_N1_minus))
+  
+  # Second order computations:
+  E_N_plus_squared <- ( N1^2 * P_S1 + N2^2 * P_S2 )  /  P_S_cum
+  E_N_minus_squared <- ( N1^2 * P_F1 + N2^2 * P_neg2 )  /  P_neg_cum
+  
+  E_N0_plus_squared <- E_N_plus_squared[1]
+  E_N1_plus_squared <-  E_N_plus_squared[-1]
+  
+  E_N0_minus_squared <- E_N_minus_squared[1]
+  E_N1_minus_squared <-  E_N_minus_squared[-1]
+  
+  Var_N0_plus <- E_N0_plus_squared - E_N0_plus^2
+  Var_N1_plus <- E_N1_plus_squared - E_N1_plus^2
+  
+  Var_N0_minus <- E_N0_minus_squared - E_N0_minus^2
+  Var_N1_minus <- E_N1_minus_squared - E_N1_minus^2
+  
+  # Law of total probability for variances (Equation 18)
+  Var_N_plus <- Var_N0_plus * Pr_H0_given_sig + Var_N1_plus * Pr_H1_given_sig +
+    (E_N0_plus - E_N_plus)^2 * Pr_H0_given_sig +
+    (E_N1_plus - E_N_plus)^2 * Pr_H1_given_sig
+  
+  Var_N_minus <- Var_N0_minus * Pr_H0_given_nonsig + Var_N1_minus * Pr_H1_given_nonsig +
+    (E_N0_minus - E_N_minus)^2 * Pr_H0_given_nonsig +
+    (E_N1_minus - E_N_minus)^2 * Pr_H1_given_nonsig 
+  
+  # Coefficient of variation
+  CV_N_plus <- sqrt(Var_N_plus) / E_N_plus
+  CV_N_minus <- sqrt(Var_N_minus) / E_N_minus
+  
+  # Second-order EUII approximation (Equation 15)
+  EUII_2nd_Order <- (LR_pos ^ ((1 + CV_N_plus^2) / E_N_plus)) / 
+    (LR_neg ^ ((1 + CV_N_minus^2) / E_N_minus))
+  
+  result_df <- data.frame(
+    Delta = delta[-1],
+    DOR = round(DOR, 2)
+    )
+  
+  if (first_order){
+    result_df$EUII_1st_Order = round(EUII_1st_Order, 4)
+  }
+  
+  if (exact) {
+    result_df$EUII_Exact <- round(EUII_Exact, 4)
+    if (first_order) result_df$Diff_Due_To_Jensen <- round(EUII_Exact - EUII_1st_Order, 4)
+  }
+  
+  if (separate) {
+    result_df$EUII_H0 <- round(EUII_H0, 4)
+    result_df$EUII_H1 <- round(EUII_H1, 4)
+  }
+  
+  if (second_order) {
+    result_df$EUII_2nd_Order <- round(EUII_2nd_Order, 4)
+    if (exact) result_df$Diff_with_2nd <- round(EUII_Exact - EUII_2nd_Order, 4)
+  }
+  
+  return(result_df)
+}
+
+plot_euii_comparison <- function(table_total, 
+                                 N1 = 30, 
+                                 N2 = 60, 
+                                 priors = c(0.01, 0.1, 0.5),
+                                 first_order = FALSE,
+                                 strict_futility = FALSE, 
+                                 exact = FALSE, 
+                                 separate = FALSE, 
+                                 second_order = FALSE) {
+  
+  # compute EUII for each prior
+  all_results <- bind_rows(lapply(priors, function(p) {
+    res <- compute_euii(table_total = table_total, 
+                        N1 = N1, 
+                        N2 = N2, 
+                        Pr_H1 = p,
+                        first_order = first_order,
+                        strict_futility = strict_futility,
+                        exact = exact,
+                        separate = separate,
+                        second_order = second_order)
+    res$Pr_H1 <- p #create new col
+    return(res)
+  }))
+  
+  # Create labels for prior
+  prior_labels <- paste0("Pr(H1) = ", priors * 100, "%")
+  all_results <- all_results %>%
+    mutate(Prior_Label = factor(Pr_H1, levels = priors, labels = prior_labels)) #create fact
+  
+#
+    cols_to_pivot <- c()
+  
+  if (first_order) cols_to_pivot <- c("EUII_1st_Order")
+  if (second_order) cols_to_pivot <- c(cols_to_pivot, "EUII_2nd_Order")
+  if (exact) cols_to_pivot <- c(cols_to_pivot, "EUII_Exact")
+  if (separate) cols_to_pivot <- c(cols_to_pivot, "EUII_H0", "EUII_H1")
+  
+  # pivot data for ggplot
+  plot_data_multi <- pivot_longer(all_results, 
+                                  cols = all_of(cols_to_pivot),
+                                  names_to = "Approximation",
+                                  values_to = "EUII")
+  
+  # Clean the legend labels  (e.g., "EUII_1st_Order" -> "1st Order")
+  plot_data_multi$Approximation <- gsub("EUII_", "", plot_data_multi$Approximation)
+  plot_data_multi$Approximation <- gsub("_", " ", plot_data_multi$Approximation)
+  
+  # 
+  p <- ggplot(plot_data_multi, aes(x = Delta, y = EUII, 
+                                   color = Approximation, 
+                                   linetype = Prior_Label)) +
+    geom_line(linewidth = 1) +
+    geom_point(aes(shape = Prior_Label), size = 3) + 
+    theme_bw() +
+    labs(x = "Treatment Effect",
+         y = "EUII",
+         color = "Approximation",          
+         shape = "Prior Probability",      
+         linetype = "Prior Probability") + 
+    theme(
+      plot.title = element_text(face = "bold", size = 14),
+      axis.text = element_text(size = 10),
+      axis.title = element_text(size = 12),
+      legend.position = "right",
+      legend.key.width = unit(2, "cm") 
+    )
+  
+  return(p)
+  
+  return(p)
+}
+@
+
+<<first_order_euii, fig.width=8, fig.height=5, echo=FALSE, message=FALSE, warning=FALSE>>=
+plot_euii_comparison(table_total, first_order = TRUE)
+@
+
+
+\subsection{Second order EUII}
+\label{sec: second order}
+Now we compute the second-order approximation of the EUII
+
+First, we calculate the second moments and conditional variances of the sample size under each hypothesis. For a significant result ($+$) under $H_0$:
+$$ \E{N_{0+}^2} = n_1^2 \times \Prob{\text{stop at 1} \mid +, H_0} + n_2^2 \times \Prob{\text{stop at 2} \mid +, H_0} $$
+Using then the formula for the Variance: $$ Var(N_{0+}) = \E{N_{0+}^2} - [\E{N_{0+}}]^2 $$
+The conditional variance $Var(N_{1+})$ under $H_1$ is computed analogously.
+
+Next, we calculate the overall variance $Var(N_+)$ using the Law of Total Variance, (Equation 18 paper):
+\begin{align*}
+Var(N_+) &= \left( Var(N_{0+}) \Prob{H_0 \mid +} + Var(N_{1+}) \Prob{H_1 \mid +} \right) \\
+&\quad + \left( [\E{N_{0+}} - \E{N_+}]^2 \Prob{H_0 \mid +} + [\E{N_{1+}} - \E{N_+}]^2 \Prob{H_1 \mid +} \right)
+\end{align*}
+
+We then compute the Coefficient of Variation for significant findings:
+$$ CV(N_+) = \frac{\sqrt{Var(N_+)}}{\E{N_+}} $$
+
+Repeating this entire process for nonsignificant findings ($-$) gives $CV(N_-)$. \\
+
+Now we can compute the 2-nd order EUII: 
+$$ EUII_{2nd} = \frac{(LR^+)^{(1 + CV(N_+)^2) / \E{N_+}}}{(LR^-)^{(1 + CV(N_-)^2) / \E{N_-}}} $$
+ 
+<<second_order_euii, fig.width=8, fig.height=5, echo=FALSE, message=FALSE, warning=FALSE>>=
+plot_euii_comparison(table_total, first_order = TRUE, second_order = TRUE)
+@
+
+\subsection{Exact calculation of EUII}
+In group sequential design, we cannot compute $\log(EUII)$ directly, since N is a random variable. 
+In the EUII paper \cite{held2025euii} they propose to compute $\E[]{\log(EUII)} = \E{\frac{1}{N_+}} \log{LR_+} - \E{\frac{1}{N_-}} \log{LR_-}$.
+
+A first order approximation is proposed: $\E{\frac{1}{N_+}} \approx \frac{1}{\E{N_+}}$. And as 
+we have seen, they also suggest a second order approximation.     \\
+I suggest instead to compute $$\exp(\E{\log(EUII)}) = (LR_+)^{\E{\frac{1}{N_+}}} \times \left(\frac{1}{LR_-}\right)^{\E{\frac{1}{N_-}}} $$ 
+Where $\E{\frac{1}{N_+}}$ is computed using the definition of Expected Value:
+\[  \E{\frac{1}{N_+}} = \frac{1}{n_1} \times \Prob{\text{stop at 1} \mid +} + \frac{1}{n_2} \times \Prob{\text{stop at 2}  \mid +} \]
+
+
+
+
+
+Now I will prove that my version is always greater than the first order approximation.
+
+
+\begin{boxedproof}
+$f(x) = \frac{1}{x}$ is a strictly convex function for $x>0$. So we can apply Jensen's Inequality:
+\[ \frac{1}{\E{N_+}} \le \E{\frac{1}{N_+}}  \]
+We can then assume wlog Power $\geq$ Type I Error, meaning $LR_+ > 1$ and $LR_- < 1$ (otherwise we'd have a nonsensical design) \\
+Consequently, both $\log(LR_+) > 0$ and $\log\left(\frac{1}{LR_-}\right) > 0$ and we can write:
+\[\E[]{\log(EUII)} =  \E{\frac{1}{N_+}} \log{LR_+} + \E{\frac{1}{N_-}} \log{\frac{1}{LR_-}} \geq 
+\frac{1}{\E{N_+}} \log{LR_+} + \frac{1}{\E{N_-}} \log{\frac{1}{LR_-}}\]
+
+then if we take the $exp()$ both sides, inequality is preserved since it is a monotonic increasing function:
+\[ \exp(\E{\frac{1}{N_+}} \log{LR_+}) \times \exp(\E{\frac{1}{N_-}} \log{\frac{1}{LR_-}}) \geq 
+\exp(\frac{1}{\E{N_+}} \log{LR_+}) \times  \exp(\frac{1}{\E{N_-}} \log{\frac{1}{LR_-}}) \]
+Finally simplifying:
+\[ \underbrace{(LR_+)^{\E{\frac{1}{N_+}}} \times \left(\frac{1}{LR_-}\right)^{\E{\frac{1}{N_-}}}}_{\exp(\E{\log(EUII)})} \geq 
+\underbrace{(LR_+)^{\frac{1}{\E{N_+}}} \times \left(\frac{1}{LR_-}\right)^{\frac{1}{\E{N_-}}}}_{EUII_{1st}}\]
+
+
+\end{boxedproof}
+
+
+
+\textbf{NOTE:} in Figure~\ref{fig:exact_EUII}, I plotted $\exp(\E{\log(EUII)})$  and I call it \textit{"exact"}. I think we should use this metric instead of $\E{EUII}$,
+cause $\E[]{\log(EUII)}$ has an interpretation in information theory, while $\E{EUII}$ doesn't. \\
+Actually, this is something I'd like to go deeper on, since I think it is possible to justify better the EUII using Entropy or something related\\
+
+Anyway, applying Jensen since $h(x) = \exp(x)$ is strictly convex, we get:
+\[
+\E{EUII} = \E{\exp(\log EUII)} \geq \exp\left(\E{\log(EUII)}\right)
+\]
+ 
+
+I also think it would be possible to compute $\E{EUII}$, even though I haven't implemented it.
+First, the expected value of a product of independent variables is the product of their expected values: 
+\[ \E{EUII} = \E{(LR_+)^{1/N_+}} \times \E{\left(\frac{1}{LR_-}\right)^{1/N_-}}\]
+
+
+where the first term is:
+\[ \E{(LR_+)^{1/N_+}} = \left( (LR_+)^{1/n_1} \times \Prob{\text{stop at 1} \mid +} \right) + \left( (LR_+)^{1/n_2} \times \Prob{\text{stop at 2} \mid +} \right) \]
+and the second term is:
+\[\E{\left(\frac{1}{LR_-}\right)^{1/N_-}} = \left( \left(\frac{1}{LR_-}\right)^{1/n_1} \times \Prob{\text{stop at 1} \mid -} \right) + \left( \left(\frac{1}{LR_-}\right)^{1/n_2} \times \Prob{\text{stop at 2} \mid -} \right)\]
+
+\bigskip
+Finally, looking at Figure~\ref{fig:exact_EUII}, the exact version is smaller than the 2nd Order, probably due to the fact we are missing the correction of the third order term, which is subtracted. 
+$$E[\frac{1}{N}] \approx \frac{1}{\mu} + \frac{Var(N)}{\mu^3} - \underbrace{\frac{E[(N-\mu)^3]}{\mu^4}}_{\text{missing term}}
+ + \dots$$
+
+
+<<exact_EUII, fig.width=5, fig.height=4, out.width="0.49\\textwidth", fig.show='hold', echo=FALSE, fig.cap='comparison of approx with exact EUII.'>>=
+
+plot1 <- plot_euii_comparison(table_total, first_order = TRUE, exact = TRUE)
+plot2 <- plot_euii_comparison(table_total, second_order = TRUE, exact = TRUE)
+
+print(plot1) 
+print(plot2)
+@
+
+\newpage
+
+\section{Comparison with fixed design and non informative prior (all 4 combinations)}
+Now we do the plot that was in the Preliminary paper but was wrong. 
+Denote as $n_{virtual}$ the virtual sample size due to the prior
+
+Basically we inspect 4 variants of the same experiment from GSPONER:
+\begin{itemize}
+  \item sequential design with 2 groups with 10 placebo and 20 treatments per group with a $n_{virtual} = 20$
+  \item sequential design with 2 groups with 20 placebo and 20 treatments per group and uninformative prior
+  \item fixed design with 60 patients and $n_{virtual} = 20$
+  \item fixed design with 80 patients and uninformative prior
+\end{itemize}
+
+<<4cases, fig.width=8, fig.height=5, echo=FALSE, message=FALSE, warning=FALSE>>=
+
+#define variables: 
+mysigma <- 88
+mycrit.success <- c(0,0.95,50,0.5)
+mycrit.fut <- c(40,0.9)
+alternatives <- c(0,40,50,60,70)
+
+
+
+
+# -------------------
+# Design 1 -> informative sequential
+
+# Creating the informative design
+design_informative <- gsbDesign(nr.stages = 2,
+                    patients = c(10,20),
+                    sigma=mysigma,
+                    criteria.success = mycrit.success,
+                    criteria.futility = mycrit.fut,
+                    prior.control = c(49,20),
+                    prior.treatment = c(49,0))
+
+
+simulation_informative <- gsbSimulation(
+  truth=list(49,alternatives),
+  grid.type="sliced",
+  method = "both",
+  type.update="per arm",
+  nr.sim=100000, #note this is exaclty the code of the paper, 1e6, not 1e5 simulations.
+  warnings.sensitivity = 500,
+  seed=1)
+
+
+result_informative<- gsb(design=design_informative,simulation=simulation_informative)
+
+table_seq_informative <- tab(result_informative, what = "cumulative all")
+
+
+
+
+# -------------------
+# Design 2 -> uninformative sequential
+design_uninformative <- gsbDesign(nr.stages = 2,
+                                patients = c(20,20),
+                                sigma=mysigma,
+                                criteria.success = mycrit.success,
+                                criteria.futility = mycrit.fut,
+                                prior.control = c(49,0),
+                                prior.treatment = c(49,0))
+
+
+simulation_uninformative <- gsbSimulation(
+  truth=list(49,alternatives),
+  grid.type="sliced",
+  method = "both",
+  type.update="per arm",
+  nr.sim=100000, #note this is exaclty the code of the paper, 1e6, not 1e5 simulations.
+  warnings.sensitivity = 500,
+  seed=1)
+
+
+result_uninformative<- gsb(design=design_uninformative,simulation=simulation_uninformative)
+
+table_seq_uninformative <- tab(result_uninformative, what = "cumulative all")
+
+
+
+res_seq_info <- compute_euii(table_seq_informative, N1 = 30, N2 = 60, Pr_H1 = 0.01, first_order = TRUE)
+res_seq_uninfo <- compute_euii(table_seq_uninformative, N1 = 40, N2 =  80, Pr_H1 = 0.01, first_order = TRUE)
+res_info_added_prior <- compute_euii(table_seq_informative, N1= 30, N2 =60, Pr_H1 = 0.01, first_order = TRUE)
+# As stated in the preliminary paper, if we add the 20 patients, the EUII drops, but 
+#it is still larger than with an uninformative prior (without any virtual patients). 
+
+
+
+
+
+
+
+# -------------------
+# Design 3 -> uninformative fixed
+
+design_fixed_uninformative <- gsbDesign(nr.stages = 1, 
+                    patients = c(40,40), 
+                    sigma=mysigma,
+                    criteria.success = mycrit.success,
+                    criteria.futility = mycrit.fut,
+                    prior.control = c(49,0),
+                    prior.treatment = c(49,0))
+## simulation scenarios
+simulation_fixed_uninformative <- gsbSimulation(truth=list(49,alternatives), 
+                            grid.type="sliced",
+                            type.update="per arm", 
+                            nr.sim=100000,
+                            warnings.sensitivity = 500, 
+                            method="both")
+## operating characteristics
+result_fixed_uninformative <- gsb(design=design_fixed_uninformative,simulation=simulation_fixed_uninformative)
+table_fixed_uninformative <- tab(result_fixed_uninformative, what = "cumulative all")
+
+
+
+
+# -------------------
+# Design 4 -> informative  fixed
+
+design_fixed_informative <- gsbDesign(nr.stages = 1, 
+                                        patients = c(20,40), 
+                                        sigma=mysigma,
+                                        criteria.success = mycrit.success,
+                                        criteria.futility = mycrit.fut,
+                                        prior.control = c(49,20),
+                                        prior.treatment = c(49,0))
+## simulation scenarios
+simulation_fixed_informative <- gsbSimulation(truth=list(49,alternatives), 
+                                                grid.type="sliced",
+                                                type.update="per arm", 
+                                                nr.sim=100000,
+                                                warnings.sensitivity = 500, 
+                                                method="both")
+## operating characteristics
+result_fixed_informative <- gsb(design=design_fixed_informative,simulation=simulation_fixed_informative)
+
+table_fixed_informative <- tab(result_fixed_informative, what = "cumulative all")
+
+
+
+
+
+#Extract the values for the fixed, one day you will replace with compute_euii finished
+
+delta_vals <- alternatives[-1]
+
+# --- Fixed Uninformative (Physical N = 80) ---
+T1E_fixed_uninfo <- table_fixed_uninformative[1, "stage1.suc"]
+Power_fixed_uninfo <- table_fixed_uninformative[-1, "stage1.suc"]
+LR_pos_uninfo <- Power_fixed_uninfo / T1E_fixed_uninfo
+LR_neg_uninfo <- (1 - Power_fixed_uninfo) / (1 - T1E_fixed_uninfo)
+DOR_fixed_uninfo <- LR_pos_uninfo / LR_neg_uninfo
+
+EUII_fixed_uninfo <- DOR_fixed_uninfo ^ (1/80) 
+
+# --- Fixed Informative (Physical N = 60) ---
+T1E_fixed_info <- table_fixed_informative[1, "stage1.suc"]
+Power_fixed_info <- table_fixed_informative[-1, "stage1.suc"]
+LR_pos_info <- Power_fixed_info / T1E_fixed_info
+LR_neg_info <- (1 - Power_fixed_info) / (1 - T1E_fixed_info)
+DOR_fixed_info <- LR_pos_info / LR_neg_info
+
+EUII_fixed_info <- DOR_fixed_info ^ (1/60) 
+
+
+
+#NOw create the df to plot!
+df_fixed_uninfo <- data.frame(
+  Delta = delta_vals,
+  EUII = EUII_fixed_uninfo,
+  Design = "Fixed Uninformative (N=80)"
+)
+
+df_fixed_info <- data.frame(
+  Delta = delta_vals,
+  EUII = EUII_fixed_info,
+  Design = "Fixed Informative (N=60)"
+)
+
+df_seq_info <- data.frame(
+  Delta = res_seq_info$Delta,
+  EUII = res_seq_info$EUII_1st_Order,
+  Design = "Sequential Informative (Max N=60)"
+)
+
+df_seq_uninfo <- data.frame(
+  Delta = res_seq_uninfo$Delta,
+  EUII = res_seq_uninfo$EUII_1st_Order,
+  Design = "Sequential Uninformative (Max N=80)"
+)
+
+df_merged <- rbind(df_fixed_uninfo, df_fixed_info, df_seq_info, df_seq_uninfo)
+
+ggplot(df_merged, aes(x = Delta, y = EUII, 
+                                      color = Design, shape = Design, linetype = Design)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3.5) +
+  # Using a colorblind-friendly palette
+  scale_color_manual(values = c("Fixed Uninformative (N=80)" = "#E69F00", 
+                                "Fixed Informative (N=60)" = "#D55E00",
+                                "Sequential Uninformative (Max N=80)" = "#56B4E9", 
+                                "Sequential Informative (Max N=60)" = "#0072B2")) +
+  theme_bw(base_size = 14) +
+  labs(
+    x = "True Treatment Effect",
+    y = "EUII"
+  ) +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "vertical",
+    legend.title = element_blank(),
+    plot.title = element_text(face = "bold", size = 16),
+    panel.grid.minor = element_blank()
+  ) 
+
+@
+
+
+ \subsection{Adapting sample size for bayesian}
+
+ I kind of argue that it doesn't make sense to add to N the virtual sample size of the prior. \\
+My idea is that each new animal is more "valuable" because its data is strenghtened by the historical prior. \\
+We need to save on animals, and virtual patients cost nothing, they are like free informations
+
+
+
+ \subsection{Including or not the indifferent in the -?}
+
+\vspace{0.5cm}
+\noindent \textbf{Note on notation:}
+\begin{itemize}
+    \item \textbf{+} means we reject the null hypothesis (\textit{success}).
+    \item \textbf{-} means we fail to reject the null (currently including both No-Go and Inconclusive outcomes). 
+\end{itemize}
+
+An idea would also be to consider as a "-" only the No-Go, completing ignoring the indefinite. \\
+To me it doesn't make sense much. Here are my points:\\
+First, when we use futility stopping in Sequential Testing, reaching the final analysis without rejecting the null hypothesis $H_0$ is treated identically to
+ an early futility stop in terms of expected sample size and error rate calculations.\\
+Then, just take the COVID example, the vaccines that weren't satisfying the dual 
+criterion, were not approved. So any outcome that does not result in a "Go" decision carries 
+the same value as a definitive "No-Go". \\
+        
+     
+   
+\bibliography{references}   
+\end{document} 
+  
+
+    

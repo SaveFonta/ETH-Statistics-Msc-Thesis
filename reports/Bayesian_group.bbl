@@ -1,0 +1,25 @@
+\begin{thebibliography}{2}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Gsponer et~al.(2014)Gsponer, Gerber, Bornkamp, Ohlssen,
+  Vandemeulebroecke, and Schmidli]{gsponer2014bayesian}
+Thomas Gsponer, Florian Gerber, Bj{\"o}rn Bornkamp, David Ohlssen, Marc
+  Vandemeulebroecke, and Heinz Schmidli.
+\newblock A practical guide to {B}ayesian group sequential designs.
+\newblock \emph{Pharmaceutical Statistics}, 13\penalty0 (1):\penalty0 71--80,
+  2014.
+\newblock \doi{10.1002/pst.1593}.
+
+\bibitem[Keene et~al.(2007)Keene, Jones, Lane, and Anderson]{Neg_Bin}
+Oliver~N. Keene, Mark R.~K. Jones, Peter~W. Lane, and Julie Anderson.
+\newblock Analysis of exacerbation rates in asthma and chronic obstructive
+  pulmonary disease: example from the tristan study.
+\newblock \emph{Pharmaceutical Statistics}, 6\penalty0 (2):\penalty0 89--97,
+  2007.
+\newblock \doi{10.1002/pst.250}.
+
+\end{thebibliography}
