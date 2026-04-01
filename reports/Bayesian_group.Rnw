@@ -79,18 +79,55 @@ final_plot_CRON
 \caption{EUII Comparison}
 \end{figure}
 
-In Table \ref{sample_size_CRON} we can see the sample size for the two sequential designs:
+In Table \ref{sample_size_CRON} we can see the effective sample size ($\E[]{1/N}^{-1}$) for the two sequential designs:
 
 <<sample_size_CRON, echo=FALSE, results='asis'>>=
 print(xtable(N_data_CRON, 
              label = "sample_size_CRON", 
-             caption = "Sample size for sequential designs"),
+             caption = "Effective sample size and CV for sequential designs"),
       include.rownames = FALSE,
       booktabs = TRUE,
       sanitize.colnames.function = identity)
 @
 
+
+Table \ref{tab:t1e_example1} reports the Type-I error rate for each design variant:
+
+<<vector_t1e_example1, echo=FALSE, results='asis'>>=
+t1e_tab_example1 <- xtable(
+  as.data.frame(t(T1E_example1)),
+  label = "tab:t1e_example1",
+  caption = "Type-I error rates across treatment effects and designs",
+  digits = c(0, 3, 3, 3, 3)
+)
+
+print(t1e_tab_example1,
+  include.rownames = FALSE,
+  booktabs = TRUE)
+@
+
+Table \ref{tab:power_example1} reports the corresponding power values across treatment effects:
+
+<<table_power_example1, echo=FALSE, results='asis'>>=
+power_tab_example1 <- xtable(
+  as.data.frame(Power_example1),
+  label = "tab:power_example1",
+  caption = "Power values across treatment effects and designs",
+  digits = c(0, 0, 3, 3, 3, 3)
+) 
+ 
+print(power_tab_example1,
+  include.rownames = FALSE,
+  booktabs = TRUE)
+@
+
 \textbf{NOTE}: in these plots and for the rest of the file, if not specified, the prior for the alternative used in the EUII computations is 10$\%$, i.e. $P(H_1) = 0.1$ 
+
+
+
+\FloatBarrier 
+
+
 
 \subsection{Sensitive analysis of varying the true value}
 The idea here is to inspect what happens to the EUII when there is a mistake in specifyig the prior. \\
@@ -141,7 +178,8 @@ EUII_CRON
 \FloatBarrier 
 
 
-
+\subsection{Varying both prior and true value}
+Now we inspect what happens when we set the prior = true value, and we make them vary together
 
 
 \section{Example 3.2: Oncology phase II single-arm trials}
@@ -269,7 +307,26 @@ This rule is equivalent to having a posterior median for \(\delta\) correspondin
 
 Additionally, an enthusiastic prior is obtained from Phase II trial, and it is not placed on the placebo, like the previous design, but \textbf{on the treatment effect} $\delta$. 
 They observed a risk reduction of $75\%$ (i.e. $\delta = log(100/25) = log(4) $) in a trial consisting of 80 patients per group, with placebo rate and over-dispersion parameter equal
-to the planning assumptions stated previously.This prior is considered to be worth 10 patients per grpup.\\
+to the planning assumptions stated previously. This prior is considered to be worth 10 patients per group.\\
+
+Contrary to the paper, where they compare the uninformative design with the informative using the same maximum sample size, we adjusted the physical sample size to ensure a fairer comparison.
+Specifically, since the informative design incorporates an istorical prior equivalent to 10 patients per arm, we \textbf{reduced the physical recruitment to 20 patients} per arm per stage (instead of 25 as the uninformative design), wall
+which in turn lead to a maximum of 40 physical patients per arm. 
+ 
+
+\subsection{Implementation}
+The dependence of $\sigma$ on $\mu$ requires carefulness. Infact, while $\sigma_c$ remains fixed when varying the underlying true reduction (since $\mu_c =14.8$ ), $\sigma_E$ varies as a function of the varying $\mu_E$.
+To address thiss, we implement a loop that recursively computes $\sigma_E$ based on the specific scenario's value of $\mu_E$ (where $\mu_E = mu_c \times (1 - reduction)$). 
+Another software inconvenience arises because gsbDesign computes the prior variance for the treatment difference internally as $V_{computed}= \frac{\sigma_C^2 + \sigma_E^2}{n_{specified}}$ where $n_{specified}$ is the 
+the sample size specified by the user for both prior control and experimental group. Because we update $\sigma_E$ in every loop iteration, passing a static $n_{specified} = 10$ would cause the Bayesian prior variance to  widen or narrow depending on the true effect size scenario.
+
+To overcome this issue, we can define:
+$$V_{target} = \frac {\sigma_{c,prior}^2 + \sigma_{E,prior}^2}{10}$$ where $\sigma_{c,prior}^2 = \sigma_c^2$ and $\sigma_{E,prior}^2$ is computed assuming a reduction of 75\% 
+  ($\sigma_{E,prior}^2 = \kappa + 1/\mu_{E,prior}$, where $\mu_{E,prior} = \mu_C \times (1 - 0.75)$).
+
+Setting $V_{target} = V_{computed}$ we obtain: 
+$$V_{target} = \frac {\sigma_c^2 + \sigma_E^2} {n_{specified}}$$ 
+Therefore, inside the loop, we just need to dynamically set $n_{specified}= \frac {\sigma_c^2 + \sigma_E^2} {V_{target}}$ to obtain the desired variance for the $\delta$ prior.
 
 \subsection{Results}
 Table \ref{tab:expected_N} illustrates the Expected Total Sample Size ($E[N]$) across varying true treatment effects for both the Non-Informative and Informative. Since the trial needs at least 50 patients, 
@@ -310,12 +367,12 @@ print(p_final)
 comp_clean <- comparison_df
 colnames(comp_clean) <- c("True Red. (\\%)",  
                           "EUII (Non-Inf)", "EUII (Inf)", 
-                          "$E[N_+]$ (Non-Inf)", "$E[N_+]$ (Inf)", 
-                          "$E[N_-]$ (Non-Inf)", "$E[N_-]$ (Inf)"
+                          "$ESS_{+}$ (Non-Inf)", "$ESS_{+}$ (Inf)", 
+                          "$ESS_{-}$ (Non-Inf)", "$ESS_{-}$ (Inf)"
                           )
-
+ 
 comp_tab <- xtable(comp_clean, 
-                   caption = "Comparison of EUII and Conditional Expected Sample Sizes between informative and non informative",
+                   caption = "Comparison of EUII and Effective Sample Sizes between informative and non informative",
                    label = "tab:comp_euii",
                    digits = c(0, 0, 4, 4, 1, 1, 1, 1))
 
@@ -325,9 +382,9 @@ print(comp_tab,
       booktabs = TRUE, 
       caption.placement = "top",
       sanitize.colnames.function = identity)
-@
+@ 
 
-<<plot_oc, warning = FALSE, echo=FALSE, fig.align='center', fig.width=6.5, fig.height=7.5, fig.cap="Cumulative probability of stopping for the Non-Informative and Informative prior designs.", fig.pos="h">>=
+<<plot_oc, warning = FALSE, echo=FALSE, fig.align='center', fig.width=6.5, fig.height=7.5, fig.cap="Cumulative probability of stopping for the Non-Informative and Informative prior designs (plot from the paper)", fig.pos="h">>=
 # Print the patchwork object
 print(final_oc_plot)
 @
