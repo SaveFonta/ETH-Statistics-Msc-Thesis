@@ -78,7 +78,7 @@ OC_onco <- plot(res_onco, what="cumulative all", sliced = TRUE)
 
 
 #Note, in this specific design, we know that if a trial is a success, then it must be to the end
-#This mean that E(N_+) = 46, while E(N_-) can be not
+#This means that N_eff(+) = 46, while N_eff(-) can be lower due to early futility stopping
 
 
 EUII_onco <- compute_euii(
@@ -87,23 +87,30 @@ EUII_onco <- compute_euii(
 
 comp_clean_onco <- EUII_onco$result_df
 
-# Bind with N data
-comp_clean_onco <- cbind(comp_clean_onco, EUII_onco$N[, c("E_N_plus", "E_N_minus")])
+# Bind with effective sample size and CV data
+comp_clean_onco <- cbind(
+  comp_clean_onco,
+  EUII_onco$effective_N[, c("effective_N_plus", "effective_N_minus", "CV_N_plus", "CV_N_minus")]
+)
 
 colnames(comp_clean_onco) <- c("True Rate delta ($\\pi_E - \\pi_C$)",
                                "DOR",
                                "EUII",
-                               "$E[N_+]$",
-                               "$E[N_-]$")
+                               "$N_{eff,+}$",
+                               "$N_{eff,-}$",
+                               "$CV_{+}$",
+                               "$CV_{-}$")
 
 comp_tab_onco <- xtable(comp_clean_onco,
                         caption = "EUII and other operating characteristics",
                         label = "tab:comp_euii_onco",
-                        digits = c(0, 2, 2, 4, 1, 1))
+                        digits = c(0, 2, 2, 4, 1, 1, 3, 3))
 
 
 
 plot_euii_onco <- plot_euii_comparison(table_onco,N = c(16, 46), exact = TRUE, first_order = FALSE, priors = c(0.01,0.10, 0.99))
+
+plot_euii_onco <- plot_euii_onco + guides(color = "none") #hide approx type legend
 
 
 

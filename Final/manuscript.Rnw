@@ -20,7 +20,7 @@
 \newcommand{\Var}[2][]{\mathrm{Var}_{#1}\left(#2\right)}
 \newcommand{\Prob}[1]{\mathbb{P}\left(#1\right)}
 
-\title{EUII with Dual Criterion and Bayesian Design}
+\title{On frequentist characteristics in Bayesian Sequential designs}
 \author{Saverio Fontana}
 
 \begin{document}
@@ -35,25 +35,61 @@ library(ggplot2)
 @ 
 
 \begin{abstract}
-Comparing clinical trial designs with varying sample sizes is complex, particularly 
-for sequential designs that incorporate interim analyses for efficacy or futility.
-This thesis extends the Experimental Unit Information Index (EUII) 
-proposed by \cite{held2025euii}, designed to quantify the evidentiary value of a 
-single experimental unit to more complex design structures. We first adapt the EUII to Bayesian group sequential designs, 
-where decision-making is based on posterior probability thresholds rather than frequentist error rates. The framework 
-is then extended to dual-criterion designs, which complement statistical significance with a clinically motivated decision value. 
-Finally, we integrate these concepts into a Bayesian sequential dual-criterion framework to evaluate how each experimental unit 
-contributes to the overall evidentiary weight and to assess the efficiency gains compared to standard fixed-sample designs
+
 \end{abstract}
 
-\section{Dual Criterion Design}
-Theory of dual criterion. Can the T1E be expressed as an integral ? Maybe in bayesian yes, not sure in frequentist
+\section{Introduction and motivating examples}
+[PUT an intro to sequential design]. 
+[Put some motivation behind using bayesian sequential designs]
+[Say that dual criterion designs can be easily used and also futility stopping etc]
+[Difficulties of comparing sequential design and fixed --> call for the need of EUII]
 
 \section{Bayesian Design}
-Can implement a fixed bayesian design using gsbDesign of course. But RBest allows us to create mixture.... maybe we should discard all of gsbDesign
+Talk about bayesian stuff, show atwo motivating examples in which you use gsbDesign (prior on the placebo, prior on the treamtent). 
+\cite{kopp2020power} to explain that we need other metrics, also \cite{psioda2019bayesian} says the same thing.
+Advocate for use of mixture and Assurance and also avergae T1E
+
+% summary of the paper by calderazzo: 
+% while Bayesian mechanisms like robust mixture priors are designed to borrow external information, they cannot simultaneously provide power gains and maintain strict frequentist Type I error (T1E) control. When external data is positive, it naturally increases the posterior probability of success, which leads to T1E inflation if standard decision thresholds are used. While you can "re-control" the T1E by raising the critical threshold for rejection, this adjustment effectively discounts the borrowed information until the test becomes mathematically equivalent to a standalone Uniformly Most Powerful (UMP) test. Consequently, the authors conclude that for borrowing to be practically beneficial in clinical trials—particularly in small-sample settings like pediatric medicine—the requirement for strict T1E control must be replaced by more flexible metrics or an acceptance of some error inflation
+% so if we wanted to just control traditional frequentist TYYPE 1 error, then the best idea would be to disregard historical info entirely. 
 
 
-\section{Gsponer Examples}
+Note that psioda2019bayesian is also interestin cause it defines the average T1E and average Power whicha re really simialr to the ones
+from the paper by Best. BUT--> they only define those to allow prior on the TREATMENT! 
+
+\subsection{Explain the mixture apprach}
+
+\subsection{Explain metrics to use to evaluate bayesian designs}
+
+\subsection{Dual Criterion Design}
+Can we extend the previous parts to the dual criterion using integrals?? 
+
+
+\section{Sequential Bayesian Design}
+Show the same examples from gsbdesign but using this time the sequenntial desing. 
+Read and cite the paper \cite{psioda2020twostage} for a nice stuff, also could replciate their results since they advocate for a better
+T1E at sme point. (or at least they say that we are inflating T1E but this is ok if we agree with clinicians). 
+You can REALLY implement this example, IT'S THE SAME ias the paper of Best but it is adaptive!! 
+
+
+Also can discuss the filosohy and some stuff about the paper \cite{zhou2021bayesian}. Also check in this paper if it cites some 
+interesting papers. 
+ 
+\subsection{Extensions}
+Can we extend the chapters that we wrote for the bayesian design to the sequentialbayesian? 
+For  example can we explain the mixture appraoch in sequential ? Can we show the metrics in sequentials? 
+
+\subsection{Talk about EUII as a new metric that can be used }
+
+
+
+
+
+\section{And when do you extend the EUII to dual criterion?? Maybe in the appendix}
+
+
+
+
 The following 4 examples are taken from the paper from Gsponer \cite{gsponer2014bayesian}.
 
 \subsection{Example 3.1: Design of a proof-of-concept trial in Crohn’s disease}
@@ -523,6 +559,7 @@ Hazard ratio
  
 \newpage
 \bibliography{references}   
+
 \end{document}
   
  

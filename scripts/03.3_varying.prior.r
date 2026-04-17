@@ -14,12 +14,14 @@ library(ggplot2)
 ex.3.function <- function(
   patients_uninfo = NULL, 
   patients_info = NULL, 
-  prior_patients = 10, # 10 +10 = 20
+  prior_patients = 10, # 10 +10 = 20 (10 for each arm)
   prior_reduction = 0.75, 
   mu_c = 14.8,
   kappa = 2,
   stages = 1,
-  pr_h1 = 0.1
+  pr_h1 = 0.1,
+  succ.crit = c(0, 0.9, log(2.5), 0.5), 
+  fut.crit = c(log(1.43), 0.5, log(2.5), 0.9)
 ) {
 
 if (is.null(patients_uninfo)) {
@@ -71,8 +73,8 @@ redscen <- c(0, seq(0.5, 0.9, 0.05)) #reduction scenarios from 50% to 90% -->
       nr.stages = stages,
       patients = patients_vec_uninfo, 
       sigma = c(sigma_c, sigma_E), 
-      criteria.success = c(0, 0.9, log(2.5), 0.5), 
-      criteria.futility = c(log(1.43), 0.5, log(2.5), 0.9),
+      criteria.success = succ.crit, 
+      criteria.futility = fut.crit,
       prior.difference = "non-informative" 
     )
     
@@ -100,8 +102,8 @@ redscen <- c(0, seq(0.5, 0.9, 0.05)) #reduction scenarios from 50% to 90% -->
       nr.stages = stages,
       patients = patients_vec_info,
       sigma = c(sigma_c, sigma_E), 
-      criteria.success = c(0, 0.9, log(2.5), 0.5),
-      criteria.futility = c(log(1.43), 0.5, log(2.5), 0.9),
+      criteria.success = succ.crit,
+      criteria.futility = fut.crit,
       prior.difference = c(delta_prior, n_adj, n_adj) 
     )
     
@@ -208,19 +210,50 @@ results_skeptical$EUII_Comparison
 
 
 
+# ----------------------------
+# Grid with varying criterias before meeting of the 15th April
+# ------------------------------
+
+#the prior from the paper was 0.75,assume we trust it cause it comes from 
+# previous data
+
+result1 <- ex.3.function(
+  prior_reduction = 0.75, 
+  prior_patients = 10,
+  stages = 2
+)
+result1$EUII_Comparison
+
+
+succ_stat <- c(0, 0.9)          # Pr(Effect > 0) > 0.9
+succ_clin <- c(log(2.5), 0.5)   # Pr(Effect > log(2.5)) > 0.5
+
+fut_stat <- c(log(1.43), 0.5)   # Pr(Effect > log(1.43)) < 0.5 (or evaluated via futility logic)
+fut_clin <- c(log(2.5), 0.9)    # Pr(Effect > log(2.5)) < 0.9
+fut_impossible <- c(-10, 1e-5) # Pr(Effect > -10) < 1e-5
+
+
+#delete futility stopping
+result.fixed <- ex.3.function(
+  prior_reduction = 0.75, 
+  prior_patients = 10,
+  stages = 2,
+  fut.crit = fut_impossible
+)
+result.fixed$EUII_Comparison
 
 
 
+result.fixed <- ex.3.function(
+  prior_reduction = 0.75, 
+  prior_patients = 10,
+  stages = 2,
+  succ.crit = succ_stat,
+  fut.crit = fut_impossible
+)
+result.fixed$EUII_Comparison
 
-
-
-
-
-
-
-
-
-
+result.fixed$Diagnostics
 
 
 

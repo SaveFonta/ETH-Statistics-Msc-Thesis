@@ -20,7 +20,7 @@ compute_euii <- function(table_total,
                          null_value       = 0  ) {
   
   #Never gonna use prior_N, but I want to keep it in case I want to do the comparison with the bayesian design, where I can use it to add the prior sample size to the physical sample size.
-  N <- N + prior_N
+  #N <- N + prior_N
   
   K     <- length(N) #how many stops? 
   delta <- table_total[, "delta"]
@@ -159,8 +159,8 @@ compute_euii <- function(table_total,
   
   
   # Second order computations:
-  E_N_plus_squared  <- drop(P_S_exact  %*% N^2) / P_S_cum
-  E_N_minus_squared <- drop(P_neg_exact %*% N^2) / P_neg_cum
+  E_N_plus_squared  <- as.numeric(drop(P_S_exact  %*% N^2)) / P_S_cum
+  E_N_minus_squared <- as.numeric(drop(P_neg_exact %*% N^2)) / P_neg_cum
   
   E_N0_plus_squared  <- E_N_plus_squared[h0_index]
   E_N1_plus_squared  <- E_N_plus_squared[-h0_index]
@@ -168,10 +168,10 @@ compute_euii <- function(table_total,
   E_N0_minus_squared <- E_N_minus_squared[h0_index]
   E_N1_minus_squared <- E_N_minus_squared[-h0_index]
   
-  Var_N0_plus  <- E_N0_plus_squared  - E_N0_plus^2
-  Var_N1_plus  <- E_N1_plus_squared  - E_N1_plus^2
-  Var_N0_minus <- E_N0_minus_squared - E_N0_minus^2
-  Var_N1_minus <- E_N1_minus_squared - E_N1_minus^2
+  Var_N0_plus  <- pmax(0, E_N0_plus_squared  - E_N0_plus^2)
+  Var_N1_plus  <- pmax(0, E_N1_plus_squared  - E_N1_plus^2)
+  Var_N0_minus <- pmax(0, E_N0_minus_squared - E_N0_minus^2)
+  Var_N1_minus <- pmax(0, E_N1_minus_squared - E_N1_minus^2)
   
   # Law of total probability for variances (Equation 18)
   Var_N_plus  <- Var_N0_plus  * Pr_H0_given_sig    + Var_N1_plus  * Pr_H1_given_sig    +
@@ -181,6 +181,9 @@ compute_euii <- function(table_total,
   Var_N_minus <- Var_N0_minus * Pr_H0_given_nonsig + Var_N1_minus * Pr_H1_given_nonsig +
     (E_N0_minus - E_N_minus)^2 * Pr_H0_given_nonsig +
     (E_N1_minus - E_N_minus)^2 * Pr_H1_given_nonsig
+
+  Var_N_plus  <- pmax(0, Var_N_plus)
+  Var_N_minus <- pmax(0, Var_N_minus)
   
   # Coefficient of variation
   CV_N_plus  <- sqrt(Var_N_plus)  / E_N_plus
@@ -212,11 +215,19 @@ compute_euii <- function(table_total,
   }
 
   N <- data.frame(Delta = delta[-h0_index], E_N_plus = E_N_plus, E_N_minus = E_N_minus, E_invN_plus = E_invN_plus,  E_invN_minus = E_invN_minus)
+  effective_N <- data.frame(
+    Delta = delta[-h0_index],
+    effective_N_plus = 1 / E_invN_plus,
+    effective_N_minus = 1 / E_invN_minus,
+    CV_N_plus = CV_N_plus,
+    CV_N_minus = CV_N_minus
+  )
+  DOR_df <- data.frame(Delta = delta[-h0_index], DOR = DOR)
   LR_df <- data.frame(Delta = delta[-h0_index], LR_pos = LR_pos, LR_neg = LR_neg)
   P_H1_posterior <- data.frame(Delta = delta[-h0_index], Pr_H1_given_sig = Pr_H1_given_sig, Pr_H1_given_nonsig = Pr_H1_given_nonsig) 
 
 
-  results <- list(result_df = result_df, N=N, LR_df = LR_df, P_H1_posterior = P_H1_posterior)
+  results <- list(result_df = result_df, DOR_df = DOR_df, N = N, effective_N = effective_N, LR_df = LR_df, P_H1_posterior = P_H1_posterior)
   
   return(results)
 }
@@ -304,7 +315,7 @@ plot_euii_comparison <- function(table_total,
 }
 
 
-# ── Example calls ──────────────────────────────────────────────────────────────
+# ---- Example calls
 
 library(dplyr)
 library(gsbDesign)

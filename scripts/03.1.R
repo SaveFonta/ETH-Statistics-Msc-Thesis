@@ -10,12 +10,15 @@ source("00_compute_EUII_2.R")
 mysigma <- 88
 mycrit.success <- c(0,0.95,50,0.5)
 mycrit.fut <- c(40,0.9)
-alternative_deltas <- c(0,40,50,60,70) #those are the possible delta values, where delta = mean_control - mean_treatment, so a positive delta means the treatment is better than control.
-
+alternative_deltas <- c(0,10,20,30,40,50,60,70) #those are the possible delta values, where delta = mean_control - mean_treatment, so a positive delta means the treatment is better than control.
+control_value <- 49
 
 
 # we dedfine bias = Real control value - Prior control value 
 
+# --------------------------------
+# Function to create the values
+# ---------------------
 
 change_truth <- function(bias) { 
   
@@ -24,7 +27,7 @@ change_truth <- function(bias) {
   # Create an exact N x 2 matrix for the simulations. 
   # Column 1: True Control Mean. Column 2: True Treatment Mean.
   # ---------------------------------------------------------------------
-  true_control <- 49 + bias
+  true_control <- control_value + bias
   true_treatment <- true_control + alternative_deltas
   truth_matrix <- cbind(true_control, true_treatment)
   
@@ -32,7 +35,7 @@ change_truth <- function(bias) {
   # Design 1 -> Informative Sequential
   design_informative <- gsbDesign(nr.stages = 2, patients = c(10,20), sigma=mysigma,
                                   criteria.success = mycrit.success, criteria.futility = mycrit.fut,
-                                  prior.control = c(49,20), 
+                                  prior.control = c(control_value,20), 
                                   prior.treatment = c(49,0)) 
   
   simulation_informative <- gsbSimulation(truth = truth_matrix,
@@ -136,11 +139,13 @@ change_truth <- function(bias) {
 # classic approach with bias = 0
 df_merged <- change_truth(0)
 
+T1E_example1 <- df_merged$T1E
+Power_example1 <- df_merged$Power
 
 final_plot_CRON <- ggplot(df_merged$df_merged, aes(x = Delta, y = EUII, 
                                       color = Design, shape = Design, linetype = Design)) +
   geom_line(linewidth = 1.2) +
-  geom_point(size = 3.5) +
+  geom_point(size = 2.2) +
   # Using a colorblind-friendly palette
   scale_color_manual(values = c("Fixed Uninformative (N=80)" = "#E69F00", 
                                 "Fixed Informative (N=60)" = "#D55E00",
@@ -162,24 +167,35 @@ final_plot_CRON <- ggplot(df_merged$df_merged, aes(x = Delta, y = EUII,
 
 ## Sample size df building
 
-info <- df_merged$res_seq_info$N[, 2:3] 
-uninfo <- df_merged$res_seq_uninfo$N[,2:3]
-names(info) <- c("E_N_+_info", "E_N_-_info")
-names(uninfo) <- c("E_N_+_uninfo", "E_N_-_uninfo")
+info <- df_merged$res_seq_info$effective_N[, 2:5]
+uninfo <- df_merged$res_seq_uninfo$effective_N[, 2:5]
+names(info) <- c("N_eff_+_info", "N_eff_-_info", "CV_+_info", "CV_-_info")
+names(uninfo) <- c("N_eff_+_uninfo", "N_eff_-_uninfo", "CV_+_uninfo", "CV_-_uninfo")
 delta <- df_merged$res_seq_uninfo$result_df$Delta
 N_data_CRON <- cbind(delta, info, uninfo)
 
 library(xtable)
-colnames(N_data_CRON) <- c("$\\Delta$", "$E[N_+]^{\\text{info}}$", "$E[N_-]^{\\text{info}}$", "$E[N_+]^{\\text{uninfo}}$", "$E[N_-]^{\\text{uninfo}}$")
-N_data_CRON <- xtable(N_data_CRON, digits = c(0, 0,2,2,2,2))
+colnames(N_data_CRON) <- c(
+  "$\\Delta$",
+  "$N_{\\text{eff},+}^{\\text{info}}$", "$N_{\\text{eff},-}^{\\text{info}}$",
+  "$CV_{+}^{\\text{info}}$", "$CV_{-}^{\\text{info}}$",
+  "$N_{\\text{eff},+}^{\\text{uninfo}}$", "$N_{\\text{eff},-}^{\\text{uninfo}}$",
+  "$CV_{+}^{\\text{uninfo}}$", "$CV_{-}^{\\text{uninfo}}$"
+)
+N_data_CRON <- xtable(N_data_CRON, digits = c(0, 0, 2, 2, 3, 3, 2, 2, 3, 3))
 
 
 
 
 
-#####################################################################à
+
+
+
+
+
+# --------------------------------------------------------
 # What if we change the bias value??????????
-
+# --------------------------------------------------------------
 bias_values <- seq(-20, 20, by = 5)
 raw_results <- lapply(bias_values, function(b) {
   res <- change_truth(b)
@@ -205,10 +221,11 @@ df_plot_euii <- df_euii_total  |>
                   filter(Delta == 50)  |> 
                   filter(is.finite(EUII))
 
-# Plot the EUII vs. Prior Bias
+#######
+# Plots to put in the paper:
 EUII_CRON <- ggplot(df_plot_euii, aes(x = Bias, y = EUII, color = Design, linetype = Design, shape = Design)) +
   geom_line(linewidth = 1.2) +
-  geom_point(size = 3.5) +
+  geom_point(size = 2.2) +
   scale_color_manual(values = c("Fixed Uninformative (N=80)" = "#E69F00", 
                                 "Fixed Informative (N=60)" = "#D55E00",
                                 "Sequential Uninformative (Max N=80)" = "#56B4E9", 
@@ -216,9 +233,9 @@ EUII_CRON <- ggplot(df_plot_euii, aes(x = Bias, y = EUII, color = Design, linety
   geom_vline(xintercept = 0, linetype = "dotted", color = "darkgray", linewidth = 1) +
   theme_bw(base_size = 14) +
   labs(
-    title = "EUII Sensitivity to Prior-Data Conflict",
+    title = "EUII Sensitivity to Drift",
     subtitle = expression("True Effect Size " * Delta * " = 50"),
-    x = "Prior Bias (True Control Mean - Prior Mean)",
+    x = "Drift (True Control Mean - Prior Mean)",
     y = "EUII"
   ) +
   theme(legend.position = "bottom", legend.direction = "vertical", legend.title = element_blank())
@@ -227,17 +244,16 @@ EUII_CRON <- ggplot(df_plot_euii, aes(x = Bias, y = EUII, color = Design, linety
 
 
 
-library(tidyr)
 
 # Reshape T1E for ggplot
 df_t1e_long <- df_t1e_total %>%
   pivot_longer(cols = starts_with("T1E"), names_to = "Design", values_to = "Alpha")
 
 T1E_CRON <- ggplot(df_t1e_long, aes(x = Bias, y = Alpha, color = Design)) +
-  geom_line(linewidth = 1.2) + geom_point(size = 3.5) +
+  geom_line(linewidth = 1.2) + geom_point(size = 2.2) +
   geom_hline(yintercept = 0.05, linetype = "dashed", color = "red") + # Standard 5% line
   theme_bw(base_size = 14) +
-  labs(  x = "Prior Bias", y = "Type-I Error Rate")
+  labs(  x = "Drift", y = "Type-I Error Rate")
 
 
 
@@ -248,9 +264,9 @@ df_power_long <- df_power_total %>%
   pivot_longer(cols = starts_with("Power"), names_to = "Design", values_to = "Power_Val")
 
 Power_plot_CRON <- ggplot(df_power_long, aes(x = Bias, y = Power_Val, color = Design)) +
-  geom_line(linewidth = 1.2) + geom_point(size = 3.5) +
+  geom_line(linewidth = 1.2) + geom_point(size = 2.2) +
   theme_bw(base_size = 14) +
-  labs(x = "Prior Bias", y = "Statistical Power")
+  labs(x = "Drift", y = "Statistical Power")
 
 
 
@@ -258,87 +274,3 @@ Power_plot_CRON <- ggplot(df_power_long, aes(x = Bias, y = Power_Val, color = De
 
 
 
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-
-# 1. Extract the components directly from your raw_results list
-df_components <- do.call(rbind, lapply(raw_results, function(res) {
-  
-  b <- res$T1E$Bias
-  
-  # Extract Type I Error and Power for the Sequential Informative design
-  alpha <- res$T1E$T1E_sequential.info
-  power <- res$Power$Power_sequential.info[res$Power$Delta == 50]
-  
-  # Calculate Likelihood Ratios (adding a tiny epsilon to prevent division by zero)
-  epsilon <- 1e-6
-  LR_plus <- power / max(alpha, epsilon)
-  LR_minus <- (1 - power) / max(1 - alpha, epsilon)
-  
-  # Extract Expected Sample Sizes (E[N+] and E[N-]) for Delta = 50
-  # We find the row index where Delta == 50 in the sequential info object
-  idx <- which(res$res_seq_info$result_df$Delta == 50)
-  
-  # Based on your setup, column 2 is E[N+] and column 3 is E[N-]
-  EN_plus <- res$res_seq_info$N[idx, 2]
-  EN_minus <- res$res_seq_info$N[idx, 3]
-  
-  data.frame(
-    Bias = b,
-    LR_plus = LR_plus,
-    LR_minus = LR_minus,
-    EN_plus = as.numeric(EN_plus),
-    EN_minus = as.numeric(EN_minus)
-  )
-}))
-
-# 2. Reshape the data for a multi-panel ggplot
-df_plot_components <- df_components %>%
-  pivot_longer(
-    cols = c("LR_plus", "LR_minus", "EN_plus", "EN_minus"), 
-    names_to = "Metric", 
-    values_to = "Value"
-  ) %>%
-  mutate(
-    # Group metrics into two categories for faceting
-    Category = ifelse(grepl("LR", Metric), "Evidentiary Value (Likelihood Ratios)", "Cost (Expected Sample Size)"),
-    # Rename for cleaner plot legends
-    Metric = case_when(
-      Metric == "LR_plus"  ~ "LR+ (Evidence for Alternative)",
-      Metric == "LR_minus" ~ "LR- (Evidence for Null)",
-      Metric == "EN_plus"  ~ "E[N+] (Sample Size if Significant)",
-      Metric == "EN_minus" ~ "E[N-] (Sample Size if Non-Sig.)"
-    )
-  )
-
-# 3. Create the Decoupled Plot
-decoupled_plot <- ggplot(df_plot_components, aes(x = Bias, y = Value, color = Metric, linetype = Metric)) +
-  geom_line(linewidth = 1.2) +
-  geom_point(size = 3) +
-  # Free Y-scales because LRs can be in the hundreds, while N is bounded at 60
-  facet_wrap(~ Category, scales = "free_y", ncol = 1) +
-  geom_vline(xintercept = 0, linetype = "dotted", color = "darkgray", linewidth = 1) +
-  scale_color_manual(values = c(
-    "LR+ (Evidence for Alternative)" = "#0072B2", 
-    "LR- (Evidence for Null)" = "#56B4E9",
-    "E[N+] (Sample Size if Significant)" = "#D55E00", 
-    "E[N-] (Sample Size if Non-Sig.)" = "#E69F00"
-  )) +
-  theme_bw(base_size = 14) +
-  labs(
-    title = "Mechanics of EUII Drop: Likelihood Ratios vs. Sample Size",
-    subtitle = "Sequential Informative Design (True Treatment Effect = 50)",
-    x = "Prior Bias (True Control Mean - Prior Mean)",
-    y = "Metric Value"
-  ) +
-  theme(
-    legend.position = "bottom", 
-    legend.direction = "vertical", 
-    legend.title = element_blank(),
-    strip.text = element_text(face = "bold", size = 12),
-    panel.grid.minor = element_blank()
-  )
-
-# Display the plot
-print(decoupled_plot)
