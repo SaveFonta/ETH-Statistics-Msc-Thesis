@@ -19,8 +19,8 @@ sigma <- 88
 sign.crit.95 <- decision2S(pc = 0.95, qc = 0, lower.tail = TRUE)
 sign.crit.975 <- decision2S(pc = 0.975, qc = 0, lower.tail = TRUE)
 
-dual.crit.95 <- decision2S(pc = c(0.95, 0.5), qc = c(0, 50), lower.tail = TRUE)
-dual.crit.975 <- decision2S(pc = c(0.975, 0.5), qc = c(0, 50), lower.tail = TRUE)
+dual.crit.95 <- decision2S(pc = c(0.95, 0.5), qc = c(0, -50), lower.tail = TRUE)
+dual.crit.975 <- decision2S(pc = c(0.975, 0.5), qc = c(0, -50), lower.tail = TRUE)
 
 
 
@@ -248,6 +248,7 @@ final_table <- bind_rows(tab1, tab2, tab3, tab4)
 saveRDS(final_table, file = "data/avgT1E.fixed.rds")
 cat("avgT1E fixed data saved")
 
+final_table <- readRDS("data/avgT1E.fixed.rds")
 
 
 
@@ -257,47 +258,44 @@ cat("avgT1E fixed data saved")
 
 # Plot experiments
 
+colnames(final_table)[6] <- "Robust"
+
 df_plot_avg <- final_table %>%
   pivot_longer(
-    cols = c("Vague", "Skeptical", "MAP", "Robust_p_MAP"),
+    cols = c("Vague", "Skeptical", "MAP", "Robust"),
     names_to = "Design_Prior",
     values_to = "Avg_T1E"
   ) %>%
   mutate(
-    Analysis_Prior = factor(Analysis_Prior, levels = c("Vague", "MAP", "Robust p_MAP")),
-    Design_Prior = factor(Design_Prior, levels = c("Vague", "Skeptical", "MAP", "Robust_p_MAP"),
-                          labels = c("Vague", "Skeptical", "MAP", "Robust")),
+    Analysis_Prior = factor(Analysis_Prior, levels = c("Vague", "MAP", "Robust")),
+    Design_Prior = factor(Design_Prior, levels = c("Vague", "Skeptical", "MAP", "Robust")),
     Decision_Criteria = factor(Decision_Criteria, 
-                               levels = c("Relative (95%)", "Relative (97.5%)", 
+                               levels = c("Significance (95%)", "Significance (97.5%)", 
                                           "Dual (95%)", "Dual (97.5%)"))
   )
-
-# Faceted Bar Chart
-ggplot(df_plot_avg, aes(x = Design_Prior, y = Avg_T1E, fill = Analysis_Prior)) +
-  geom_col(position = position_dodge(width = 0.8), width = 0.7, color = "black") +
-  
-  # Add a threshold line (Change 2.5 to 5.0 if you are targeting 5% alpha)
-  geom_hline(yintercept = 2.5, linetype = "dashed", color = "red", linewidth = 0.8) +
-  
-  # Facet by the 4 Decision Criteria
-  facet_wrap(~ Decision_Criteria, ncol = 2) +
-  
-  # Optional: add text labels on top of the bars if you want exact numbers in the plot
-  # geom_text(aes(label = sprintf("%.1f", Avg_T1E)), 
-  #           position = position_dodge(width = 0.8), vjust = -0.5, size = 2.5) +
-  
-  labs(
-    title = "Average Type I Error Across Decision Criteria",
-    subtitle = "Evaluating prior robustness against varying underlying true scenarios",
-    x = "True Underlying Reality (Design Prior)",
-    y = "Average Type I Error (%)",
-    fill = "Analysis Prior"
-  ) +
-  scale_fill_manual(values = c("Vague" = "#E69F00", "MAP" = "#56B4E9", "Robust p_MAP" = "#009E73")) +
-  theme_bw(base_size = 12) +
-  theme(
-    legend.position = "bottom",
-    axis.text.x = element_text(angle = 45, hjust = 1), # Tilt x-axis labels to fit nicely
-    panel.grid.major.x = element_blank(),
-    strip.background = element_rect(fill = "#f0f0f0") # Light grey facet headers
-  )
+  # Faceted Bar Chart
+  ggplot(df_plot_avg, aes(x = Design_Prior, y = Avg_T1E, fill = Analysis_Prior)) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.7, color = "black") +
+    
+    # Add a threshold line (Change 2.5 to 5.0 if you are targeting 5% alpha)
+    geom_hline(yintercept = 2.5, linetype = "dashed", color = "red", linewidth = 0.8) +
+    
+    # Facet by the 4 Decision Criteria - 4 columns (2x2 layout: Sig95, Sig975, Dual95, Dual975)
+    facet_wrap(~ Decision_Criteria, ncol = 4) +
+    
+    labs(
+      title = "Average Type I Error Across Decision Criteria",
+      subtitle = "Evaluating prior robustness against varying underlying true scenarios",
+      x = "True Underlying Reality (Design Prior)",
+      y = "Average Type I Error (%)",
+      fill = "Analysis Prior"
+    ) +
+    scale_fill_manual(values = c("Vague" = "#E69F00", "MAP" = "#56B4E9", "Robust" = "#009E73")) +
+    theme(
+      legend.position = "bottom",
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.major.x = element_blank(),
+      strip.background = element_rect(fill = "#f0f0f0"),
+      figure.width = 14,
+      figure.height = 4
+    )
