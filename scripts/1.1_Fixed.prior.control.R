@@ -129,6 +129,7 @@ df_plot <- df %>%
 
 
 saveRDS(df_plot, file = "data/T1E.fixed.rds")
+cat("T1E fixed data saved")
 
 # -------------------
 # Plotting
@@ -245,6 +246,7 @@ final_table <- bind_rows(tab1, tab2, tab3, tab4)
 
 
 saveRDS(final_table, file = "data/avgT1E.fixed.rds")
+cat("avgT1E fixed data saved")
 
 
 
