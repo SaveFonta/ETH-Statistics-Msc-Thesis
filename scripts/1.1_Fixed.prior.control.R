@@ -9,6 +9,8 @@ library(ggplot2)
 library(checkmate)  
 library(assertthat) 
 
+# Create data directory if it doesn't exist
+dir.create("data", showWarnings = FALSE)
 
 sigma <- 88
 
