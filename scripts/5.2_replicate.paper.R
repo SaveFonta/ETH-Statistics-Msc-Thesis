@@ -46,7 +46,7 @@ p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma)
 
 
 # define success criterion 
-succ.crit <- decision2S(pc = 0.975, qc = 0, lower.tail = TRUE)
+succ.crit <- decision2S(pc = 0.95, qc = 0, lower.tail = TRUE)
 
 
 
@@ -194,8 +194,7 @@ average_T1E <- function(analysis.criteria, design.prior, lower = NA, upper = NA,
 
 # Lets recreate the table 2
 # we have an additional design prior, which is skeptical 
-p_skep <- mixnorm(c(1, -90, 25), sigma = 88)
-
+p_skep <- mixnorm(c(1, -90, 25), sigma = sigma)
 
 T1E_vague_row <- c(
   average_T1E(oc_vague, p_vague),
@@ -247,20 +246,76 @@ print(Table_2_Formatted)
 library(checkmate)   # assert_number, assert_scalar, assert_list, assert_function
 library(assertthat)  # assert_that
 
-avgoc2S.normMix(
-  prior1 = p_vague,
-  prior2 = p_rob,
+avgoc_vague <- avgoc2S.normMix(
+  prior1 = p_vague, # analysis prior
+  prior2 = p_vague,
   n1 = n.act,
   n2 = n.pbo,
   decision = succ.crit,
   delta = 0,        # <-- theta1 = theta2 + delta
-  mix2 = p_skep,         # <-- distribution of theta2 ( design prior)
+  mix2 = p_vague,         # <- ( design prior)
   sigma1 = sigma,
   sigma2 = sigma
 ) 
 
 
-prior1 = p_vague, prior2 = p_MAP, n1 = n.act, n2 = n.pbo, decision = succ.crit
+avgoc_MAP <- avgoc2S.normMix(
+  prior1 = p_vague, 
+  prior2 = p_MAP,       # analysis prior
+  n1 = n.act,
+  n2 = n.pbo,
+  decision = succ.crit,
+  delta = 0,        # <-- theta1 = theta2 + delta
+  mix2 = p_vague,         # <- ( design prior)
+  sigma1 = sigma,
+  sigma2 = sigma
+) 
+
+
+avgoc_rob <- avgoc2S.normMix(
+  prior1 = p_vague, 
+  prior2 = p_rob,       # analysis prior
+  n1 = n.act,
+  n2 = n.pbo,
+  decision = succ.crit,
+  delta = 0,        # <-- theta1 = theta2 + delta
+  mix2 = p_vague,         # <- ( design prior)
+  sigma1 = sigma,
+  sigma2 = sigma
+) 
+
+
+col1 <- c(avgoc_vague(), avgoc_MAP(), avgoc_rob())
+
+col2 <- c(avgoc_vague(mix2_new = p_skep), avgoc_MAP(mix2_new = p_skep), avgoc_rob(mix2_new = p_skep))
+
+col3 <- c(avgoc_vague(mix2_new = p_MAP), avgoc_MAP(mix2_new = p_MAP), avgoc_rob(mix2_new = p_MAP))
+
+col4 <- c(avgoc_vague(mix2_new = p_rob), avgoc_MAP(mix2_new = p_rob), avgoc_rob(mix2_new = p_rob))
+
+
+
+full <- cbind(col1, col2, col3, col4)
+
+tab <- as.data.frame(round(full,3))
+rownames(tab) <- c("Vague", "MAP", "Robust p_MAP")
+colnames(tab) <- c("Vague", "Skeptical", "MAP", "Robust p_MAP")
+final <- tab * 100
+final
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -418,12 +473,12 @@ avgoc2S_sequential.normMix <- function(
 
   ## ---- parse stage decisions ------------------------------------------
   ## Normalise each stage entry to list(success = d_s, futility = d_f | NULL)
-  parse_decision <- function(d) {
+  check_decision <- function(d) {
     if (is(d, "decision2S")) return(list(success = d, futility = NULL))
     stopifnot(is.list(d), !is.null(d$success))
     list(success = d$success, futility = d$futility)
   }
-  dec <- lapply(decisions, parse_decision)
+  dec <- lapply(decisions, check_decision)
 
   if (!is.null(dec[[K]]$futility)) {
     warning("Futility criterion at the final stage (k=K) is not supported and will be ignored.")
@@ -454,13 +509,13 @@ avgoc2S_sequential.normMix <- function(
   ##
   ##   sd(Y1_k | Y1_{k-1}, theta1) = sigma1 * sqrt(n1[k] - n1[k-1]) / n1[k]
   ##   sd(Y1_1 | theta1)           = sigma1 / sqrt(n1[1])
-  csd1 <- numeric(K)
-  csd2 <- numeric(K)
-  csd1[1] <- sigma1 / sqrt(n1[1])
-  csd2[1] <- sigma2 / sqrt(n2[1])
+  cSEM1 <- numeric(K)
+  cSEM2 <- numeric(K)
+  cSEM1[1] <- sigma1 / sqrt(n1[1])
+  cSEM2[1] <- sigma2 / sqrt(n2[1])
   if (K > 1) for (k in 2:K) {
-    csd1[k] <- sigma1 * sqrt(n1[k] - n1[k-1]) / n1[k]
-    csd2[k] <- sigma2 * sqrt(n2[k] - n2[k-1]) / n2[k]
+    cSEM1[k] <- sigma1 * sqrt(n1[k] - n1[k-1]) / n1[k]
+    cSEM2[k] <- sigma2 * sqrt(n2[k] - n2[k-1]) / n2[k]
   }
 
   ## Conditional mean of cumulative arm-1 mean at stage k
@@ -524,8 +579,8 @@ avgoc2S_sequential.normMix <- function(
   compute_from_stage <- function(k, y1p, y2p, theta1, theta2) {
     mu1 <- cmean1(k, y1p, theta1)
     mu2 <- cmean2(k, y2p, theta2)
-    sd1 <- csd1[k]
-    sd2 <- csd2[k]
+    sd1 <- cSEM1[k]
+    sd2 <- cSEM2[k]
 
     y2_lo <- qnorm(eps / 2,   mu2, sd2)
     y2_hi <- qnorm(1-eps / 2, mu2, sd2)
@@ -631,7 +686,7 @@ avgoc2S_sequential.normMix <- function(
 # Final: success/failure only
 
 d_efficacy <- RBesT::decision2S(0.95, 0,  lower.tail = FALSE)  # P(θ₁>θ₂|data) > 0.95
-d_futility <- RBesT::decision2S(0.10, 0,  lower.tail = TRUE)   # P(θ₁>θ₂|data) < 0.10
+d_futility <- RBesT::decision2S(0.10, 10,  lower.tail = TRUE)   # P(θ₁>θ₂|data) < 0.10
 d_final    <- RBesT::decision2S(0.90, 0,  lower.tail = FALSE)
 
 avgoc2S_sequential.normMix(
@@ -648,3 +703,384 @@ avgoc2S_sequential.normMix(
   sigma1      = 88,
   sigma2      = 88
 )
+
+
+
+
+
+
+
+fun <- oc2S_seq.normMix(
+  prior1      = p_vague,
+  prior2      = p_MAP,
+  n1          = c(50, 100),
+  n2          = c(50, 100),
+  decisions   = list(
+    list(success = d_efficacy, futility = d_futility),   # interim
+    d_final                                              # final
+  ),
+  sigma1      = 88,
+  sigma2      = 88
+)
+
+fun(-100,0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# decisions should be passed as a list the length the number of stages
+# so let's say in a two stage with futility we have 
+# succ.early <- decision2S(0.95, 0, lower.tail = FALSE)
+# fut.early <- decision2S(0.20, 0, lower.tail = TRUE)
+# succ.final <- decision2S (0.9, 0, lower.tail = FALSE)
+
+# decision <- list ( list (success = succ.early, futility = fut.early), success = succ_final)
+oc2S_seq.normMix <- function(
+  prior1, prior2,
+  n1, n2,
+  decisions,
+  sigma1, sigma2,
+  eps = 1e-6, Ngrid = 10
+) {
+
+  ## 1. SETUP
+  if (missing(sigma1)) sigma1 <- RBesT::sigma(prior1)
+  if (missing(sigma2)) sigma2 <- RBesT::sigma(prior2)
+
+  RBesT::sigma(prior1) <- sigma1
+  RBesT::sigma(prior2) <- sigma2
+
+
+  ## Check decision list and standardise it to list(success=, futility=)
+  check_decision <- function(d, k) {
+
+    # if it is a single decision object, it is only a success rule
+    if (methods::is(d, "decision2S")) {
+      return(list(success = d, futility = NULL))
+    }
+
+    if (!is.list(d)) {
+      stop(paste0("Error at Stage ", k, ": decision must be a 'decision2S' object or a list"))
+    }
+
+    if (is.null(d$success)) {
+      stop(paste0("Error at Stage ", k, ": the list is missing the mandatory 'success' rule."))
+    }
+
+    if (!methods::is(d$success, "decision2S")) {
+      stop(paste0("Error at Stage ", k, ": The 'success' rule must be a valid RBesT decision2S object."))
+    }
+
+    return(list(success = d$success, futility = d$futility))
+  }
+
+  dec <- lapply(seq_along(decisions), function(k) check_decision(decisions[[k]], k))
+
+
+  ## Factory for decision boundaries:
+  ## given a stage k and a decision object, returns the boundary function
+  ## that maps y2 -> critical y1 value. Returns NULL if no rule exists.
+  make_bnd <- function(k, d_obj) {
+    if (is.null(d_obj)) return(NULL)
+    RBesT:::decision2S_boundary(
+      prior1, prior2, n1[k], n2[k], d_obj,
+      sigma1, sigma2, eps, Ngrid
+    )
+  }
+
+  bnd_succ <- lapply(1:2, function(k) make_bnd(k, dec[[k]]$success))
+  bnd_fut  <- lapply(1:2, function(k) make_bnd(k, dec[[k]]$futility))
+
+  # Now we have:
+  # bnd_succ[[1]](y2) = critical y1 for early success at interim given placebo mean y2
+  # bnd_fut[[1]](y2)  = critical y1 for futility stop at interim given placebo mean y2
+  # bnd_succ[[2]](y2) = critical y1 for final success given placebo mean y2
+
+
+  ## Extract the tail direction from each decision object.
+  ## This encodes whether "success = y1 > boundary" (lower.tail = FALSE, higher is better)
+  ## or "success = y1 < boundary" (lower.tail = TRUE, lower is better).
+  ## By reading it from the decision object we avoid hardcoding the direction.
+  lower.tail_succ <- lapply(1:2, function(k) attr(dec[[k]]$success,  "lower.tail"))
+  lower.tail_fut  <- lapply(1:2, function(k) {
+    if (is.null(dec[[k]]$futility)) NULL else attr(dec[[k]]$futility, "lower.tail")
+  })
+
+
+  ## Marginal standard errors at each stage
+  ## (used for integration limits and sampling distributions)
+  mSEM1 <- sigma1 / sqrt(n1)   # c(sem1_stage1, sem1_stage2)
+  mSEM2 <- sigma2 / sqrt(n2)
+
+  ## Conditional standard errors of the incremental data between stages
+  ## These answer: given interim data y_1p, what is the SD of the final mean y_1?
+  ## Derived from: y_final = (n_interim * y_interim + n_increment * y_new) / n_final
+  cSEM1 <- c(sigma1 / sqrt(n1[1]), sigma1 * sqrt(n1[2] - n1[1]) / n1[2])
+  cSEM2 <- c(sigma2 / sqrt(n2[1]), sigma2 * sqrt(n2[2] - n2[1]) / n2[2])
+
+  ## Conditional means of the final stage statistic given interim data
+  ## These answer: if my interim mean is y_p and the true param is theta,
+  ## what is E[y_final | y_interim = y_p, theta]?
+  cmean1 <- function(y1p, theta1) (n1[1] * y1p + (n1[2] - n1[1]) * theta1) / n1[2]
+  cmean2 <- function(y2p, theta2) (n2[1] * y2p + (n2[2] - n2[1]) * theta2) / n2[2]
+
+
+  ## 2. THE FIXED-THETA EVALUATOR
+  ## Returns operating characteristics for a specific (theta1, theta2) pair
+  design_fun <- function(theta1, theta2) {
+
+    tol <- eps^0.4
+
+    ## --- CACHE WARM-UP ---
+    ## Pre-populate the boundary function caches over the plausible
+    ## data range for this (theta1, theta2). Without this, the boundary
+    ## functions would recompute repeatedly during integration.
+    for (k in 1:2) {
+      lim2_k <- c(
+        qnorm(eps / 2,     theta2, mSEM2[k]),
+        qnorm(1 - eps / 2, theta2, mSEM2[k])
+      )
+      lim1_k <- c(
+        qnorm(eps / 2,     theta1, mSEM1[k]),
+        qnorm(1 - eps / 2, theta1, mSEM1[k])
+      )
+      if (!is.null(bnd_succ[[k]])) bnd_succ[[k]](lim2_k, lim1 = lim1_k)
+      if (!is.null(bnd_fut[[k]]))  bnd_fut[[k]](lim2_k,  lim1 = lim1_k)
+    }
+
+
+    ## --- STAGE 1 (Interim) ---
+    ## Marginal sampling distribution of the interim placebo mean
+    ## y2_1 ~ N(theta2, mSEM2[1])
+    mix_y2_1 <- RBesT::mixnorm(c(1, theta2, mSEM2[1]), sigma = mSEM2[1])
+
+    ## P(early success at interim) = E_{y2_1}[ P(y1_1 > bnd_succ[[1]](y2_1) | theta1) ]
+    ## integrate_density_log expects log-probabilities from the integrand.
+    ## lower.tail_succ[[1]] encodes the correct direction for this endpoint.
+    p_eff_1 <- RBesT:::integrate_density_log(
+      integrand = function(x) {
+        sapply(x, function(y2) {
+          pnorm(
+            bnd_succ[[1]](y2), theta1, cSEM1[1],
+            lower.tail = lower.tail_succ[[1]], log.p = TRUE
+          )
+        })
+      },
+      mix     = mix_y2_1,
+      Lplower = RBesT:::logit(eps / 2),
+      Lpupper = RBesT:::logit(1 - eps / 2)
+    )
+
+    ## P(futility stop at interim) = E_{y2_1}[ P(y1_1 < bnd_fut[[1]](y2_1) | theta1) ]
+    ## lower.tail_fut[[1]] encodes the correct direction for the futility rule.
+    p_fut_1 <- 0
+    if (!is.null(bnd_fut[[1]])) {
+      p_fut_1 <- RBesT:::integrate_density_log(
+        integrand = function(x) {
+          sapply(x, function(y2) {
+            pnorm(
+              bnd_fut[[1]](y2), theta1, cSEM1[1],
+              lower.tail = lower.tail_fut[[1]], log.p = TRUE
+            )
+          })
+        },
+        mix     = mix_y2_1,
+        Lplower = RBesT:::logit(eps / 2),
+        Lpupper = RBesT:::logit(1 - eps / 2)
+      )
+    }
+
+    ## P(continue to stage 2) = 1 - P(early stop for any reason)
+    p_cont_1 <- 1 - p_eff_1 - p_fut_1
+
+
+    ## --- STAGE 2 (Final) ---
+    ## P(success at final) = E_{y2_1}[ 1(continue) * E_{y1_1 in continuation region}[
+    ##                          E_{y2_2 | y2_1}[ P(y1_2 > bnd_succ[[2]](y2_2) | y1_1, theta1) ] ] ]
+    ##
+    ## Outer integral over y2_1 ~ N(theta2, mSEM2[1]) via integrate_density_log.
+    ## Middle integral over y1_1 in continuation region via base integrate().
+    ## We must use base integrate() here because the continuation region [c_lo, c_hi]
+    ## depends on y2_1 and cannot be expressed as a fixed mixture support.
+    ## Inner integral over y2_2 | y2_1 via integrate_density_log.
+
+    p_eff_2 <- RBesT:::integrate_density_log(
+      integrand = function(y2_1_vec) {
+        sapply(y2_1_vec, function(y2_1) {
+
+          ## Continuation region boundaries for y1_1 given y2_1.
+          ## We sort c_f and c_s so that the integration bounds are always
+          ## (lower, upper) regardless of endpoint direction:
+          ##   higher is better: c_f < c_s, so c_lo = c_f, c_hi = c_s
+          ##   lower  is better: c_s < c_f, so c_lo = c_s, c_hi = c_f
+c_s <- bnd_succ[[1]](y2_1)
+          
+          if (!is.null(bnd_fut[[1]])) {
+            c_f <- bnd_fut[[1]](y2_1)
+          } else {
+            ## If no futility rule exists, the "futility" boundary is just the 
+            ## opposite infinity of the success region.
+            if (lower.tail_succ[[1]] == FALSE) {
+              c_f <- -Inf  # Higher is better: continue if > -Inf and < c_s
+            } else {
+              c_f <- Inf   # Lower is better: continue if < Inf and > c_s
+            }
+          }
+
+          c_lo <- min(c_f, c_s)
+          c_hi <- max(c_f, c_s)
+
+          ## Middle integral: integrate over y1_1 in continuation region
+          inner <- tryCatch({
+            integrate(function(y1_1_vec) {
+              sapply(y1_1_vec, function(y1_1) {
+
+                ## Conditional means for final stage given interim data
+                mu1 <- cmean1(y1_1, theta1)
+                mu2 <- cmean2(y2_1, theta2)
+
+                ## Conditional sampling distribution of final placebo mean
+                ## y2_2 | y2_1 ~ N(mu2, cSEM2[2])
+                mix_y2_2 <- RBesT::mixnorm(c(1, mu2, cSEM2[2]), sigma = cSEM2[2])
+
+                ## Inner integral: P(final success | y1_1, y2_1)
+                ## = E_{y2_2 | y2_1}[ P(y1_2 > bnd_succ[[2]](y2_2) | mu1) ]
+                ## lower.tail_succ[[2]] encodes the correct direction for the final success rule.
+                succ_2 <- RBesT:::integrate_density_log(
+                  integrand = function(y2_2_vec) {
+                    sapply(y2_2_vec, function(y2_2) {
+                      pnorm(
+                        bnd_succ[[2]](y2_2), mu1, cSEM1[2],
+                        lower.tail = lower.tail_succ[[2]], log.p = TRUE
+                      )
+                    })
+                  },
+                  mix     = mix_y2_2,
+                  Lplower = RBesT:::logit(eps / 2),
+                  Lpupper = RBesT:::logit(1 - eps / 2)
+                )
+
+                ## Weight by marginal density of y1_1
+                succ_2 * dnorm(y1_1, theta1, cSEM1[1])
+              })
+            }, lower = c_lo, upper = c_hi, rel.tol = tol)$value
+          }, error = function(e) 0.0)
+
+          ## Return log for integrate_density_log
+          if (inner <= 0) return(-Inf)
+          log(inner)
+        })
+      },
+      mix     = mix_y2_1,
+      Lplower = RBesT:::logit(eps / 2),
+      Lpupper = RBesT:::logit(1 - eps / 2)
+    )
+
+
+    ## --- OPERATING CHARACTERISTICS ---
+    p_total  <- p_eff_1 + p_eff_2   # overall power
+    p_no_rej <- 1 - p_total          # overall non-rejection probability
+
+    ## --- EXPECTED SAMPLE SIZES ---
+    ## E[N] = n_interim * P(stop at interim) + n_final * P(reach final)
+    EN1 <- n1[1] * (p_eff_1 + p_fut_1) + n1[2] * p_cont_1
+    EN2 <- n2[1] * (p_eff_1 + p_fut_1) + n2[2] * p_cont_1
+
+    ## E[N | rejection]: weighted average of sample sizes at each success event
+    EN1_rej <- (n1[1] * p_eff_1 + n1[2] * p_eff_2) / p_total
+    EN2_rej <- (n2[1] * p_eff_1 + n2[2] * p_eff_2) / p_total
+
+    ## E[N | no rejection]: futility stop at interim + failure at final
+    ## p_cont_1 - p_eff_2 = P(reach final but fail)
+    EN1_norej <- (n1[1] * p_fut_1 + n1[2] * (p_cont_1 - p_eff_2)) / p_no_rej
+    EN2_norej <- (n2[1] * p_fut_1 + n2[2] * (p_cont_1 - p_eff_2)) / p_no_rej
+
+    return(data.frame(
+      Theta1           = theta1,
+      Theta2           = theta2,
+      P_Stop_Eff_Stg1  = p_eff_1,
+      P_Stop_Fut_Stg1  = p_fut_1,
+      P_Continue_Stg1  = p_cont_1,
+      P_Success_Stg2   = p_eff_2,
+      Total_Power      = p_total,
+      EN_Trt           = EN1,
+      EN_Pbo           = EN2,
+      EN_Tot           = EN1 + EN2,
+      EN_Trt_Rej       = EN1_rej,
+      EN_Pbo_Rej       = EN2_rej,
+      EN_Tot_Rej       = EN1_rej + EN2_rej,
+      EN_Trt_NoRej     = EN1_norej,
+      EN_Pbo_NoRej     = EN2_norej,
+      EN_Tot_NoRej     = EN1_norej + EN2_norej
+    ))
+  }
+
+  return(design_fun)
+}
