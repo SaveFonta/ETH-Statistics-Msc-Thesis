@@ -12,7 +12,7 @@
   {\end{proof}\end{mdframed}}
 \usepackage[numbers,sort&compress]{natbib} % For professional numerical citations
 
-\bibliographystyle{plainnat}  
+\bibliographystyle{plainnat}   
 
 \newcommand{\E}[2][]{\mathbb{E}_{#1}\left[#2\right]}
 \newcommand{\Var}[2][]{\mathrm{Var}_{#1}\left(#2\right)}
@@ -33,172 +33,126 @@ library(ggplot2)
 @
 
 \section{Starting with the package}
-Let $\theta_1$ be the endpoint value for sample 1 and $\theta_2$ be the value for sample 2. The decision function 
+For the rest of the chapter, we will asume we are in a 2 sample clinical trial. 
+
+\subsection{Decision Function}
+Let $\theta_1$ and $\theta_2$ be the parameters for sample 1 and sample 2, respectively. The decision function 
 $D(y_1, y_2)$ is defined as an indicator function that returns 1 (success) if all specified conditions are met, and 0 otherwise. 
-For a Normal endpoint, assuming an identity link, the decision is based on the difference $\Delta = \theta_1 - \theta_2$. A decision rule consists of one or more conditions $i$, where each condition is defined by a critical probability $p_{c,i}$ and a critical value $q_{c,i}$.For a lower-tail decision (\texttt{lower.tail = TRUE}), a condition is satisfied if the probability mass of the difference below $q_{c,i}$ is at least $p_{c,i}$:
-$$P(\theta_1 - \theta_2 \le q_{c,i}) > p_{c,i}$$In complex clinical trial designs, a "Double Criterion" is often employed to ensure both statistical significance and clinical relevance. The package evaluates these conditions simultaneously using a product of Heaviside step functions $H(x)$, which is 1 if $x > 0$ and 0 otherwise:
-$$D(y_1, y_2) = \prod_{i} H_i(P(\theta_1 - \theta_2 \le q_{c,i}) - p_{c,i})$$ \cite{gsponer2014bayesian}.
+For a Normal endpoint, assuming an identity link, the decision is based on the difference $\Delta = \theta_1 - \theta_2$. A decision 
+rule consists of one or more conditions $i$, where each condition is defined by a critical probability $p_{c,i}$ and a critical value $q_{c,i}$. 
+For a lower-tail decision, i.e., when a lower value is better (\texttt{lower.tail = TRUE}), condition $i$ is:
+$$P(\theta_1 - \theta_2 \le q_{c,i}) > p_{c,i}$$
 
-NOTE THAT it is possible to insert also other link functions:
- the logit link will lead to decisions based on the differences in logits corresponding to a criterion based on the log-odds. The log link will evaluate ratios instead of absolute differences which could be useful for a binary endpoint or counting rates. The respective critical quantiles qc must be given on the transformed scale.
-     
-\subsection{Implementation via \texttt{decision2S}}
+The function used for implementation is \texttt{decision2S}. In the case of 'Dual Criterion' designs \cite{roychoudhury2018dual}, were the goal is to ensure both statistical significance and clinical relevance,
+ the conditions are evaluated simultaneously using a product of Heaviside step functions\footnote{Note that this product formulation naturally generalizes to an arbitrary number of conditions} $H(x)$, where $H(x) = 1$ for $x > 0$ and $0$ for $x \le 0$:
+$$D(y_1, y_2) = \prod_{i} H(P(\theta_1 - \theta_2 \le q_{c,i}) - p_{c,i})$$ 
 
-To implement this in \texttt{RBesT}, the \texttt{decision2S} function is used to define the success or failure criteria.
-
+\paragraph{Link Functions} 
+The package supports \texttt{identity}, \texttt{logit}, and \texttt{log} links. Densities are transformed via the link function before calculating the difference distribution:
 \begin{itemize}
-\item \textbf{Function Signature}: \texttt{decision2S(pc, qc, lower.tail, link)}.
-\item \textbf{Arguments}:
-\begin{itemize}
-\item \texttt{pc}: A vector of critical cumulative probabilities for the difference distribution.
-\item \texttt{qc}: A vector of critical values (thresholds) on the difference scale.
-\item \texttt{lower.tail}: A logical value determining the direction of the inequality.
-\item \texttt{link}: The scale on which the difference is evaluated (defaults to \texttt{"identity"} for Normal cases).
+    \item \textbf{Logit link}: Decisions are based on differences in logits (log-odds).
+    \item \textbf{Log link}: Evaluates differences on the log scale, effectively assessing ratios (useful for rates or binary endpoints).
 \end{itemize}
-\end{itemize}
+Critical values $q_{c,i}$ must always be provided on the transformed scale.
 
 
 
-\subsection{The Decision Boundary}
-Once a decision function is defined, the package can calculate the decision boundary using \texttt{decision2S\_boundary}.  
-In a 2-sample design, the specification of the priors, the sample sizes ($n_1, n_2$), and the decision function $D(y_1, y_2)$ uniquely define a conditional decision boundary $D_1(y_2)$.
-In this framework, $y_1$ represents the outcome of the Treatment arm (Sample 1) and $y_2$ represents the outcome of the Control arm (Sample 2). The interpretation of these variables depends on the statistical model being used:
-\begin{itemize}
-\item \textbf{Normal Case}: $y_1$ and $y_2$ represent the sample means, $\bar{y}_1$ and $\bar{y}_2$.
-\item \textbf{Binary and Poisson Cases}: $y_1$ and $y_2$ represent the sufficient statistics, specifically the total number of events (successes or counts), $y = \sum_{i=1}^{n} y_i$.
-\end{itemize}
- 
+\section{The Decision Boundary}
+In a 2-sample design, the specification of the priors, the sample sizes ($n_1, n_2$), and the decision function $D(y_1, y_2)$ uniquely define a conditional Decision Boundary $D_1(y_2)$.
+In this framework, $y_1$ represents the outcome of the Treatment arm (Sample 1) and $y_2$ represents the outcome of the Control arm (Sample 2). 
 
-The boundary $D_1(y_2)$ is the critical value of $y_1$ conditional on the value of $y_2$ where the decision function changes its value. For a decision function with \texttt{lower.tail = TRUE}, the boundary is the maximal value of $y_1$ for which the decision is 1:
+The boundary $D_1(y_2)$ is the critical value of $y_1$ conditional on the value of $y_2$ where the decision function changes its value. For a decision function with \texttt{lower.tail = TRUE}, 
+the boundary is the maximal value of $y_1$ for which the decision is 1:
 $$D_1(y_2) = \max\{y_1 : D(y_1, y_2) = 1\}$$
 Conversely, if the decision function is defined with \texttt{lower.tail = FALSE}, the boundary represents the maximal value for which the decision is 0:
 $$D_1(y_2) = \max\{y_1 : D(y_1, y_2) = 0\}$$
+
+
+Importantly, the interpretation of $y_1$ and $y_2$ depends on the statistical model being used:
+\begin{itemize}
+\item \textbf{Normal Case}: $y_1$ and $y_2$ represent the sample means, $\bar{y}_1$ and $\bar{y}_2$.
+\item \textbf{Binary and Poisson Cases}: $y_1$ and $y_2$ represent the sufficient statistics, specifically the total number of events (successes or counts), $y_k = \sum_{i=1}^{n_k} y_{ki}$ for $k \in \{1, 2\}$.
+\end{itemize}
  
-It is important to note that \texttt{RBesT} only supports the calculation of a decision boundary for one-sided decision functions. If a two-sided decision function is provided, the function returns a list containing separate boundary functions for both the \texttt{lower\_or\_equal\_than} and \texttt{higher\_than} components.
+
+ Once a decision function is defined using \texttt{decision2S}, the Decision Boundary is computed using \texttt{decision2S\_boundary}, which returns a function that
+ takes as input $y_2$ and and output the critical value for $y_1$.
+It is important to note that if a two-sided decision function is provided (e.g. a dual criterion), the function returns a list containing 
+separate boundary functions for both the \texttt{lower\_or\_equal\_than} and \texttt{higher\_than} components.
 
 
-\subsection{Computational Implementation and Methods}
-The \texttt{RBesT} package employs specific numerical methods to calculate the decision boundary $D_1(y_2)$ depending on the distributional class of the priors. These methods balance mathematical exactness with computational efficiency.
+\subsection{Computational details of finding the Decision Boundary}
 
 \subsubsection{Normal Case (\texttt{normMix})}
-For the normal model, the calculation assumes a known reference standard deviation $\sigma$. A key consequence of this assumption is that the calculation discards sampling uncertainty of the second moment. To find the boundary, the package uses the following approach:
+For the normal model, the calculation assumes a known reference standard deviation $\sigma$. A key consequence of this assumption is that the calculation discards sampling uncertainty of the second moment.
 \begin{itemize}
-\item \textbf{Search Region}: The decision boundary is searched within a region of probability mass $1 - \epsilon$, where $\epsilon$ defaults to $10^{-6}$.
+\item \textbf{Search Region}: The Decision Boundary is searched within a region of probability mass $1 - \epsilon$, where $\epsilon$ defaults to $10^{-6}$.
 \item \textbf{Discretization}: The continuous decision function is evaluated on a discrete grid of $y_2$ values. The density of this grid is controlled by the \texttt{Ngrid} parameter, with a spacing defined by:
-$$\delta_2 = \frac{\sigma_2}{\sqrt{N_{grid}}}$$\item \textbf{Interpolation}: Once evaluated at the discrete steps, a \textbf{spline} is used to interpolate the decision boundary for intermediate points, providing a continuous boundary curve.
-\end{itemize}\subsubsection{Other Distributions}
+$$\delta_2 = \frac{\sigma_2}{\sqrt{N_{grid}}}$$
+\item \textbf{Interpolation}: Once evaluated at the discrete steps, a spline is used to interpolate the Decision Boundary for intermediate points, providing a continuous boundary curve.
+\end{itemize}
+
+\subsubsection{Other Distributions}
 While the Normal case relies on discretization and splines, other endpoints use different internal logic:
 \begin{itemize}
 \item \textbf{Binomial Case (\texttt{betaMix})}: This typically uses exact expressions for the calculations. However, for large sample sizes where exact calculation is computationally costly, an approximate method can be used by defining the \texttt{eps} argument to limit the search to a $1 - \epsilon$ probability mass.
 \item \textbf{Poisson Case (\texttt{gammaMix})}: Similar to the normal case, it uses an \texttt{eps} argument (defaulting to $10^{-6}$) to determine the probability mass region where the boundary is searched for $y_1$ and $y_2$.
 \end{itemize}
 
-\textit{So basically the function \texttt{decision2S\_boundary} creates a function that takes as input $y_2$ and and output the critical value for $y_1$. }
 
 
 
-\subsection{Operating Characteristics}
-The function \texttt{oc2S} exploits \texttt{decision2S\_boundary} to compute the Operating characteristics, representing the probability of success. 
-Success is defined when $D(y_1, y_2) = 1$.
+\section{Operating Characteristics}
+From now on, for ease of notation, we will assume that lower values are better (\texttt{lower.tail = TRUE}), but similar formulas can be obtained by inverting the tail of the decision function. 
 
-Assuming the treamtent has a true fixed mean $\theta_1$ and the placebo has a true fixed mean $\theta_2$, the \texttt{oc2S} function calculates the probability that your trial will end in a "Go" decision:
+The function \texttt{oc2S} exploits \texttt{decision2S\_boundary} to compute the operating characteristics. 
 
-$$OC(\theta_1, \theta_2) = \int f_2(y_2|\theta_2) F_1(D_1(y_2)|\theta_1) dy_2 = \int f_2(y_2|\theta_2)  \Prob{\text{success}|y_2, \theta_1} dy_2$$
+Assuming the treatment has a true fixed mean $\theta_1$ and the placebo has a true fixed mean $\theta_2$, the \texttt{oc2S} function calculates the probability that the trial will end in a ``Go'' decision:
+
+$$OC(\theta_1, \theta_2) = \int f_2(y_2 \mid \theta_2) \, \Prob{\text{Success} \mid y_2, \theta_1} \, dy_2 = \int f_2(y_2 \mid \theta_2) F_1(D_1(y_2) \mid \theta_1) \, dy_2$$
 
 where:
 \begin{itemize}
-\item $f_2(y_2|\theta_2)$ is the probability density function (PDF) of seeing a specific placebo result ($y_2$) given the true placebo mean ($\theta_2$).
-\item $F_1(D_1(y_2)|\theta_1)$ is the cumulative distribution function (CDF) of the first group evaluated at the decision boundary $D_1(y_2)$.
+\item $f_2(y_2 \mid \theta_2)$ is the probability density function (PDF) of seeing a specific placebo result ($y_2$) given the true placebo mean ($\theta_2$).
+\item $F_1(\cdot \mid \theta_1)$ is the cumulative distribution function (CDF) of the sampling distribution of the sufficient statistic $y_1$, conditional on $\theta_1$, evaluated at the decision boundary $D_1(y_2)$.
 \end{itemize}
 
-Because the parameters $theta_1$ and $theta_2$ are treated as fixed, $f_2$ and $F_1$ represent the frequentist sampling distributions of the sufficient statistics ($y_1$, $y_2$). 
+Because the parameters $\theta_1$ and $\theta_2$ are treated as fixed, $f_2$ and $F_1$ represent the frequentist sampling distributions of the sufficient statistics ($y_1$, $y_2$). 
 
+\subsection{Computational Details of oc2S in the Normal Case}
+For a one-sided boundary and normal endpoints, the conditional probability of success given the outcome in sample 2 ($y_2$) and a known true parameter $\theta_1$ is:
+$$P(\text{Success} \mid y_2, \theta_1) = \Phi\left(\frac{D_1(y_2) - \theta_1}{SEM_1}\right)$$
 
+where $SEM_1 = \sigma_1 / \sqrt{n_1}$, and $D_1(y_2)$ is the decision boundary obtained using \texttt{decision2S\_boundary}.
 
+When computing operating characteristics (\texttt{oc2S}), we assume fixed, known true parameters $\theta_1$ and $\theta_2$. Therefore, the sampling distribution $f_2(y_2 \mid \theta_2)$ is a Normal distribution:
+$$y_2 \sim N(\theta_2, SEM_2^2)$$
+where $SEM_2 = \sigma_2 / \sqrt{n_2}$.
 
+The operating characteristics for given true parameters $\theta_1$ and $\theta_2$ are evaluated by integrating over the sampling distribution of $y_2$:
+$$OC(\theta_1, \theta_2) = \int_{-\infty}^{\infty} \Phi\left(\frac{D_1(y_2) - \theta_1}{SEM_1}\right) \cdot \phi\left(\frac{y_2 - \theta_2}{SEM_2}\right) \frac{1}{SEM_2} \, dy_2$$
 
-\subsubsection{Function Usage}
-\begin{itemize}
-\item \textbf{Function}: \texttt{oc2S(prior1, prior2, n1, n2, decision, sigma1, sigma2, ...)}.
-\item \textbf{Return}: It returns a function that accepts two vector arguments, \texttt{theta1} and \texttt{theta2}, and outputs the frequency of success for those parameter pairs.
-\end{itemize}
-This allows to plot power curves or Type I error rates across a range of hypothetical true differences to validate the Bayesian design from a frequentist perspective.
+Note that in the case of a two-sided boundary, the procedure is the same, but the conditional probability becomes:
+$$P(\text{Success} \mid y_2, \theta_1) = \Phi\left(\frac{D_{upper}(y_2) - \theta_1}{SEM_1}\right) - \Phi\left(\frac{D_{lower}(y_2) - \theta_1}{SEM_1}\right)$$
 
+\paragraph{Numerical Integration via Variable Transformation}
+Integrating directly from $-\infty$ to $\infty$ can be numerically unstable. To resolve this, the variable of integration is first changed from the data scale ($y_2$) to the probability scale ($u$). 
 
-\subsubsection{How it works internally}
-For a one-sided test where lower values are better and normal endpoints, we can write: 
-$$P(\text{Success} | y_2, \theta_1) = 1 - \Phi\left(\frac{D_1(y_2) - \theta_1}{SEM_1}\right)$$
+Let $u = F(y_2 \mid \theta_2)$, where $F$ is the cumulative distribution function (CDF) of the normal sampling distribution. This implies $y_2 = Q(u \mid \theta_2)$, where $Q$ is the corresponding quantile function. Because $du = f(y_2 \mid \theta_2) \, dy_2$, the integral limits change from $(-\infty, \infty)$ to $(0, 1)$:
+$$OC(\theta_1, \theta_2) = \int_{0}^{1} P(\text{Success} \mid Q(u \mid \theta_2), \theta_1) \, du$$
+where $u$ represents a percentile between 0 and 1.
 
-where $SEM_1 = \sigma_1 / \sqrt{n_1}$
-where $D_1$ is the Decision Boundary obtained using \texttt{uniroot}
+\paragraph{The Logit Transformation}
+To stretch the $[0,1]$ space, a logit transformation is applied: $l = \text{logit}(u)$.
 
-We assume the likelihood distribution $f(y_2 \mid \theta_2)$ to be a mixture of Normal distributions (with $N_c$ components):
-$$f(y_2 \mid \theta_2) = \sum_{k=1}^{N_c} w_k \cdot f_k(y_2 \mid \theta_2)$$
+Therefore, $u = \text{logit}^{-1}(l)$, and the derivative of the inverse logit function is:
+$$\frac{du}{dl} = u(1-u)$$
+Substituting this into the integral changes the limits back to $(-\infty, \infty)$, but the space is now perfectly scaled for computational evaluation:
+$$OC(\theta_1, \theta_2) = \int_{-\infty}^{\infty} P\Big(\text{Success} \mid Q(\text{logit}^{-1}(l) \mid \theta_2), \theta_1\Big) \cdot u(1-u) \, dl$$
 
-SO we can exploit the fact that the integral of a sum is the sum of the integrals:
-$$OC(\theta_1, \theta_2) = \sum_{k=1}^{N_c} w_k \left[ \int_{-\infty}^{\infty} P(\text{Success} \mid y_2, \theta_1) \cdot f_k(y_2 \mid \theta_2) \, dy_2 \right]$$
-
-
-Since integrating from $-\infty$ to $\infty$ is numerically unstable. We change the variable of integration from the data scale ($y_2$) to the probability scale ($u$).
-
-We define $u = F_k(y_2)$, where $F_k$ is the Cumulative Distribution Function (CDF).This implies that $y_2 = Q_k(u)$, where $Q_k$ is the Quantile function.By definition, the derivative is $du = f_k(y_2) \, dy_2$.Substitute $Q_k(u)$ for $y_2$ and $du$ for $f_k(y_2) \, dy_2$. The limits change from $(-\infty, \infty)$ to $(0, 1)$:$$\text{Integral}_k = \int_{0}^{1} P(\text{Success} \mid Q_k(u), \theta_1) \, du$$$u$: A percentile between 0 and 1.$Q_k(u)$: The actual data value at the $u$-th percentile.
-
-Step 4: The Logit Transformation (The Code's Engine)While $[0,1]$ is better than infinity, computers still struggle at the extreme edges (e.g., $u = 0.0000001$). The code applies one final transformation to stretch the $[0,1]$ space using the logit function: $l = \text{logit}(u)$.Therefore, $u = \text{logit}^{-1}(l)$.The derivative of the inverse logit function is:$$\frac{du}{dl} = u(1-u)$$We substitute this into our integral. The limits change back to $(-\infty, \infty)$, but now the space is perfectly stretched for the computer:$$\text{Integral}_k = \int_{-\infty}^{\infty} P\Big(\text{Success} \mid Q_k(\text{logit}^{-1}(l)), \theta_1\Big) \cdot u(1-u) \, dl$$
-
-Step 5: Log-Space ComputationTo prevent multiplying tiny probabilities together (which causes numerical underflow), the entire expression inside the integral is computed in log-space.We take the natural logarithm of the inner terms and wrap the whole thing in an exponential function ($\exp(\log(x)) = x$):$$\text{Integral}_k = \int_{-\infty}^{\infty} \exp \Big( \log(P) + \log(u) + \log(1-u) \Big) \, dl$$
-
-
-
-\section{Summmary of how oc2S works internally (questo è da cancellare è solo x informazion)}
-
-\subsection*{Phase 1: The Setup (The Architect)}
-When you first call \texttt{oc2S}, you are not actually calculating Power yet. You are handing the software the blueprints for your trial (Priors, Sample Sizes, Decision Rules).
-
-\begin{itemize}
-    \item \textbf{Scaling the Data:} It converts your standard deviations into Standard Errors ($SEM_1, SEM_2$). This defines exactly how ``wide'' the bell curves of your hypothetical trial results will be.
-    \item \textbf{Defining the Goal:} It registers your Bayesian decision rule (e.g., ``Success means 95\% posterior probability that Treatment > Placebo'').
-\end{itemize}
-
-\subsection*{Phase 2: Building the Map (The Boundary Solver)}
-Frequentist math cannot easily calculate the probability of a Bayesian rule. So, the software translates the Bayesian rule into a hard ``Data Hurdle.''
-
-\begin{itemize}
-    \item \textbf{The Grid:} It creates a massive grid of every single Placebo result ($y_2$) that could possibly happen in reality.
-    \item \textbf{The Root-Finder (\texttt{uniroot}):} For each Placebo result, it uses a numerical search algorithm to find the exact Treatment score ($y_{1,c}$) needed to win.
-    \begin{itemize}
-        \item \textbf{The Hack:} To make the computer find this exact edge, it subtracts 0.75 from the logical decision output, creating a mathematical zero-crossing that the algorithm can lock onto.
-    \end{itemize}
-    \item \textbf{The Cache (The Closure):} Calculating Bayesian posteriors to find these boundaries is incredibly slow. The software uses a Super-Assignment (\texttt{<<-}) to save every boundary it finds into a permanent ``Living Map'' hidden in the computer's memory.
-\end{itemize}
-
-\subsection*{Phase 3: The Math Engine (The Integrator)}
-Once the software knows exactly where the ``Success Hurdles'' are, it defines the \texttt{freq} function to perform the actual frequentist calculus.
-
-For any specific pair of true effects ($\theta_1, \theta_2$), it does the following:
-
-\begin{itemize}
-    \item \textbf{The Single-Arm Shortcut:} If there is no control group ($n_2 = 0$), the hurdle is fixed. It just uses a basic Normal distribution curve (\texttt{pnorm}) to find the probability of jumping that hurdle.
-    \item \textbf{The Two-Arm Integration:} If there is a control group, the hurdle moves randomly. It must solve a complex integral:
-    \[
-    Power(\theta_1, \theta_2) = \int_{-\infty}^{\infty} P(\text{Success} \mid y_2, \theta_1) \cdot f(y_2 \mid \theta_2) \, dy_2
-    \]
-    \item \textbf{Bulletproofing the Calculus (\texttt{integrate\_density\_log}):} To solve that integral without the computer crashing or rounding small numbers to zero, it:
-    \begin{itemize}
-        \item Splits the Mixture Prior into individual components (\texttt{mix\_comp}).
-        \item Transforms the infinite $X$-axis into a finite $0$-to-$1$ probability box using the Quantile function and the Logit transform.
-        \item Does all multiplication by adding Logarithms together to prevent numerical underflow.
-    \end{itemize}
-\end{itemize}
-
-\subsection*{Phase 4: The Assembly Line (The Delivery)}
-The Math Engine can only test one scenario at a time. The package needs to deliver a tool that can calculate hundreds of scenarios instantly.
-
-\begin{itemize}
-    \item \textbf{Vectorization (\texttt{Vfreq}):} It wraps the Math Engine in an automated loop, allowing it to process whole lists of true effects at once.
-    \item \textbf{Pre-Heating the Cache:} The final wrapper function (\texttt{design\_fun}) looks at all the scenarios you want to test, draws a massive boundary box (\texttt{lim1}, \texttt{lim2}), and forces the Boundary Solver to pre-calculate the ``Living Map'' for the entire area before doing any math.
-    \item \textbf{The Execution (\texttt{do.call}):} It neatly stacks your list of scenarios into a table (\texttt{theta\_df}) and dumps them into the automated loop. Because the map was pre-calculated, the Math Engine flies through the integration at lightning speed.
-    \item \textbf{The Output:} It returns the fully customized \texttt{design\_fun} to your R console, ready for you to use.
-\end{itemize}
+\paragraph{Log-Space Computation}
+Finally, to prevent numerical underflow, the entire expression inside the integral is computed in log space. The natural logarithm is taken of the inner terms, and the result is exponentiated ($\exp(\log(x)) = x$):
+$$OC(\theta_1, \theta_2) = \int_{-\infty}^{\infty} \exp \Big( \log(P) + \log(u) + \log(1-u) \Big) \, dl$$
 
 
 
@@ -206,74 +160,175 @@ The Math Engine can only test one scenario at a time. The package needs to deliv
 
 
 
-
-
-
-To complete this section of your thesis, the following content covers the Probability of Success (PoS), which represents the fully Bayesian predictive approach to trial evaluation.\subsection{Probability of Success via \texttt{pos2S}}While the operating characteristics (\texttt{oc2S}) evaluate the design at fixed, hypothetical parameter values, the \textbf{Probability of Success (PoS)}—also known as Bayesian Predictive Power—incorporates the uncertainty regarding the true parameters $\theta_1$ and $\theta_2$. This is particularly useful for interim analyses where success at the end of the trial is predicted based on currently observed data.\subsubsection{Mathematical Definition}The PoS is the frequency with which the decision function $D(y_1, y_2)$ is expected to evaluate to 1, given that the parameters $\theta_1$ and $\theta_2$ are distributed according to some "true" prior or posterior distributions, $p(\theta_1)$ and $p(\theta_2)$.The calculation is an extension of the operating characteristics, integrating the OC function over the distributions of the parameters:
-$$PoS = \int \int \left[ \int f_2(y_2|\theta_2) F_1(D_1(y_2)|\theta_1) dy_2 \right] p(\theta_1) p(\theta_2) d\theta_1 d\theta_2$$
-where:
-\begin{itemize}
-\item $p(\theta_1)$ and $p(\theta_2)$ are the assumed true distributions for the group parameters (represented as mixture distributions in \texttt{RBesT}).
-\item The inner integral represents the frequentist OC at specific values of $\theta_1$ and $\theta_2$.
-\end{itemize}
-
-\subsubsection{Function Usage}\begin{itemize}
-\item \textbf{Function}: \texttt{pos2S(prior1, prior2, n1, n2, decision, sigma1, sigma2, ...)}.
-\item \textbf{Input}: Unlike \texttt{oc2S}, the returned function accepts two \textit{mixture objects} (\texttt{mix1} and \texttt{mix2}) representing the uncertainty in the parameters, rather than fixed vectors.
-\end{itemize}This provides a metric that directly answers the question: "Given what we currently know about these treatments, what is the probability that the final trial results will meet our success criteria?".
-
-
-
-\subsection*{Step 1: The Fundamental Definition (The Triple Integral)}
-The absolute definition of the Bayesian Probability of Success (PoS) requires integrating the frequentist power across the prior uncertainty for both the treatment effect ($\theta_1$) and the placebo effect ($\theta_2$).
+\section{Probability of Success}
+It is also possible to compute the Bayesian Probability of Success (PoS), which requires integrating the operating characteristics (OC) across the prior uncertainty for both the treatment effect ($\theta_1$) and the placebo effect ($\theta_2$).
+This can be achieved by using the function \texttt{pos2S}. 
 
 \[
-PoS = \int_{-\infty}^{\infty} \int_{-\infty}^{\infty} \left[ \int_{-\infty}^{\infty} P(\text{Success} \mid y_2, \theta_1) \cdot f_2(y_2 \mid \theta_2) \, dy_2 \right] p(\theta_1) p(\theta_2) \, d\theta_1 \, d\theta_2
+PoS = \int_{-\infty}^{\infty} \int_{-\infty}^{\infty} \left[ \int_{-\infty}^{\infty} P(\text{Success} \mid y_2, \theta_1) \cdot f_2(y_2 \mid \theta_2) \, dy_2 \right] p(\theta_1) p(\theta_2) \, d\theta_1 \, d\theta_2 
+\]
+This is equivalent to:
+\[
+\int_{-\infty}^{\infty} \int_{-\infty}^{\infty} \left[ OC(\theta_1, \theta_2) \right] p(\theta_1) p(\theta_2) \, d\theta_1 \, d\theta_2
 \]
 
-Where:
-\begin{itemize}
-    \item $P(\text{Success} \mid y_2, \theta_1)$ is the probability the treatment beats the hurdle $y_{1,c}(y_2)$. This is mathematically equivalent to $1 - F_1(y_{1,c}(y_2) \mid \theta_1)$, where $F_1$ is the CDF of the treatment data.
-    \item $f_2(y_2 \mid \theta_2)$ is the likelihood (PDF) of observing placebo data $y_2$ given $\theta_2$.
-    \item $p(\theta_1)$ and $p(\theta_2)$ are your prior distributions.
-\end{itemize}
+where $p(\theta_1)$ and $p(\theta_2)$ are the assumed true distributions for the group parameters (e.g., mixtures of Normals), which we refer to as \textbf{Design Priors} \cite{bayesianT1E}.
 
-\subsection*{Step 2: Rearranging via Fubini's Theorem}
-Because $\theta_1$ and $\theta_2$ are independent in our priors, we can safely change the order of integration. We pull the integral with respect to the data ($dy_2$) to the outside, and group the parameters with their respective trial arms:
+\subsection*{Computational Details of pos2S}
+Because $\theta_1$ and $\theta_2$ are independent in our priors, we can change the order of integration using Fubini's Theorem. 
+We pull the integral with respect to the data ($dy_2$) to the outside, and group the parameters with their corresponding arms:
 
 \[
 PoS = \int_{-\infty}^{\infty} \underbrace{\left[ \int_{-\infty}^{\infty} P(\text{Success} \mid y_2, \theta_1) p(\theta_1) \, d\theta_1 \right]}_{\text{Treatment Arm}} \cdot \underbrace{\left[ \int_{-\infty}^{\infty} f_2(y_2 \mid \theta_2) p(\theta_2) \, d\theta_2 \right]}_{\text{Placebo Arm}} dy_2
 \]
 
-\subsection*{Step 3: Analytical Marginalization (The Predictive Distributions)}
-By the laws of Bayesian probability, integrating a data likelihood over a parameter prior yields the \textbf{Posterior Predictive Distribution}. This step removes the unknown parameters ($\theta_1, \theta_2$) entirely.
+\paragraph{Predictive Distributions}
+Integrating a data likelihood over a parameter prior yields the \textbf{Prior Predictive Distribution}. 
+This step removes the unknown parameters ($\theta_1, \theta_2$) entirely.
 
 For the Placebo Arm (The Weights), this becomes the predictive density function:
 \[
 f_{\text{pred}}(y_2) = \int_{-\infty}^{\infty} f_2(y_2 \mid \theta_2) p(\theta_2) \, d\theta_2
 \]
 
-For the Treatment Arm (The Integrand), this becomes the predictive probability of success (evaluated via the \texttt{pmix} function in the code):
+For the Treatment Arm (The Integrand), this becomes the predictive probability of success:
 \[
 P_{\text{pred}}(\text{Success} \mid y_2) = \int_{-\infty}^{\infty} P(\text{Success} \mid y_2, \theta_1) p(\theta_1) \, d\theta_1
 \]
 
-\subsection*{Step 4: The Final Computable Integral}
-By substituting the analytical predictive distributions back into our rearranged equation, the massive triple integral collapses into a single, one-dimensional integral over the placebo outcome space. 
-
+Leading to a one dimensional integral:
 \[
 PoS = \int_{-\infty}^{\infty} P_{\text{pred}}(\text{Success} \mid y_2) \cdot f_{\text{pred}}(y_2) \, dy_2
 \]
 
-\textbf{Conclusion:} This final equation is exactly what the \texttt{integrate\_density\_log} function executes. It evaluates the data integral ($dy_2$) numerically, while relying on the pre-computed predictive distributions (\texttt{preddist}) to have already solved the parameter integrals analytically.
+\paragraph*{Analytical Computation for Normal case}
+In the Normal likelihood case, the \texttt{preddist} function avoids the numerical computation of the integral to derive the predictive distribution.\\
+
+If we express the sample mean as:
+$$y_n = \theta + \epsilon$$
+
+The sampling noise $\epsilon$ is centered at zero, with its variance determined by the trial's squared standard error: $\epsilon \sim N(0, \sigma^2/n)$. 
+
+For priors specified as \textbf{mixtures of Normal distributions}, $p(\theta) = \sum_{k=1}^K w_k N(m_k, s_k^2)$. Because integration is a linear operation, we can evaluate the predictive distribution component by component. 
+
+If we look at a single component $k$, both the prior parameter $\theta$ and the sampling noise $\epsilon$ are independent Normal variables. A fundamental property of independent random variables is that the variance of their sum is the sum of their variances:
+$$Var(y_n \mid \text{component } k) = Var(\theta) + Var(\epsilon) = s_k^2 + \frac{\sigma^2}{n}$$
+
+Consequently, the resulting predictive distribution $f_{\text{pred}}(y_n)$ is itself a Normal mixture. It has the same number of components $K$, the same weights $w_k$, and the same means $m_k$ as the prior. Only the variances are updated (inflated by $\sigma^2/n$), allowing us to skip the complex integral computation.
 
 
-\section{MAP, not useful but anyway}
-Meta-Analytic-Predictive (MAP) Analysis via gMAPThe Meta-Analytic-Predictive (MAP) approach is a fundamental component of the RBesT package, used to derive an informative prior for a future clinical trial by synthesizing available historical data. For the Normal case, the package employs a hierarchical model to estimate the parameter of interest while accounting for heterogeneity across different historical studies.Statistical Model for the Normal CaseIn a 1-sample summary statistic case (e.g., one observation per trial), the model simplifies to a standard normal-normal hierarchical model. Let $h = 1, \dots, H$ be the index for the historical studies. The model is formulated as follows:Data Likelihood: The observed mean $y_h$ for study $h$ is assumed to follow a normal distribution:
-$$y_h | \theta_h \sim N(\theta_h, s_h^2)$$where $s_h^2$ is the known (fixed) sampling variance.Parameter Model: The study-specific parameters $\theta_h$ are assumed to be exchangeable and follow a common distribution:
-$$\theta_h = \beta_1 + \epsilon_h$$$$\epsilon_h \sim N(0, \tau^2)$$Here, $\beta_1$ represents the overall population mean (intercept), and $\tau$ is the between-trial heterogeneity standard deviation.Predictive Distribution: The MAP prior is the predictive distribution for a new, future study parameter $\theta_*$ given the historical data:
-$$Pr(\theta_* | y_1, \dots, y_H)$$Between-Trial Heterogeneity ($\tau$)The amount of information borrowed from historical data is strictly limited by the ratio of between-trial heterogeneity $\tau$ to the within-trial standard deviation $\sigma$. For a normal endpoint with a fixed $\sigma$, the maximum effective sample size ($n_\infty$) of the MAP prior as the number of trials $H \to \infty$ is given by:
-$$n_\infty = \left( \frac{\tau^2}{\sigma^2} \right)^{-1}$$.RBesT classifies $\tau/\sigma$ ratios to help researchers specify appropriate prior distributions for $\tau$ based on the expected level of heterogeneity:Small: $\tau/\sigma = 0.0625$ ($n_\infty = 256$).Moderate: $\tau/\sigma = 0.125$ ($n_\infty = 64$).Substantial: $\tau/\sigma = 0.25$ ($n_\infty = 16$).Large: $\tau/\sigma = 0.5$ ($n_\infty = 4$).Implementation via gMAPThe gMAP function performs this analysis using Markov-Chain-Monte-Carlo (MCMC) sampling via the rstan interface.Function Signature: gMAP(formula, family, data, tau.dist, tau.prior, beta.prior, ...).Arguments:formula: Specified as response ~ 1 | study to indicate a model with only an intercept and a grouping factor for study-level random effects.family: For the Normal case, use gaussian (defaults to an identity link).tau.dist: Defines the prior distribution for $\tau$ (e.g., "HalfNormal", "Uniform", or "Fixed").beta.prior: Specifies the mean and standard deviation for the normal prior of the regression coefficients ($\beta$).Parametric ApproximationOnce the MCMC sampling is complete, the resulting predictive distribution is typically approximated by a parametric mixture of conjugate distributions using the mixfit or automixfit functions. This allows the derived MAP prior to be easily used in subsequent 1-sample or 2-sample analyses (such as oc2S or pos2S).
+
+
+
+\section{Metrics to evaluate Bayesian Designs}
+Frequentist Type I error and power are well established metrics to evaluate traditional frequentist designs. 
+
+Other metrics are nowadadays used when evaluating Bayesian designs like Assurance \cite{ohagan2005assurance} or Predictive Power \cite{held2020new}, \cite{predpower}, but it is well known that incorporating informative priors often inflates the classical Type I Error \cite{put_citations_here}.
+
+As noted by \cite{bayesianT1E}, all these metrics are special cases of a common metric $m$ which can be expressed as the expected probability of study success, integrated over a specified prior distribution for the parameter of interest $\theta$:
+\begin{equation}
+  \label{eq:m}
+m = \int \Prob{\text{Success} \mid \theta} p(\theta) \, d\theta
+\end{equation}
+
+
+In this paper, they propose to distinguish between analysis prior and design prior. 
+The analysis prior is the distribution used in the actual analysis to derive the posterior (e.g., an informative prior obtained via a Meta-Analytic-Predictive approach). Conversely, the design prior $p(\theta)$, which appears in formula \ref{eq:m}, represents the assumed distribution of the underlying true parameter used to evaluate the design's operating characteristics.
+
+
+Paper \cite{bayesianT1E} further distinguishes between two primary scenarios depending on how the historical information is provided: placing the prior on the individual arm parameters (specifically the placebo), or placing it directly on the treatment effect.
+
+
+
+\subsection{Prior on the Placebo}
+
+
+One can choose to use independent design priors on the individual arm parameters, $p(\theta_c)$ and $p(\theta_t)$. Under the assumption of independence between the arms the general metric $m$ can be written as:
+$$m = \int_{-\infty}^{\infty} \int_{-\infty}^{\infty} \Prob{\text{Success} \mid \theta_t, \theta_c} p(\theta_t) p(\theta_c) \, d\theta_t \, d\theta_c$$
+
+
+
+\paragraph{Average Type I Error}
+The traditional definitions of both Type I Error and power impose deterministic constraints 
+on the relationship between the treatment and control parameters. Specifically, we can fix the treatment 
+contrast at a constant value $\delta^*$, such that $\theta_t = \theta_c + \delta^*$. In this framework,
+$\delta^*$ represents the null effect (e.g., $\delta^* = 0$) when evaluating Type I Error, or the 
+ targeted alternative effect when evaluating power. Therefore, a design prior is only required for one of these parameters to evaluate the design.
+
+\begin{equation}
+  \label{eq:avgT1E}
+  m = \int_{-\infty}^{\infty} \Prob{\text{Success} \mid \theta_c, \theta_t = \theta_c + \delta^*} p(\theta_c) \, d\theta_c
+\end{equation}
+
+When $\delta^* = 0$, we can refer to Equation~\eqref{eq:avgT1E} as \textbf{Average Type I Error}:  
+\begin{equation}
+  \label{eq:avg-type1-error}
+  \alpha_{avg} = \int_{-\infty}^{\infty} \Prob{\text{Success} \mid \theta_c, \theta_t = \theta_c} p(\theta_c) \, d\theta_c
+\end{equation}
+
+Note that in this case, the classical T1E is no longer a single constant, instead it becomes a pointwise rate that varies as a function of $\theta_c$. 
+The metric $\alpha_{avg}$ solves this by computing the marginal average of these varying pointwise errors, weighted by the probability of each $\theta_c$
+value as defined by the design prior $p(\theta_c)$.
+
+
+
+\paragraph{Restricted Maximum Type I Error}
+As an alternative, it is also proposed to compute the maximum (or minimum) operating characteristic over a plausible subset of the parameter space, 
+denoted as $\Theta_c$. Under a deterministic constraint $\delta^*$ (where $\delta^* = 0$ for the null hypothesis), this restricted maximum Type I error is expressed as:
+$$\max_{\theta_c \in \Theta_c} \Prob{\text{Success} \mid \theta_c, \theta_t = \theta_c + \delta^*}$$
+
+
+
+
+\paragraph{Implementation Details: The \texttt{avgoc2S.normMix} Function}
+To operationalize the theoretical metric $m$ proposed by \cite{bayesianT1E}, the custom function \texttt{avgoc2S.normMix} was explicitly designed to handle the scenario where the treatment parameter is deterministically constrained by the control parameter ($\theta_t = \theta_c + \delta$). 
+
+To compute the double integration efficiently and prevent numerical underflow, the architecture of the function breaks the problem down into two distinct parts:
+
+\begin{enumerate}
+    \item \textbf{The Inner Integral (Pointwise Operating Characteristic):} 
+    The inner function, \texttt{freq(theta1, theta2)}, evaluates the classical, pointwise probability of success for any fixed pair of true parameters. It first retrieves the decision boundary $D_1(y_2)$ derived from the analysis priors. Then, it utilizes \texttt{RBesT}'s internal \texttt{integrate\_density\_log} to integrate the conditional probability of success over the sampling distribution of the placebo data, $y_2 \sim N(\theta_c, SEM_2^2)$. The log-space integration ensures numerical stability when dealing with extreme tail probabilities defined by the tolerance $\epsilon$.
+    
+    \item \textbf{The Outer Integral (Marginalization over the Design Prior):}
+    The second part computes the Bayesian metric by marginalizing the pointwise results over the design prior $p_D(\theta_c)$, passed to the function as the argument \texttt{mix2}. By applying the deterministic constraint \texttt{x + delta}, the function integrates \texttt{freq(x + delta, x)} over the density of the mixture distribution. To optimize execution speed, the code "warms up" the decision boundary cache across the plausible search limits before integrating.
+\end{enumerate}
+
+Importantly, rather than returning a single scalar, the outer structure returns a closure function (\texttt{design\_fun}). This functional programming approach allows the user to lock in the computationally expensive decision boundary (derived from the fixed \textit{analysis priors} and sample sizes), while freely altering the \textit{design prior} (\texttt{mix2\_new}) and the true treatment effect (\texttt{delta\_new}). This perfectly mimics Metric (5) from Best et al., enabling rapid sensitivity analyses of the Average Type I Error ($\delta = 0$) or Assurance ($\delta > 0$) across different drift scenarios.
+
+
+
+
+
+
+\subsection{Case Study: Evaluating a Trial Design in Crohn's Disease}
+PUT A SUMMARY OF THE TRIAL
+
+
+
+
+\subsection{Prior on the Treatment Effect ($\delta$)}
+Alternatively, when researchers have specific prior beliefs or historical data regarding the relative difference between the arms, the framework parametrizes the design prior directly on the treatment effect, $\delta$. In this scenario, the evaluation metric $m$ is expressed as an integral over the prior distribution of the effect size, $p(\delta)$:
+$$m = \int_{-\infty}^{\infty} \Prob{\text{Success} \mid \delta} p(\delta) \, d\delta$$
+This parametrization is particularly useful for calculating metrics such as Assurance (Average Power) or Predictive Power, where the focus is on the probability of a successful trial given the hypothesized distribution of the drug's efficacy.
+
+
+
+\section{Dual Criterion}
+
+
+
+
+
+\section{Sequential design}
+Presentation of the sequential design, before the code was relying on exact numerical integration, this can be achieved also in a sequential design, 
+but to compute the OC we should compute the probability of early success, but also the probability of early futility,but for example also for the final success itwouldnt be a simple integral since the outcome of the 
+interim analysis and of the final data are highly correlated. This mean that for final success we should find the probability that y1 lands in teh continuation zone 
+and the the final y crosses the final success. And the more stops we have the more complicated it become. That is why rely on simulation by simulating 
+10000 paths of the trialswhere for given thetas we raw the interim data, apply the decision rules, drop the failed/succeded trails, and simualte the remainder to the end. 
+
+This potentially also allow us to use more complex futility rules like predictive prob of success. 
+
+\subsection{show results for both the oc2S and the pos2S sequential}
 \bibliography{references}   
 \end{document} 
   

@@ -9,3 +9,7 @@
 *.rdata
 *.RDS
 *.tex
+*.bbl
+*.rdb
+*.rdx
+*.blg

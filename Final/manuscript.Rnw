@@ -39,9 +39,22 @@ library(ggplot2)
 \end{abstract}
 
 \section{Introduction and motivating examples}
+[Put an intro to bayesian design]
 [PUT an intro to sequential design]. 
+
+
+
 [Put some motivation behind using bayesian sequential designs]
+Filisophy discussion 3 different views on the matter from the paper.
+When you talk about the full bayesian appraoch, say that from a strict bayesian view, following the likelihood principle, the final analysis 
+of data can ignore previous interim looks and there is no need to adjust: the posterior distribution can be updated at any time without adjustments. 
+When you switch to regulatory reality, FDA, EMA MHRA, require proof of T1E control for confirmatory trials, thus \cite{do.we.need.to.adj} trough simulation studies
+show that incorporating efficay early stopping inglates T1E, while adding futility stopping decreases the T1E but also reduces the power, this is why they suggest to combine the two 
+and tune them. 
+
+
 [Say that dual criterion designs can be easily used and also futility stopping etc]
+
 [Difficulties of comparing sequential design and fixed --> call for the need of EUII]
 
 \section{Bayesian Design}
@@ -62,7 +75,7 @@ from the paper by Best. BUT--> they only define those to allow prior on the TREA
 \subsection{Explain metrics to use to evaluate bayesian designs}
 
 \subsection{Dual Criterion Design}
-Can we extend the previous parts to the dual criterion using integrals?? 
+Can we extend the previous parts to the dual criterion using integrals--> I think yes
 
 
 \section{Sequential Bayesian Design}

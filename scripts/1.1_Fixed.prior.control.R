@@ -1,3 +1,5 @@
+source("scripts/00.functions.R")
+
 
 # this part will use it for the Rnw
 library(RBesT)
@@ -122,6 +124,9 @@ df_plot <- df %>%
   # Optional: Convert Prior to a factor so it plots in a specific order in the legend
   mutate(Prior = factor(Prior, levels = c("Vague", "MAP", "Robust")))
 
+
+
+saveRDS(df_plot, file = "data/T1E.fixed.rds")
 
 # -------------------
 # Plotting
