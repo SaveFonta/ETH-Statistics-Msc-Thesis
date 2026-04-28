@@ -4,6 +4,8 @@
 *.pdf
 *.gz
 *.out
+*.RData
 *.Rdata
+*.rdata
 *.RDS
 *.tex
