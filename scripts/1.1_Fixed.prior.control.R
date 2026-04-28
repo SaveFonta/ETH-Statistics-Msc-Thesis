@@ -171,11 +171,6 @@ ggplot(df_plot, aes(x = theta, y = T1E, color = Prior)) +
 
 
 
-
-
-
-
-
 # -----------------------------------
 # EVALUATE Average T1E
 # ----------------------------------
@@ -221,14 +216,14 @@ get_avg_t1e_table <- function(crit_name, succ.crit) {
     Skeptical    = col_skep,
     MAP          = col_MAP,
     Robust_p_MAP = col_rob
-  ) * 100
+  ) 
   
-  tab <- round(tab, 3)
+  
   
   tab$Analysis_Prior <- c("Vague", "MAP", "Robust")
   tab$Decision_Criteria <- crit_name
   
-  # Reorder columns for presentation
+  # Reorder cols
   tab <- tab[, c("Decision_Criteria", "Analysis_Prior", "Vague", "Skeptical", "MAP", "Robust_p_MAP")]
   
   return(tab)
@@ -260,12 +255,12 @@ final_table <- readRDS("data/avgT1E.fixed.rds")
 
 colnames(final_table)[6] <- "Robust"
 
-df_plot_avg <- final_table %>%
+df_plot_avg <- final_table  |> 
   pivot_longer(
     cols = c("Vague", "Skeptical", "MAP", "Robust"),
     names_to = "Design_Prior",
     values_to = "Avg_T1E"
-  ) %>%
+  )  |> 
   mutate(
     Analysis_Prior = factor(Analysis_Prior, levels = c("Vague", "MAP", "Robust")),
     Design_Prior = factor(Design_Prior, levels = c("Vague", "Skeptical", "MAP", "Robust")),
@@ -299,3 +294,17 @@ df_plot_avg <- final_table %>%
       figure.width = 14,
       figure.height = 4
     )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
