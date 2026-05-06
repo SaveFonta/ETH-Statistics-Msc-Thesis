@@ -273,7 +273,7 @@ df_plot_avg <- final_table  |>
     geom_col(position = position_dodge(width = 0.8), width = 0.7, color = "black") +
     
     # Add a threshold line (Change 2.5 to 5.0 if you are targeting 5% alpha)
-    geom_hline(yintercept = 2.5, linetype = "dashed", color = "red", linewidth = 0.8) +
+    geom_hline(yintercept = 0.25, linetype = "dashed", color = "red", linewidth = 0.8) +
     
     # Facet by the 4 Decision Criteria - 4 columns (2x2 layout: Sig95, Sig975, Dual95, Dual975)
     facet_wrap(~ Decision_Criteria, ncol = 4) +

@@ -1,15 +1,52 @@
+# LaTeX build artifacts
 *.aux
 *.log
 *.toc
-*.pdf
-*.gz
 *.out
+*.pdf
+*.synctex.gz
+*.bbl
+*.blg
+
+# R/Markdown generated files
+*.tex
 *.RData
 *.Rdata
 *.rdata
 *.RDS
-*.tex
-*.bbl
+*.rds
+
+# Cache and temporary files
 *.rdb
 *.rdx
-*.blg
+.Rhistory
+.RData
+.Rproj.user/
+
+# Data files (often large)
+*.csv
+*.xlsx
+*.xls
+*.json
+*.xml
+*.tsv
+
+# IDE and system files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Build outputs
+build/
+dist/
+
+# Specific folders to ignore
+.cache/
+cache/
+figure/
