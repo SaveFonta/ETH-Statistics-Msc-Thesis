@@ -24,7 +24,7 @@ library(assertthat)
 #'
 #' @return numeric scalar: the averaged OC
 avgoc2S <- function(
-  prior1, prior2, n1, n2, decision, delta, design_prior2,   eps = 1e-6, Ngrid = 10, 
+  prior1, prior2, n1, n2, decision, delta, design_prior2,   eps = 1e-6, Ngrid = 10
 ) {
   
   # Creates OC
