@@ -24,7 +24,7 @@ library(assertthat)
 #'
 #' @return numeric scalar: the averaged OC
 avgoc2S <- function(
-  prior1, prior2, n1, n2, decision, delta, design_prior2,   eps = 1e-6, Ngrid = 10
+  prior1, prior2, n1, n2, decision, delta, design_prior2,   eps = 1e-6, Ngrid = 10, ...
 ) {
   
   # Creates OC
@@ -120,6 +120,16 @@ oc2S_seq.dual.normMix <- function(
   ## 1. SETUP
   if (missing(sigma1)) sigma1 <- RBesT::sigma(prior1)
   if (missing(sigma2)) sigma2 <- RBesT::sigma(prior2)
+
+  if (length(n1) != 2 || length(n2) != 2) {
+    stop("This implementation currently supports exactly 2 stages: provide length-2 cumulative n1 and n2.")
+  }
+  if (length(decisions) != 2) {
+    stop("This implementation currently supports exactly 2 stages: provide 2 stage decision entries.")
+  }
+  if (any(diff(n1) <= 0) || any(diff(n2) <= 0)) {
+    stop("n1 and n2 must be strictly increasing cumulative sample sizes.")
+  }
 
   RBesT::sigma(prior1) <- sigma1
   RBesT::sigma(prior2) <- sigma2
@@ -366,15 +376,15 @@ oc2S_seq.dual.normMix <- function(
     EN2 <- n2[1] * (p_succ_1 + p_fut_1) + n2[2] * p_cont_1
 
     ## E[N | +]
-    EN1_rej <- (n1[1] * p_succ_1 + n1[2] * p_succ_2) / p_total
-    EN2_rej <- (n2[1] * p_succ_1 + n2[2] * p_succ_2) / p_total
+    EN1_rej <- if (p_total > 0) (n1[1] * p_succ_1 + n1[2] * p_succ_2) / p_total else NA_real_
+    EN2_rej <- if (p_total > 0) (n2[1] * p_succ_1 + n2[2] * p_succ_2) / p_total else NA_real_
 
     ## E[N | -]
     ## p_cont_1 - p_succ_2 = P(reach final but fail)
     p_fail_2 <- max(0, p_cont_1 - p_succ_2)
 
-    EN1_norej <- (n1[1] * p_fut_1 + n1[2] * (p_fail_2)) / p_no_rej
-    EN2_norej <- (n2[1] * p_fut_1 + n2[2] * (p_fail_2)) / p_no_rej
+    EN1_norej <- if (p_no_rej > 0) (n1[1] * p_fut_1 + n1[2] * (p_fail_2)) / p_no_rej else NA_real_
+    EN2_norej <- if (p_no_rej > 0) (n2[1] * p_fut_1 + n2[2] * (p_fail_2)) / p_no_rej else NA_real_
 
     return(data.frame(
       Theta1           = theta1,
@@ -493,14 +503,14 @@ avgoc2S_seq2.normMix <- function(
     
     # --- CALCULATE OVERALL METRICS ---
     # We pass an anonymous function to extract the exact column/metric we want to average
-    avg_Power       <- calc_expectation(function(res) res$Overall$Power)
-    avg_Prob_Fut    <- calc_expectation(function(res) res$Overall$Prob_Fut_seq)
-    avg_EN_t        <- calc_expectation(function(res) res$Overall$EN_t)
-    avg_EN_c        <- calc_expectation(function(res) res$Overall$EN_c)
-    avg_EN_t_Succ   <- calc_expectation(function(res) res$Overall$EN_t_Succ)
-    avg_EN_c_Succ   <- calc_expectation(function(res) res$Overall$EN_c_Succ)
-    avg_EN_t_Fail   <- calc_expectation(function(res) res$Overall$EN_t_Fail)
-    avg_EN_c_Fail   <- calc_expectation(function(res) res$Overall$EN_c_Fail)
+    avg_Power       <- calc_expectation(function(res) res$Total_Power)
+    avg_Prob_Fut    <- calc_expectation(function(res) res$P_Stop_Fut_Stg1)
+    avg_EN_t        <- calc_expectation(function(res) res$EN_Trt)
+    avg_EN_c        <- calc_expectation(function(res) res$EN_Pbo)
+    avg_EN_t_Succ   <- calc_expectation(function(res) res$EN_Trt_Rej)
+    avg_EN_c_Succ   <- calc_expectation(function(res) res$EN_Pbo_Rej)
+    avg_EN_t_Fail   <- calc_expectation(function(res) res$EN_Trt_NoRej)
+    avg_EN_c_Fail   <- calc_expectation(function(res) res$EN_Pbo_NoRej)
     
     overall_res <- data.frame(
       Power = avg_Power,
@@ -518,22 +528,19 @@ avgoc2S_seq2.normMix <- function(
     # (number of stages, fixed N sizes)
     prior_mean <- RBesT::summary(design_prior2_new)["mean"]
     base_res <- oc_fun(prior_mean + delta_new, prior_mean)
-    n_stages <- nrow(base_res$Per_Stage)
-    
-    per_stage_list <- lapply(1:n_stages, function(k) {
-      avg_P_Succ <- calc_expectation(function(res) res$Per_Stage$P_Succ[k])
-      avg_P_Fut  <- calc_expectation(function(res) res$Per_Stage$P_Fut[k])
-      
-      data.frame(
-        Stage  = k,
-        N_Trt  = base_res$Per_Stage$N_Trt[k],  # Fixed cumulative sample sizes
-        N_Ctrl = base_res$Per_Stage$N_Ctrl[k],
-        P_Succ = avg_P_Succ,
-        P_Fut  = avg_P_Fut
+    per_stage_res <- data.frame(
+      Stage  = 1:2,
+      N_Trt  = n1,
+      N_Ctrl = n2,
+      P_Succ = c(
+        calc_expectation(function(res) res$P_Stop_Eff_Stg1),
+        calc_expectation(function(res) res$P_Success_Stg2)
+      ),
+      P_Fut = c(
+        calc_expectation(function(res) res$P_Stop_Fut_Stg1),
+        0
       )
-    })
-    
-    per_stage_res <- do.call(rbind, per_stage_list)
+    )
     
     # Compute the average cumulative probabilities step-by-step
     per_stage_res$Cum_P_Succ <- cumsum(per_stage_res$P_Succ)
@@ -710,7 +717,7 @@ oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2,
 
 
 
-avgoc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2, 
+avgoc2_seq_mc.normMix <- function(prior_1, prior_2, 
                                   n1_seq, n2_seq,  decisions_list,  # recall that n1_seq is cumulative
                                   delta = 0, design_prior_c, sigma_val = 88, n_sim = 100000, seed = 123) {
 set.seed(seed)
@@ -726,6 +733,8 @@ res_avgT1E <- oc2_seq_mc.normMix(
   decisions_list = decisions_list, n_sim = n_sim, seed = seed
 )
 
+return(res_avgT1E)
+
 }
 
 
@@ -740,13 +749,11 @@ res_avgT1E <- oc2_seq_mc.normMix(
 
 
 
-
-library(RBesT)
-
 # 1. Define Priors and Sample Sizes
 sigma_val <- 88
 prior_t <- mixnorm(c(1, 0, 100), sigma = sigma_val)
 prior_c <- mixnorm(c(1, 0, 100), sigma = sigma_val)
+design_prior_c <- prior_c
 n_seq <- c(50, 100) # Cumulative: 50 at interim, 100 at final
 
 # 2. Define Decisions
@@ -791,7 +798,7 @@ avg_seq_fun <- avgoc2S_seq2.normMix(
   n2 = n_seq,
   decisions = decisions,
   delta = 0, # Delta null for calculating at1e_seq
-  design_prior2 = design_prior_c,
+  design_prior2 = prior_c,
   sigma1 = sigma_val, 
   sigma2 = sigma_val
 )
