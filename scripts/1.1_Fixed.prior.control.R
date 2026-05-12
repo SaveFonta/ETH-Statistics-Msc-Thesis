@@ -180,17 +180,17 @@ get_avg_t1e_table <- function(crit_name, succ.crit) {
   # define the 3 oc for the 3 analysis prior
   avgoc_vague <- avgoc2S.normMix(
     prior1 = p_vague, prior2 = p_vague, n1 = n.act, n2 = n.pbo, 
-    decision = succ.crit, delta = 0, mix2 = p_vague, sigma1 = sigma, sigma2 = sigma
+    decision = succ.crit, delta = 0, design_prior2 = p_vague, sigma1 = sigma, sigma2 = sigma
   ) 
   
   avgoc_MAP <- avgoc2S.normMix(
     prior1 = p_vague, prior2 = p_MAP, n1 = n.act, n2 = n.pbo, 
-    decision = succ.crit, delta = 0, mix2 = p_vague, sigma1 = sigma, sigma2 = sigma
+    decision = succ.crit, delta = 0, design_prior2 = p_vague, sigma1 = sigma, sigma2 = sigma
   ) 
   
   avgoc_rob <- avgoc2S.normMix(
     prior1 = p_vague, prior2 = p_rob, n1 = n.act, n2 = n.pbo, 
-    decision = succ.crit, delta = 0, mix2 = p_vague, sigma1 = sigma, sigma2 = sigma
+    decision = succ.crit, delta = 0, design_prior2 = p_vague, sigma1 = sigma, sigma2 = sigma
   ) 
   
   # Evaluate for the 4 design priors
@@ -198,17 +198,17 @@ get_avg_t1e_table <- function(crit_name, succ.crit) {
                  avgoc_MAP(), 
                  avgoc_rob())
   
-  col_skep  <- c(avgoc_vague(mix2_new = p_skep), 
-                 avgoc_MAP(mix2_new = p_skep), 
-                 avgoc_rob(mix2_new = p_skep))
+  col_skep  <- c(avgoc_vague(design_prior2_new = p_skep), 
+                 avgoc_MAP(design_prior2_new = p_skep), 
+                 avgoc_rob(design_prior2_new = p_skep))
   
-  col_MAP   <- c(avgoc_vague(mix2_new = p_MAP), 
-                 avgoc_MAP(mix2_new = p_MAP), 
-                 avgoc_rob(mix2_new = p_MAP))
+  col_MAP   <- c(avgoc_vague(design_prior2_new = p_MAP), 
+                 avgoc_MAP(design_prior2_new = p_MAP), 
+                 avgoc_rob(design_prior2_new = p_MAP))
   
-  col_rob   <- c(avgoc_vague(mix2_new = p_rob), 
-                 avgoc_MAP(mix2_new = p_rob), 
-                 avgoc_rob(mix2_new = p_rob))
+  col_rob   <- c(avgoc_vague(design_prior2_new = p_rob), 
+                 avgoc_MAP(design_prior2_new = p_rob), 
+                 avgoc_rob(design_prior2_new = p_rob))
   
   # Tale
   tab <- data.frame(

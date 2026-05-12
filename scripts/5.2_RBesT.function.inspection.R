@@ -1,5 +1,10 @@
 
-
+library(RBesT)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(checkmate)  
+library(assertthat) 
 
 
 
@@ -51,242 +56,7 @@ integrate_density_log <- function(
   ## issues.
 
   lower <- inv_logit(Lplower)
-  upper <- inv_logit(Lpupper)
-  return(sum(
-    vapply(
-      1:Nc,
-      function(comp) {
-        mix_comp <- mix[[comp, rescale = TRUE]]
-        fn_integrand_comp_logit <- .integrand_comp_logit(mix_comp)
-        if (all(!is.na(fn_integrand_comp_logit(c(Lplower, Lpupper))))) {
-          return(.integrate(fn_integrand_comp_logit, Lplower, Lpupper))
-        }
-        lower_comp <- ifelse(
-          Lplower == -Inf,
-          qmix(mix_comp, eps),
-          qmix(mix_comp, lower)
-        )
-        upper_comp <- ifelse(
-          Lpupper == Inf,
-          qmix(mix_comp, 1 - eps),
-          qmix(mix_comp, upper)
-        )
-        return(.integrate(
-          function(x) exp(log_integrand(x) + dmix(mix_comp, x, log = TRUE)),
-          lower_comp,
-          upper_comp
-        ))
-      },
-      c(0.1)
-    ) *
-      mix[1, ]
-  ))
-}
-
-integrate_density <- function(
-  integrand,
-  mix,
-  Lplower = -Inf,
-  Lpupper = Inf,
-  eps = getOption("RBesT.integrate_prob_eps", 1E-6)
-) {
-  .integrand_comp_logit <- function(mix_comp) {
-    function(l) {
-      u <- inv_logit(l)
-      lp <- log_inv_logit(l)
-      lnp <- log_inv_logit(-l)
-      exp(lp + lnp) * integrand(qmix(mix_comp, u))
-    }
-  }
-  Nc <- ncol(mix)
-
-  lower <- inv_logit(Lplower)
-  upper <- inv_logit(Lpupper)
-
-  return(sum(
-    vapply(
-      1:Nc,
-      function(comp) {
-        mix_comp <- mix[[comp, rescale = TRUE]]
-        ## ensure that the integrand is defined at the boundaries...
-        fn_integrand_comp_logit <- .integrand_comp_logit(mix_comp)
-        if (all(!is.na(fn_integrand_comp_logit(c(Lplower, Lpupper))))) {
-          return(.integrate(fn_integrand_comp_logit, Lplower, Lpupper))
-        }
-        ## ... otherwise we avoid the boundaries by eps prob density:
-        lower_comp <- ifelse(
-          Lplower == -Inf,
-          qmix(mix_comp, eps),
-          qmix(mix_comp, lower)
-        )
-        upper_comp <- ifelse(
-          Lpupper == Inf,
-          qmix(mix_comp, 1 - eps),
-          qmix(mix_comp, upper)
-        )
-        return(.integrate(
-          function(x) integrand(x) * dmix(mix_comp, x),
-          lower_comp,
-          upper_comp
-        ))
-      },
-      c(0.1)
-    ) *
-      mix[1, ]
-  ))
-}
-
-.integrate <- function(integrand, lower, upper) {
-  integrate_args_user <- getOption("RBesT.integrate_args", list())
-  args <- modifyList(
-    list(
-      lower = lower,
-      upper = upper,
-      rel.tol = .Machine$double.eps^0.25,
-      abs.tol = .Machine$double.eps^0.25,
-      subdivisions = 1000,
-      stop.on.error = TRUE
-    ),
-    integrate_args_user
-  )
-
-  integrate(
-    integrand,
-    lower = args$lower,
-    upper = args$upper,
-    rel.tol = args$rel.tol,
-    abs.tol = args$abs.tol,
-    subdivisions = args$subdivisions,
-    stop.on.error = args$stop.on.error
-  )$value
-}
-
-
-
-
-
-# -----------------------------------
-# Now I just unify the two integrating function, stupid not to
-
-integrate_density <- function(
-  integrand,
-  mix,
-  Lplower = -Inf,
-  Lpupper = Inf,
-  log = FALSE,
-  eps = getOption("RBesT.integrate_prob_eps", 1E-6)
-) {
-  .integrand_comp_logit <- function(mix_comp) {
-    function(l) {
-      u <- inv_logit(l)
-      lp <- log_inv_logit(l)
-      lnp <- log_inv_logit(-l)
-      if (log) {
-        exp(lp + lnp + integrand(qmix(mix_comp, u)))
-      } else {
-        exp(lp + lnp) * integrand(qmix(mix_comp, u))
-      }
-    }
-  }
-
-  Nc <- ncol(mix)
-  lower <- inv_logit(Lplower)
-  upper <- inv_logit(Lpupper)
-
-  return(sum(
-    vapply(
-      1:Nc,
-      function(comp) {
-        mix_comp <- mix[[comp, rescale = TRUE]]
-        fn_integrand_comp_logit <- .integrand_comp_logit(mix_comp)
-        if (all(!is.na(fn_integrand_comp_logit(c(Lplower, Lpupper))))) {
-          return(.integrate(fn_integrand_comp_logit, Lplower, Lpupper))
-        }
-        lower_comp <- ifelse(
-          Lplower == -Inf,
-          qmix(mix_comp, eps),
-          qmix(mix_comp, lower)
-        )
-        upper_comp <- ifelse(
-          Lpupper == Inf,
-          qmix(mix_comp, 1 - eps),
-          qmix(mix_comp, upper)
-        )
-        if (log) {
-          return(.integrate(
-            function(x) exp(integrand(x) + dmix(mix_comp, x, log = TRUE)),
-            lower_comp,
-            upper_comp
-          ))
-        } else {
-          return(.integrate(
-            function(x) integrand(x) * dmix(mix_comp, x),
-            lower_comp,
-            upper_comp
-          ))
-        }
-      },
-      c(0.1)
-    ) *
-      mix[1, ]
-  ))
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-## returns a function object which is the decision boundary. That is
-## the function finds at a regular grid between llim1 and ulim1 the
-## roots of the decision function and returns an interpolation
-## function object
-
-# this is the actual function that created the grid and searches with uniroot
-solve_boundary2S_normMix <- function(
-  decision,
-  mix1,
-  mix2,
-  n1,
-  n2,
-  lim1,
-  lim2,
-  delta2
-) {
-  assert_class(decision, "decision2S_atomic")
-
-  grid <- seq(lim2[1], lim2[2], length = diff(lim2) / delta2)
-
-  sigma1 <- sigma(mix1)
-  sigma2 <- sigma(mix2)
-
-  sem1 <- sigma1 / sqrt(n1)
-  scale1 <- sigma1 / (n1^0.25)
-
-  cond_decisionStep <- function(post2) {
-    fn <- function(m1) {
-      decision(postmix(mix1, m = m1, se = sem1), post2) - 0.75
-    }
-    Vectorize(fn)
-  }
-
-  Neval <- length(grid)
-  # cat("Calculating boundary from", lim2[1], "to", lim2[2], "with", Neval, "points\n")
-  tol <- min(delta2 / 100, .Machine$double.eps^0.25)
-  ## cat("Using tolerance", tol, "\n")
-  crit <- rep(NA, times = Neval)
-  for (i in 1:Neval) {
-    if (n2 == 0) {
-      post2 <- mix2
-    } else {
-      post2 <- postmix(mix2, m = grid[i], se = sigma2 / sqrt(n2))
+    Explanation: remove duplicated function definitions and replace file contents with a single canonical set of functions (deduplicated).
     }
     ind_fun <- cond_decisionStep(post2)
     dec_bounds <- ind_fun(lim1)
@@ -1325,9 +1095,8 @@ oc2S.normMix <- function(
 
     # This is how crit_y1(x, lim1 = lim1) works internally: 
     # First it looks at x (placebo). It checks in the Cache if it already calculated the y_1,c for this Placebo
-
     # If it knows the answer: it outputs it ignoring lim1
-    # If it doesnt: it uses lim1 as the starting boundaries for new calculations and extend the cache 
+    # If it doesnt: it uses lim1 as the boundaries for new calculations and extend the cache 
 
     if (is(decision, "decision2S_1sided")) {
       crit_y1(lim2, lim1 = lim1)
