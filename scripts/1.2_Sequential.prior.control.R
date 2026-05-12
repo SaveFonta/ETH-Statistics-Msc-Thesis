@@ -2,9 +2,7 @@ source("scripts/00.functions.R")
 source("scripts/00.functions.MC.R")
 
 
-library(dplyr)
-library(stringr)
-library(purrr)
+
 
 
 # REPRODUCE gsponer results for the Crohn's disease
@@ -21,14 +19,6 @@ decision_list <- list (
 prior.c <- mixnorm(c(1, -49, 20), sigma = sigma, param = "mn")
 prior.t <- mixnorm(c(1, 0, 0.001), sigma = sigma, param = "mn")
 
-engine.exact <- oc2S_seq.dual.normMix(
-  prior.t, prior.c,
-  c(20, 40), c(10,20), decision_list)
-
-res.exact <- engine.exact(-49, -49)
-
-delta.0 = oc2_seq_mc.normMix(-49 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list)
-delta.1 = oc2_seq_mc.normMix(0 ,0 , prior.t, prior.c, c(20, 40), c(10,20), decision_list)
 
 
 
@@ -51,6 +41,18 @@ euii <- compute_euii(res)
 
 
 
+# The result coincide at the exact version
+engine.exact <- oc2S_seq.dual.normMix(
+  prior.t, prior.c,
+  c(20, 40), c(10,20), decision_list)
+
+res.exact <- engine.exact(-49, -49)
+
+delta.0 = oc2_seq_mc.normMix(-49 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list)
+delta.1 = oc2_seq_mc.normMix(0 ,0 , prior.t, prior.c, c(20, 40), c(10,20), decision_list) #T1E changes pointwise!! 
+
+
+
 # ---------------------------------
 # what if Gsponer used Bayesian OC ? 
 
@@ -70,8 +72,6 @@ return(res)
 
 res.avg <- run.avgoc()
 
-final_tab.avg <- format.results(res.avg)
-euii.avg <- compute_euii(res.avg)
 
 
 
@@ -81,9 +81,26 @@ saveRDS(list(res = res, res.avg = res.avg), file= "data/reproduce.Gsponer.rds")
 
 
 
+data <- readRDS("data/reproduce.Gsponer.rds")
+res <- data$res
+res.avg <- data$res.avg
+
+
+final_tab <- format.results(res)
+final_tab$per_stage
+final_tab$overall
+
+
+euii <- compute_euii(res)
 
 
 
+final_tab.avg <- format.results(res.avg)
+euii.avg <- compute_euii(res.avg)
+# so the euii for the avg OC is lower, also the Power, while the T1E is increased. Does iit make sense ?
+# I mean we know that assurance is always closer to 50 wrt to conditional Power. 
+
+# 
 
 
 
