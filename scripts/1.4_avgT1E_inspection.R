@@ -55,7 +55,7 @@ prior.t <-  <- mixnorm(c(1, 0, 0.001), sigma = sigma, param = "mn")
 
 # Deltas for avgOC: negative because lower.tail = TRUE (lower = better for trt)
 deltas        <- c(0, -40, -50, -60, -70)
-delta_labels  <- c("0 (T1E)", "40", "50", "60", "70")   ì
+delta_labels  <- c("0 (T1E)", "40", "50", "60", "70")   
 
 N_SIM <- 1e7
 SEED  <- 123
