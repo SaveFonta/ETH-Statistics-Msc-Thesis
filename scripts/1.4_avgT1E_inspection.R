@@ -51,7 +51,7 @@ n1_seq <- c(20, 40)
 n2_seq <- c(10, 20)
 
 # Flat treatment prior
-prior.t <-  <- mixnorm(c(1, 0, 0.001), sigma = sigma, param = "mn")
+prior.t <-  mixnorm(c(1, 0, 0.001), sigma = sigma, param = "mn")
 
 # Deltas for avgOC: negative because lower.tail = TRUE (lower = better for trt)
 deltas        <- c(0, -40, -50, -60, -70)
