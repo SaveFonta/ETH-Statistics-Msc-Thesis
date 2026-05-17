@@ -45,7 +45,7 @@ deltas        <- c(0, 40, 50, 60, 70)
 
 N_SIM <- 1e7
 SEED  <- 123
-
+p_MAP["w",1 ]
 # =============================================================================
 #  PRIORS
 # =============================================================================
@@ -61,8 +61,47 @@ prior.t <- p_vague # Ok I decided to make prior.t super vague
 
 p_skep  <- mixnorm(c(1, -90, 25), sigma = sigma) #posterior distribution of a stand-alone analysis of the historical study with the “most extreme” placebo effect
 
-priors      <- list(MAP = p_MAP, Robust = p_rob, Vague = p_vague, Skeptical = p_skep)
+
+###################
+# In case I wante the prior of a t distribution:
+library(RBesT)
+
+# ---------------------------------------------------------
+# parameters of heavy-tailed prior
+# ---------------------------------------------------------
+mu_robust <- -50    
+scale_robust <- 88 
+nu <- 3            # Degrees of freedom (3 is the standard for robust priors)
+
+
+set.seed(123)
+n_samples <- 500000
+t_samples <- mu_robust + scale_robust * rt(n_samples, df = nu)
+
+
+# automixfit uses the EM algorithm to find the optimal weights, means, and SDs.
+approx_robust_prior <- automixfit(t_samples, Nc = 15, control = list(Niter.max = 1000))
+
+# View the resulting finite mixture
+print(approx_robust_prior)
+
+# Combine with Informative MAP
+
+ p_rob_t.dist <- mixcombine(
+   informative = p_MAP, 
+   robust = approx_robust_prior, 
+   weight = c(0.5, 0.5)
+ )
+
+
+
+
+priors <- list(MAP = p_MAP, Robust = p_rob, Vague = p_vague, Skeptical = p_skep, Robust_t = p_rob_t.dist)
 prior_names <- names(priors)
+
+
+
+
 
 # =============================================================================
 # T1E AND POWER AT FIXED theta_c = -49, and varying delta 
@@ -74,8 +113,11 @@ prior_names <- names(priors)
 cat("\n--- T1E and Power at fixed deltas ---\n")
 
 results_fixed <- bind_rows(lapply(prior_names, function(pname) {
-  cat(paste0(" Computing Prior: ", pname))
+  cat(paste0(" Computing Prior: ", pname, "\n"))
   prior_c <- priors[[pname]]
+  
+  # neew to find how many informative components we have -> MAP, Robust and Robust_t all use the 3-component p_MAP as their base 
+  n_info <- if(pname %in% c("MAP", "Robust", "Robust_t")) 3 else 1 
 
   bind_rows(lapply(deltas, function(d) {
     # Note: lower.tail = TRUE in the decision, so treatment must score lower to win.
@@ -91,7 +133,10 @@ results_fixed <- bind_rows(lapply(prior_names, function(pname) {
       sigma_1        = sigma,
       sigma_2        = sigma,
       n_sim          = N_SIM,
-      seed           = SEED
+      seed           = SEED,
+      weight.track = TRUE, 
+      n_info_comps   = n_info
+
     )
     data.frame(
       Prior      = pname,
@@ -100,20 +145,22 @@ results_fixed <- bind_rows(lapply(prior_names, function(pname) {
       Theta_c    = theta_c_fixed,
       Power      = res$Overall["Power"],
       P_Fut      = res$Overall["Prob_Fut_seq"],
-      EN_total       = res$Overall["EN_t"] + res$Overall["EN_c"]
+      EN_total       = res$Overall["EN_t"] + res$Overall["EN_c"],
+      Weight_S1  = res$Per_Stage$Exp_info_weight[1], 
+      Weight_S2  = res$Per_Stage$Exp_info_weight[2]
     )
   }))
 }))
 
 # Label delta = 0 rows as T1E
-results_fixed <- results_fixed %>%
+results_fixed <- results_fixed |>
   mutate(
     Metric = ifelse(Delta == 0, "T1E", paste0("Power (delta=", Delta, ")")),
     Prior  = factor(Prior, levels = prior_names)
   )
 
 cat("Done.\n")
-print(results_fixed %>% select(Prior, Delta, Power, P_Fut, EN_total))
+print(results_fixed |> select(Prior, Delta, Power, P_Fut, EN_total))
 
 # =============================================================================
 #  GRID theta_1 and theta_2
@@ -124,14 +171,13 @@ print(results_fixed %>% select(Prior, Delta, Power, P_Fut, EN_total))
 
 cat("\n--- Rejection probability over (theta_1, theta_2) grid ---\n")
 
-
-theta_c_grid <- seq(-120, -30, by = 10)
 theta_t_grid <- seq(-120, -30, by = 10)
+theta_c_grid <- seq(-120, -30, by = 10)
 
 grid_df <- expand.grid(Theta_t = theta_t_grid, Theta_c = theta_c_grid)
 
 results_grid <- bind_rows(lapply(prior_names, function(pname) {
-  cat(paste0("Prior: ", pname))
+  cat(paste0("Prior: ", pname, "\n"))
   prior_c <- priors[[pname]]
 
   bind_rows(lapply(seq_len(nrow(grid_df)), function(i) {
@@ -173,20 +219,13 @@ cat ("RESULTS SAVED CORRECTLY")
 
 
 
+res <- readRDS("data/T1E.sequential.rds")
 
 
 
 
-
-
-
-
-
-
-
-
-
-
+results_fixed <- res$results_fixed
+results_grid <- res$results_grid
 
 
 
