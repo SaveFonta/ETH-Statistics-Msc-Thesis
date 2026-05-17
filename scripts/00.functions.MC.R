@@ -71,6 +71,8 @@ oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2,
     y_2_curr[active_idx] <- (n_2_prev * y_2_curr[active_idx] + dn_2 * y_2_inc) / n2_seq[k]
     y_1_curr[active_idx] <- (n_1_prev * y_1_curr[active_idx] + dn_1 * y_1_inc) / n1_seq[k]
 
+
+if (weight.track) { 
     #average y of all the active 
     avg_y_2_curr <- mean(y_2_curr[active_idx]) 
     
@@ -89,7 +91,7 @@ oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2,
     else if (type.weight.track == "uninformative.mixture"){
     w_inf_traj[k] <- sum(post_avg["w", 1:n_info_comps])
     }
-
+}
 
 
  
