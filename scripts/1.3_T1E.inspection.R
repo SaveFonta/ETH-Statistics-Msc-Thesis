@@ -82,10 +82,8 @@ n_samples <- 500000
 t_samples <- mu_robust + scale_robust * rt(n_samples, df = nu)
 
 
-# automixfit uses the EM algorithm to find the optimal weights, means, and SDs.
 approx_robust_prior <- automixfit(t_samples, Nc = 15)
 
-# View the resulting finite mixture
 print(approx_robust_prior)
 
 # Combine with Informative MAP
@@ -105,7 +103,7 @@ p_rob_t.dist0.5 <- mixcombine(
 
 
 
-priors <- list(MAP = p_MAP, Robust = p_rob, Vague = p_vague, Skeptical = p_skep, Robust_t = p_rob_t.dist, p_rob_0.5, p_rob_t.dist0.5)
+priors <- list(MAP = p_MAP, Robust = p_rob, Vague = p_vague, Skeptical = p_skep, Robust_t = p_rob_t.dist, Robust_0.5 = p_rob_0.5, Robust_t_0.5 = p_rob_t.dist0.5)
 prior_names <- names(priors)
 
 
@@ -126,7 +124,7 @@ results_fixed <- bind_rows(lapply(prior_names, function(pname) {
   prior_c <- priors[[pname]]
   
   # neew to find how many informative components we have -> MAP, Robust and Robust_t all use the 3-component p_MAP as their base 
-  n_info <- if(pname %in% c("MAP", "Robust", "Robust_t")) 3 else 1 
+  n_info <- if(pname %in% c("MAP", "Robust", "Robust_t", "Robust_0.5", "Robust_t_0.5")) 3 else 1
 
   bind_rows(lapply(deltas, function(d) {
     # Note: lower.tail = TRUE in the decision, so treatment must score lower to win.
