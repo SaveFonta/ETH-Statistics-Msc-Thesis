@@ -80,7 +80,7 @@ t_samples <- mu_robust + scale_robust * rt(n_samples, df = nu)
 
 
 # automixfit uses the EM algorithm to find the optimal weights, means, and SDs.
-approx_robust_prior <- automixfit(t_samples, Nc = 15, control = list(Niter.max = 1000))
+approx_robust_prior <- automixfit(t_samples, Nc = 15)
 
 # View the resulting finite mixture
 print(approx_robust_prior)
