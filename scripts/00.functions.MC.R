@@ -1,3 +1,9 @@
+library(dplyr)
+library(stringr)
+library(purrr)
+
+
+
 # -----------------------------------------------------
 # FUNCTIONS for Monte Carlo Sequential evaluation
 # -----------------------------------------------------
@@ -6,7 +12,10 @@
 oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2, 
                                 n1_seq, n2_seq, decisions_list,   # recall that n1_seq is cumulative
                                 sigma_1 = 88, sigma_2 = 88,       
-                                n_sim = 100000, seed = NULL) {     
+                                n_sim = 100000, seed = NULL,
+                                weight.track = FALSE,
+                                type.weight.track = "uninformative.mixture", n_info_comps = 3)  {     # added these 2 params: so we can track the informative weight both if only one uninformative component (given by robustify) 
+                                                                                     # or even if we use a mixture as non-informative (e.g. 100 mmixture to approx a t-distri) 
  
   if (!is.null(seed)) set.seed(seed)
  
@@ -41,6 +50,8 @@ oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2,
   # Vector of probabilities of stopping or futility for each stage
   p_succ_vec <- rep(0, K)
   p_fut_vec  <- rep(0, K)
+
+  w_inf_traj <- rep(NA, K) #vector of average non-informative weight 
  
   for (k in 1:K) {
     if (length(active_idx) == 0) break
@@ -59,6 +70,28 @@ oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2,
     # [mean till stage (k-1) * sample size (k-1) + mean of stage k * sample size stage k] / total sample size till stage k
     y_2_curr[active_idx] <- (n_2_prev * y_2_curr[active_idx] + dn_2 * y_2_inc) / n2_seq[k]
     y_1_curr[active_idx] <- (n_1_prev * y_1_curr[active_idx] + dn_1 * y_1_inc) / n1_seq[k]
+
+    #average y of all the active 
+    avg_y_2_curr <- mean(y_2_curr[active_idx]) 
+    
+    # Update the mixture prior using the average simulated data
+    post_avg <- suppressMessages(RBesT::postmix(prior_2, 
+                                                m = avg_y_2_curr, 
+                                                n = n2_seq[k], 
+                                                se = sigma_2 / sqrt(n2_seq[k])))
+    
+    if (type.weight.track == "robustify")  {
+    #  since the robust component is always the last row from robustify
+    idx_robust <- nrow(post_avg)
+    
+    w_robust <- post_avg["w", idx_robust]
+    w_inf_traj[k] <- 1 - w_robust }
+    else if (type.weight.track == "uninformative.mixture"){
+    w_inf_traj[k] <- sum(post_avg["w", 1:n_info_comps])
+    }
+
+
+
  
     # extract decisions
     d_succ <- decisions_list[[k]]$success
@@ -123,16 +156,38 @@ oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2,
     P_Succ     = p_succ_vec,
     P_Fut      = p_fut_vec,
     Cum_P_Succ = cumsum(p_succ_vec),
-    Cum_P_Fut  = cumsum(p_fut_vec)
+    Cum_P_Fut  = cumsum(p_fut_vec),
+    Exp_info_weight = w_inf_traj
   )
  
-  # Return OC
+
+
+
+  # --------------
+  # calculate final metrics 
+  # --------------
+
+  power_est <- sum(stop_eff) / n_sim
+  fut_est <- sum(stop_fut) / n_sim
+  
+  # MC errors 
+  mce_power <- sqrt((power_est * (1 - power_est)) / n_sim)
+  mce_fut   <- sqrt((fut_est * (1 - fut_est)) / n_sim)
+  
+  mce_en_t  <- sd(n1_seq[stage_stopped]) / sqrt(n_sim)
+  mce_en_c  <- sd(n2_seq[stage_stopped]) / sqrt(n_sim)
+
+  # Return OC with MCE included
   return(list(
     Overall = c(
-      Power        = sum(stop_eff) / n_sim,
-      Prob_Fut_seq = sum(stop_fut) / n_sim,
+      Power        = power_est,
+      MCE_Power    = mce_power,          
+      Prob_Fut_seq = fut_est,
+      MCE_Fut      = mce_fut,            
       EN_t         = mean(n1_seq[stage_stopped]),
+      MCE_EN_t     = mce_en_t,           
       EN_c         = mean(n2_seq[stage_stopped]),
+      MCE_EN_c     = mce_en_c,           
       EN_t_Succ    = EN_1_succ,
       EN_c_Succ    = EN_2_succ,
       EN_t_Fail    = EN_1_fail,
@@ -140,6 +195,7 @@ oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2,
     ),
     Per_Stage = per_stage_df
   ))
+
 }
  
  
@@ -205,48 +261,50 @@ format.results <- function(res) {
  
   per_stage <- bind_rows(
     lapply(names(res), function(nm) {
-      res[[nm]]$Per_Stage %>%
-        mutate(delta = str_remove(nm, "delta\\.") %>% as.numeric())
+      res[[nm]]$Per_Stage |>
+        mutate(delta = str_remove(nm, "delta\\.") |> as.numeric())
     })
   )
  
   # ---- Overall results ----
   overall <- bind_rows(
     lapply(names(res), function(nm) {
-      as.data.frame(t(res[[nm]]$Overall)) %>%
-        mutate(delta = str_remove(nm, "delta\\.") %>% as.numeric())
+      as.data.frame(t(res[[nm]]$Overall)) |>
+        mutate(delta = str_remove(nm, "delta\\.") |> as.numeric())
     })
   )
  
   K <- max(per_stage$Stage)
  
   # ---- Per-stage table (one row per delta x stage) ----
-  # Works for any K: each stage gets its own row rather than its own column.
-  # Callers that want a wide format can pivot_wider() on Stage themselves.
-  #
-  # Columns:
-  #   Stage_Label               : "Interim k" for k < K, "Final" for k = K
-  #   P_Succ / P_Fut / P_Ind   : marginal stopping probabilities at this stage (%)
-  #   Cum_P_Succ / _Fut / _Ind : cumulative stopping probabilities up to this stage (%)
-  per_stage_tab <- per_stage %>%
+  
+  per_stage_tab <- per_stage |>
     mutate(
-      Stage_Label = ifelse(Stage == K, "Final", paste0("Interim ", Stage)),
+      Stage_Label = ifelse(Stage == K, "Final", paste0("Interim_", Stage)),
       P_Ind       = 1 - P_Succ - P_Fut,
       Cum_P_Ind   = 1 - Cum_P_Succ - Cum_P_Fut,
       across(c(P_Succ, P_Fut, P_Ind, Cum_P_Succ, Cum_P_Fut, Cum_P_Ind),
              ~ round(100 * .x, 1))
-    ) %>%
-    select(delta, Stage, Stage_Label, N_Trt, N_Ctrl,
+    ) |>
+    select(delta, Stage_Label, N_Trt, N_Ctrl,
            P_Succ, P_Fut, P_Ind,
-           Cum_P_Succ, Cum_P_Fut, Cum_P_Ind)
+           Cum_P_Succ, Cum_P_Fut, Cum_P_Ind)  |> 
+    pivot_wider(names_from = Stage_Label, 
+    values_from = c(
+      N_Trt, N_Ctrl,
+      P_Succ, P_Fut, P_Ind,
+      Cum_P_Succ, Cum_P_Fut, Cum_P_Ind
+    ),
+    names_sep = "."
+    )
  
   # ---- Overall summary (one row per delta) ----
   # Overall power and expected sample sizes.
-  overall_tab <- overall %>%
+  overall_tab <- overall |>
     mutate(
       Expected_N = EN_t + EN_c,
       across(where(is.numeric), ~ round(.x, 1))
-    ) %>%
+    ) |>
     select(delta, Power, EN_t, EN_c, Expected_N,
            EN_t_Succ, EN_c_Succ, EN_t_Fail, EN_c_Fail)
  
@@ -262,7 +320,7 @@ compute_euii <- function(res) {
   # --- build stage-level table ----
   per_stage <- bind_rows(
     lapply(names(res), function(nm) {
-      res[[nm]]$Per_Stage %>%
+      res[[nm]]$Per_Stage |>
         mutate(delta = sub("delta\\.", "", nm) |> as.numeric())
     })
   )
@@ -270,17 +328,16 @@ compute_euii <- function(res) {
   # --- overall table ----
   overall <- bind_rows(
     lapply(names(res), function(nm) {
-      as.data.frame(as.list(res[[nm]]$Overall)) %>%
-        mutate(delta = sub("delta\\.", "", nm) |> as.numeric())
+      as.data.frame(t(res[[nm]]$Overall)) |>
+        mutate(delta = str_remove(nm, "delta\\.") |> as.numeric())
     })
   )
  
   # Type I error = power under delta = 0
-  t1e <- overall %>%
-    filter(delta == 0) %>%
+  t1e <- overall |>
+    filter(delta == 0) |>
     pull(Power)
  
-  # fix Bug 9: guard against missing delta = 0
   if (length(t1e) == 0) {
     stop("delta = 0 must be included in results to compute EUII (needed for Type I error).")
   }
@@ -293,11 +350,8 @@ compute_euii <- function(res) {
   #   final stage   (k = K): non-significant = residual probability of reaching
   #                           the final stage and not succeeding = 1 - Cum_P_Succ - Cum_P_Fut
   #
-  # E(1/N | sig) and E(1/N | nonsig) are weighted averages of 1/N_total
-  # across all K stages, where the weight at each stage is the per-stage
-  # contribution to the significant / non-significant path, normalised by
-  # the overall probability of that outcome (Power or 1 - Power).
-  out <- per_stage %>%
+
+  out <- per_stage |>
     mutate(
       N_total     = N_Trt + N_Ctrl,
       nonsig_prob = ifelse(
@@ -305,8 +359,8 @@ compute_euii <- function(res) {
         1 - Cum_P_Succ - Cum_P_Fut,   # final stage: residual
         P_Fut                           # interim stages: futility stops only
       )
-    ) %>%
-    group_by(delta) %>%
+    ) |>
+    group_by(delta) |>
     summarise(
  
       Power = Cum_P_Succ[Stage == K],
@@ -327,7 +381,7 @@ compute_euii <- function(res) {
  
       .groups = "drop"
  
-    ) %>%
+    ) |>
     mutate(
       EUII =
         LR_pos^E_invN_sig /
