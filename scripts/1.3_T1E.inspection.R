@@ -55,6 +55,9 @@ p_MAP  <- mixnorm(c(0.51, -51, 19.9), c(0.44, -46.8, 7.6), c(0.05, -54.1, 51.7),
 
 p_rob  <- robustify(p_MAP, 0.2, mean = -50)
 
+p_rob_0.5 <- robustify(p_MAP, 0.5, mean = -50)
+
+
 p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma)
 
 prior.t <- p_vague # Ok I decided to make prior.t super vague
@@ -90,13 +93,19 @@ print(approx_robust_prior)
  p_rob_t.dist <- mixcombine(
    informative = p_MAP, 
    robust = approx_robust_prior, 
+   weight = c(0.8, 0.2)
+ )
+
+p_rob_t.dist0.5 <- mixcombine(
+   informative = p_MAP, 
+   robust = approx_robust_prior, 
    weight = c(0.5, 0.5)
  )
 
 
 
 
-priors <- list(MAP = p_MAP, Robust = p_rob, Vague = p_vague, Skeptical = p_skep, Robust_t = p_rob_t.dist)
+priors <- list(MAP = p_MAP, Robust = p_rob, Vague = p_vague, Skeptical = p_skep, Robust_t = p_rob_t.dist, p_rob_0.5, p_rob_t.dist0.5)
 prior_names <- names(priors)
 
 
