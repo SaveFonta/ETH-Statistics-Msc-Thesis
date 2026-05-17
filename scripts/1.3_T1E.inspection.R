@@ -125,6 +125,8 @@ results_fixed <- bind_rows(lapply(prior_names, function(pname) {
   
   # neew to find how many informative components we have -> MAP, Robust and Robust_t all use the 3-component p_MAP as their base 
   n_info <- if(pname %in% c("MAP", "Robust", "Robust_t", "Robust_0.5", "Robust_t_0.5")) 3 else 1
+  weight.track <- if(pname %in% c("MAP", "Robust", "Robust_t", "Robust_0.5", "Robust_t_0.5")) TRUE else FALSE
+
 
   bind_rows(lapply(deltas, function(d) {
     # Note: lower.tail = TRUE in the decision, so treatment must score lower to win.
@@ -141,7 +143,7 @@ results_fixed <- bind_rows(lapply(prior_names, function(pname) {
       sigma_2        = sigma,
       n_sim          = N_SIM,
       seed           = SEED,
-      weight.track = TRUE, 
+      weight.track = weight.track, 
       n_info_comps   = n_info
 
     )
