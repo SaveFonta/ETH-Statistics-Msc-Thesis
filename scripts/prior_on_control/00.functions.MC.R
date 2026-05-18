@@ -288,7 +288,7 @@ format.results <- function(res) {
       across(c(P_Succ, P_Fut, P_Ind, Cum_P_Succ, Cum_P_Fut, Cum_P_Ind),
              ~ round(100 * .x, 1))
     ) |>
-    select(delta, Stage_Label, N_Trt, N_Ctrl,
+    select("Delta" = delta, Stage_Label, N_Trt, N_Ctrl,
            P_Succ, P_Fut, P_Ind,
            Cum_P_Succ, Cum_P_Fut, Cum_P_Ind)  |> 
     pivot_wider(names_from = Stage_Label, 
@@ -304,14 +304,16 @@ format.results <- function(res) {
   # Overall power and expected sample sizes.
   overall_tab <- overall |>
     mutate(
-      Expected_N = EN_t + EN_c,
+      E_N = EN_t + EN_c,
+      E_N_Succ  = EN_t_Succ + EN_c_Succ,
+      E_N_Fail = EN_t_Fail + EN_c_Fail,
       across(where(is.numeric), ~ round(.x, 1))
     ) |>
-    select(delta, Power, EN_t, EN_c, Expected_N,
-           EN_t_Succ, EN_c_Succ, EN_t_Fail, EN_c_Fail)
+    select("Delta" = delta, Power, EN_t, EN_c, 
+           EN_t_Succ, EN_c_Succ, EN_t_Fail, EN_c_Fail, E_N,E_N_Succ, E_N_Fail)
  
   return(list(
-    per_stage = per_stage_tab,
+    per_stage = per_stage_tab, 
     overall   = overall_tab
   ))
 }

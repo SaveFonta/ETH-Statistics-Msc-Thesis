@@ -1,5 +1,5 @@
-source("scripts/00.functions.R")
-source("scripts/00.functions.MC.R")
+source("scripts/prior_on_control/00.functions.R")
+source("scripts/prior_on_control/00.functions.MC.R")
 
 
 
@@ -42,14 +42,14 @@ euii <- compute_euii(res)
 
 
 # The result coincide at the exact version
-engine.exact <- oc2S_seq.dual.normMix(
-  prior.t, prior.c,
-  c(20, 40), c(10,20), decision_list)
+# engine.exact <- oc2S_seq.dual.normMix(
+#   prior.t, prior.c,
+#   c(20, 40), c(10,20), decision_list)
 
-res.exact <- engine.exact(-49, -49)
+# res.exact <- engine.exact(-49, -49)
 
-delta.0 = oc2_seq_mc.normMix(-49 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list)
-delta.1 = oc2_seq_mc.normMix(0 ,0 , prior.t, prior.c, c(20, 40), c(10,20), decision_list) #T1E changes pointwise!! 
+# delta.0 = oc2_seq_mc.normMix(-49 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list)
+# delta.1 = oc2_seq_mc.normMix(0 ,0 , prior.t, prior.c, c(20, 40), c(10,20), decision_list) #T1E changes pointwise!! 
 
 
 
@@ -73,10 +73,27 @@ return(res)
 res.avg <- run.avgoc()
 
 
+# we can show the more robustness of avgt1e, since T1E varyies ppointwise and we are trusting a T1E that assumes the true value 
+#of control and treatment is the same as the mean of the historical borrowing of control:
 
 
-saveRDS(list(res = res, res.avg = res.avg), file= "data/reproduce.Gsponer.rds")
 
+
+library(parallel)
+true_c <- seq(-91, 26, 3)
+
+pointwiseT1E <- mclapply(true_c, function(x) 
+{oc2_seq_mc.normMix(x , x , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7)
+}, mc.cores = 5)
+
+cat("Parallel computation worked")
+
+saveRDS(list(res = res, res.avg = res.avg, pointwiseT1E = pointwiseT1E), file= "data/reproduce.Gsponer.rds")
+
+
+cat("Results saved")
+
+# inspection
 
 
 
@@ -94,7 +111,7 @@ final_tab$overall
 euii <- compute_euii(res)
 
 
-
+res.avg <- data$res.avg
 final_tab.avg <- format.results(res.avg)
 euii.avg <- compute_euii(res.avg)
 # so the euii for the avg OC is lower, also the Power, while the T1E is increased. Does iit make sense ?
@@ -105,17 +122,8 @@ euii.avg <- compute_euii(res.avg)
 
 
 
-
 ## In the 1.3 script evaluates the classic conditional OC under different mixtures 
 ## In the 1.4 evaluates predictive OC under different mixture. 
-
-
-
-
-
-
-
-
 
 
 

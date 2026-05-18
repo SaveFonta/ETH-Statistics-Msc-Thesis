@@ -1,4 +1,4 @@
-source("scripts/00.functions.R")
+source("00.functions.R")
 
 
 # this part will use it for the Rnw
@@ -244,7 +244,6 @@ saveRDS(final_table, file = "data/avgT1E.fixed.rds")
 cat("avgT1E fixed data saved")
 
 final_table <- readRDS("data/avgT1E.fixed.rds")
-
 
 
 
