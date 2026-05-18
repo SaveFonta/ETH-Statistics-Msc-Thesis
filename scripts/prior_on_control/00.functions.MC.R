@@ -319,7 +319,7 @@ format.results <- function(res) {
 }
  
  
-compute_euii <- function(res) {
+compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5)) {
  
   # --- build stage-level table ----
   per_stage <- bind_rows(
@@ -329,68 +329,60 @@ compute_euii <- function(res) {
     })
   )
  
-  # --- overall table ----
-  overall <- bind_rows(
-    lapply(names(res), function(nm) {
-      as.data.frame(t(res[[nm]]$Overall)) |>
-        mutate(delta = str_remove(nm, "delta\\.") |> as.numeric())
-    })
-  )
- 
-  # Type I error = power under delta = 0
-  t1e <- overall |>
-    filter(delta == 0) |>
-    pull(Power)
- 
-  if (length(t1e) == 0) {
-    stop("delta = 0 must be included in results to compute EUII (needed for Type I error).")
-  }
- 
-  K <- max(per_stage$Stage)
- 
-  # ---- compute ----
-  # nonsig_prob per stage:
-  #   interim stages (k < K): non-significant stops are futility only (P_Fut)
-  #   final stage   (k = K): non-significant = residual probability of reaching
-  #                           the final stage and not succeeding = 1 - Cum_P_Succ - Cum_P_Fut
-  #
 
-  out <- per_stage |>
+   K <- max(per_stage$Stage)
+
+  per_stage_proc <- per_stage |>
     mutate(
       N_total     = N_Trt + N_Ctrl,
-      nonsig_prob = ifelse(
-        Stage == K,
-        1 - Cum_P_Succ - Cum_P_Fut,   # final stage: residual
-        P_Fut                           # interim stages: futility stops only
-      )
-    ) |>
+      nonsig_prob = ifelse(Stage == K, 1 - Cum_P_Succ - Cum_P_Fut, P_Fut)
+    )
+
+
+  pointwise_metrics <- per_stage_proc |>
     group_by(delta) |>
     summarise(
- 
       Power = Cum_P_Succ[Stage == K],
- 
-      # Likelihood ratios
-      LR_pos = Power / t1e,
-      LR_neg = (1 - Power) / (1 - t1e),
- 
-      # E(1/N | significant):
-      # sum over all stages of P(succeed at stage k) / Power * 1/N_k
-      E_invN_sig =
-        sum(P_Succ / Power * (1 / N_total)),
- 
-      # E(1/N | non-significant):
-      # sum over all stages of P(non-sig stop at stage k) / (1-Power) * 1/N_k
-      E_invN_nonsig =
-        sum(nonsig_prob / (1 - Power) * (1 / N_total)),
- 
+      #  E(1/N | sign) and E(1/N | nonsign)
+      E_invN_sig_cond = sum(P_Succ / Power * (1 / N_total)),
+      E_invN_nonsig_cond = sum(nonsig_prob / (1 - Power) * (1 / N_total)),
       .groups = "drop"
+    )
+
+ null <- pointwise_metrics |> filter(delta == 0)
+  if (nrow(null) == 0) {
+    stop("delta = 0 must be included to establish alpha and null sample size distributions.")
+  }
  
+  T1E <- null$Power
+  E_invN_sig_null <- null$E_invN_sig_cond
+  E_invN_nonsig_null <- null$E_invN_nonsig_cond
+ 
+
+ out <- lapply(prior_H1, function(x) {
+    pointwise_metrics |>
+    mutate(
+      LR_pos = Power / T1E,
+      LR_neg = (1 - Power) / (1 - T1E),
+      
+      post_odds_sig = LR_pos * (x / (1 - x)), # Posterior odds of H_1  O(H_1 | sign)
+      Pr_H1_sig     = post_odds_sig / (1 + post_odds_sig), # Posterior probability of H_1 P(H_1 | sign)
+      Pr_H0_sig     = 1 - Pr_H1_sig, 
+      
+      post_odds_nonsig = LR_neg * (x / (1 - x)),  # Posterior odds of H_1  O(H_1 |non sign)
+      Pr_H1_nonsig     = post_odds_nonsig / (1 + post_odds_nonsig), #P(H_1 | nonsign)
+      Pr_H0_nonsig     = 1 - Pr_H1_nonsig,
+      
+      E_invN_sig = (E_invN_sig_null * Pr_H0_sig) + (E_invN_sig_cond * Pr_H1_sig),
+      E_invN_nonsig = (E_invN_nonsig_null * Pr_H0_nonsig) + (E_invN_nonsig_cond * Pr_H1_nonsig)
     ) |>
     mutate(
-      EUII =
-        LR_pos^E_invN_sig /
-        LR_neg^E_invN_nonsig
-    )
- 
-  out
+      EUII = (LR_pos ^ E_invN_sig) / (LR_neg ^ E_invN_nonsig)
+    )  |> 
+    select ("Delta" = delta,  LR_pos, LR_neg, E_invN_sig, E_invN_nonsig, EUII)
+ }
+ )
+
+ names(out) <- as.character(prior_H1)
+  return(out)
 }
