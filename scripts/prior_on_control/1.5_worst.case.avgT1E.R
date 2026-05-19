@@ -1,0 +1,276 @@
+# =============================================================================
+# WORST-CASE AVG T1E OVER [0, 40]
+# =============================================================================
+# delta = theta_C - theta_T, positive = treatment better
+# False positive region: delta in [0, 40] (drug works but not enough)
+# Worst-case avgT1E = sup over this grid
+# =============================================================================
+
+
+
+library(RBesT)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(patchwork)
+library(stringr)
+library(scales)
+
+source("scripts/prior_on_control/00.functions.MC.R")
+
+# ============================================================================= 
+# SETUP DESIGN
+# =============================================================================
+
+sigma <- 88
+
+dual.crit.95 <- decision2S(pc = c(0.95, 0.5), qc = c(0, -50), lower.tail = TRUE)
+fut.40        <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
+
+decision_list <- list(
+  list(success = dual.crit.95, futility = fut.40),
+  list(success = dual.crit.95, futility = NULL)
+)
+
+n1_seq <- c(20, 40)
+n2_seq <- c(10, 20)
+
+
+# Deltas for avgOC: negative because lower.tail = TRUE (lower = better for trt)
+deltas        <- c(0, -40, -50, -60, -70)
+delta_labels  <- c("0 (T1E)", "40", "50", "60", "70")   
+
+N_SIM <- 1e7
+SEED  <- 123
+
+# =============================================================================
+# DEFINE PRIORS
+# =============================================================================
+
+
+p_MAP  <- mixnorm(c(0.51, -51, 19.9), c(0.44, -46.8, 7.6), c(0.05, -54.1, 51.7),
+                  sigma = sigma, param = "ms")
+
+p_rob0.2  <- robustify(p_MAP, 0.2, mean = -50)
+
+p_rob_0.5 <- robustify(p_MAP, 0.5, mean = -50)
+
+
+p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
+
+prior.t <- p_vague # Ok I decided to make prior.t super vague
+
+p_skep  <- mixnorm(c(1, -90, 25), sigma = sigma, param = "ms") #posterior distribution of a stand-alone analysis of the historical study with the “most extreme” placebo effect
+
+Normal <- mixnorm(c(1, -49, 20), sigma = sigma, param = "mn")
+
+
+
+###################
+# In case I wante the prior of a t distribution:
+
+# ---------------------------------------------------------
+# parameters of heavy-tailed prior
+# ---------------------------------------------------------
+mu_robust <- -50    
+scale_robust <- 88 
+nu <- 3            # Degrees of freedom (3 is the standard for robust priors)
+
+
+set.seed(123)
+n_samples <- 500000
+t_samples <- mu_robust + scale_robust * rt(n_samples, df = nu)
+
+
+approx_robust_prior <- automixfit(t_samples, Nc = 15)
+
+print(approx_robust_prior)
+
+# Combine with Informative MAP
+
+ p_rob_t.dist0.2 <- mixcombine(
+   informative = p_MAP, 
+   robust = approx_robust_prior, 
+   weight = c(0.8, 0.2)
+ )
+
+p_rob_t.dist0.5 <- mixcombine(
+   informative = p_MAP, 
+   robust = approx_robust_prior, 
+   weight = c(0.5, 0.5)
+ )
+
+
+
+# 
+priors <- list(MAP = p_MAP,
+               Robust_0.20 = p_rob0.2,
+               Vague = p_vague,
+               Skeptical = p_skep,
+               Normal = Normal,
+               Robust_t_0.20 = p_rob_t.dist0.2,
+               Robust_0.5 = p_rob_0.5,
+               Robust_t_0.5 = p_rob_t.dist0.5)
+prior_names <- names(priors)
+
+
+
+
+
+
+
+cat("prior defined")
+
+
+
+
+
+library(parallel)
+
+# =============================================================================
+# WORST-CASE AVG T1E 
+# =============================================================================
+
+h0_grid <- seq(0, 40, by = 5)
+
+# Build all combinations 
+combos <- expand.grid(
+  analysis_prior = prior_names,
+  design_prior   = prior_names,
+  stringsAsFactors = FALSE
+)
+
+# One job per (analysis_prior, design_prior, delta) triplet
+jobs <- combos |>
+  tidyr::crossing(Delta = h0_grid)
+
+cat("Total jobs:", nrow(jobs), "\n")  # n_priors^2 * length(h0_grid)
+
+# -----------------------------------------------------------------------------
+# Run jobs in parallel
+# -----------------------------------------------------------------------------
+
+job_list <- split(jobs, seq_len(nrow(jobs)))
+
+results_raw <- mclapply(job_list, function(job) {
+  
+  ap <- job$analysis_prior
+  dp <- job$design_prior
+  d  <- job$Delta
+  
+  pr_analysis <- priors[[ap]]
+  pr_design   <- priors[[dp]]
+  
+  oc <- tryCatch(
+    avgoc2_seq_mc.normMix(
+      prior_1        = prior.t,
+      prior_2        = pr_analysis,
+      n1_seq         = n1_seq,
+      n2_seq         = n2_seq,
+      decisions_list = decision_list,
+      delta          = d,
+      design_prior_c = pr_design,  
+      sigma_1        = sigma,
+      sigma_2        = sigma,
+      n_sim          = N_SIM,
+      seed           = SEED
+    ),
+    error = function(e) {
+      message("ERROR | analysis=", ap, " design=", dp, " delta=", d, " | ", e$message)
+      NULL
+    }
+  )
+  
+  if (is.null(oc)) return(NULL)
+  
+  data.frame(
+    Analysis_Prior = ap,
+    Design_Prior   = dp,
+    Delta          = d,
+    AvgT1E         = oc$Overall["Power"],
+    MCE            = oc$Overall["MCE_Power"]
+  )
+  
+}, mc.cores = 8)
+
+
+
+avg_t1e_df <- do.call(rbind, Filter(Negate(is.null), results_raw))
+rownames(avg_t1e_df) <- NULL
+
+worst_case_t1e <- avg_t1e_df |>
+  group_by(Analysis_Prior, Design_Prior) |>
+  slice_max(AvgT1E, n = 1, with_ties = FALSE) |>
+  rename(
+    WorstCase_Delta  = Delta,
+    WorstCase_AvgT1E = AvgT1E,
+    WorstCase_MCE    = MCE
+  ) |>
+  ungroup()
+
+
+saveRDS(worst_case_t1e, file = "data/worst_case_t1e.rds")
+cat("Results saved")
+
+
+# -----------------------------------------------------------------------------
+# PLOT 1: heatmap of worst-case avgT1E — analysis prior x design prior
+# -----------------------------------------------------------------------------
+
+p_heatmap <- worst_case_t1e |>
+  ggplot(aes(x = Design_Prior, y = Analysis_Prior, fill = WorstCase_AvgT1E)) +
+  geom_tile(colour = "white", linewidth = 0.5) +
+  geom_text(aes(label = sprintf("%.3f\n(\u03b4=%g)", WorstCase_AvgT1E, WorstCase_Delta)),
+            size = 2.8, lineheight = 0.9) +
+  scale_fill_gradient2(
+    low      = "#2E6DA4",
+    mid      = "white",
+    high     = "#E04F39",
+    midpoint = 0.025,
+    labels   = percent_format(accuracy = 0.1),
+    name     = "Worst-case\nAvg T1E"
+  ) +
+  labs(
+    title    = "Worst-case Avg T1E: analysis prior \u00d7 design prior",
+    subtitle = "Colour = sup over \u03b4 \u2208 [0,40] | Cell label: T1E and worst-case \u03b4",
+    x        = "Design Prior (theta_C draws)",
+    y        = "Analysis Prior (posterior)"
+  ) +
+  theme_bw(base_size = 11) +
+  theme(
+    axis.text.x      = element_text(angle = 35, hjust = 1),
+    panel.grid       = element_blank(),
+    strip.background = element_rect(fill = "grey92")
+  )
+
+# -----------------------------------------------------------------------------
+# PLOT 2: T1E curves across delta grid, faceted by analysis prior,
+#         coloured by design prior
+# -----------------------------------------------------------------------------
+
+p_curves <- avg_t1e_df |>
+  ggplot(aes(x = Delta, y = AvgT1E,
+             colour = Design_Prior, group = Design_Prior)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 1.4) +
+  geom_hline(yintercept = 0.025, linetype = "dashed",
+             colour = "grey40", linewidth = 0.5) +
+  scale_x_continuous(breaks = h0_grid) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1)) +
+  scale_colour_brewer(palette = "Dark2", name = "Design Prior") +
+  facet_wrap(~ Analysis_Prior, ncol = 3) +
+  labs(
+    title    = "Avg T1E across \u03b4 \u2208 [0,40]",
+    subtitle = "Facet = analysis prior | Colour = design prior | Dashed = 0.025",
+    x        = expression(delta == theta[C] - theta[T]),
+    y        = "Avg Type I Error"
+  ) +
+  theme_bw(base_size = 11) +
+  theme(
+    strip.background = element_rect(fill = "grey92"),
+    panel.grid.minor = element_blank(),
+    legend.position  = "bottom"
+  )
+
+print(p_heatmap)
+print(p_curves)
