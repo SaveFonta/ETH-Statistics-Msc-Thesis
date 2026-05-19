@@ -17,7 +17,7 @@ decision_list <- list (
 )
 
 prior.c <- mixnorm(c(1, -49, 20), sigma = sigma, param = "mn")
-prior.t <- mixnorm(c(1, 0, 0.001), sigma = sigma, param = "mn")
+prior.t <- mixnorm(c(1, 0, 8800), sigma = sigma)
 
 
 
@@ -126,7 +126,22 @@ euii.avg <- compute_euii(res.avg)
 ## In the 1.4 evaluates predictive OC under different mixture. 
 
 
+pointwiseT1E <- data$pointwiseT1E
 
 
 
 
+library(parallel)
+library(pbmcapply)
+true_c <- seq(-100, 0, 10)
+
+pointwiseT1E <- pbmclapply(true_c, function(x) 
+{oc2_seq_mc.normMix(x , x , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7)
+}, mc.cores = 5)
+
+
+T1E_col <- sapply(pointwiseT1E, function(x) x$Overall[["Power"]])
+true_c <- seq(-91, 26, 3)
+
+ 
+df_T1E <- data.frame(theta_c = true_c, T1E = T1E_col)

@@ -63,6 +63,9 @@ prior.t <- p_vague # Ok I decided to make prior.t super vague
 
 p_skep  <- mixnorm(c(1, -90, 25), sigma = sigma, param = "ms") #posterior distribution of a stand-alone analysis of the historical study with the “most extreme” placebo effect
 
+Normal <- mixnorm(c(1, -49, 20), sigma = sigma, param = "mn")
+
+
 
 ###################
 # In case I wante the prior of a t distribution:
@@ -101,7 +104,14 @@ p_rob_t.dist0.5 <- mixcombine(
 
 
 # 
-priors <- list(MAP = p_MAP, Robust_0.20 = p_rob0.2, Vague = p_vague, Skeptical = p_skep, Robust_t_0.20 = p_rob_t.dist0.2, Robust_0.5 = p_rob_0.5, Robust_t_0.5 = p_rob_t.dist0.5)
+priors <- list(MAP = p_MAP,
+               Robust_0.20 = p_rob0.2,
+               Vague = p_vague,
+               Skeptical = p_skep,
+               Normal = Normal,
+               Robust_t_0.20 = p_rob_t.dist0.2,
+               Robust_0.5 = p_rob_0.5,
+               Robust_t_0.5 = p_rob_t.dist0.5)
 prior_names <- names(priors)
 
 
@@ -239,27 +249,13 @@ cat ("RESULTS SAVED CORRECTLY")
 
 
 
-res <- readRDS("data/T1E.sequential.rds")
+t1e_seq <- readRDS("data/T1E.sequential.rds")
 
 
 
 
-
-results_fixed <- res$results_fixed
-results_grid <- res$results_grid
-
-# recode cause I forgot to name it wiht 0.2 in the file. If I simulate again, the names will already be changed and this won't be needed: 
-results_fixed$Prior <- dplyr::recode(
-  results_fixed$Prior,
-  "Robust"   = "Robust_0.20",
-  "Robust_t" = "Robust_t_0.20"
-)
-
-results_grid$Prior <- dplyr::recode(
-  results_grid$Prior,
-  "Robust"   = "Robust_0.20",
-  "Robust_t" = "Robust_t_0.20"
-)
+results_fixed <- t1e_seq$results_fixed
+results_grid <- t1e_seq$results_grid
 
 
 
@@ -270,23 +266,25 @@ results_grid$Prior <- dplyr::recode(
 #  PLOTS
 # =============================================================================
 prior_colours <- c(
-  MAP            = "#1f4e79",
+  MAP            = "#2f00ff",
 
-  Vague          = "#7f8c8d",
-  Skeptical      = "#4d4d4d",
+  Normal         = "#0099cc",
 
-  Robust_0.20    = "#d95f02",
-  Robust_0.5     = "#f4a261",
+  Vague          = "#8d7f7f",
+  Skeptical      = "#232323",
 
-  Robust_t_0.20  = "#1b9e77",
-  Robust_t_0.5   = "#66c2a5"
+  Robust_0.20    = "#ff0000",
+  Robust_0.5     = "#ffa600",
+
+  Robust_t_0.20  = "darkgreen",
+  Robust_t_0.5   = "#11ff00"
 )
 
 # ----------------------------------------------------------------------------
 # T1E and Power at fixed deltas (line + point per prior)
 # ----------------------------------------------------------------------------
 
-p1 <- results_fixed |>
+results_fixed |>
   ggplot(aes(x = Delta, y = Power, colour = Prior, group = Prior)) +
   geom_line(linewidth = 0.8) +
   geom_point(size = 2.5) +
@@ -310,7 +308,7 @@ p1 <- results_fixed |>
 
 t1e_df <- results_fixed |> filter(Delta == 0)
 
-p2 <- t1e_df |>
+t1e_df |>
   ggplot(aes(x = Prior, y = Power, fill = Prior)) +
   geom_col(width = 0.6) +
   geom_hline(yintercept = 0.05, linetype = "dashed", colour = "grey40", linewidth = 0.6) +
@@ -333,105 +331,7 @@ p2 <- t1e_df |>
 
 
 
-# ----------------------------------------------------------------------------
-# Expected sample size under H0 and H1
-# ----------------------------------------------------------------------------
 
-p4 <- results_fixed |>
-  select(Prior, Delta, EN_total)  |>
-  ggplot(aes(x = Delta, y = EN_total, colour = Prior, group = Prior)) +
-  geom_line(linewidth = 0.8) +
-  geom_point(size = 2.5) +
-  scale_colour_manual(values = prior_colours) +
-  scale_x_continuous(breaks = deltas) +
-  labs(
-    title    = "Expected total sample size (E[N_t] + E[N_c]) by prior and delta",
-    x        = "Delta",
-    y        = "Expected total N",
-    colour   = "Control prior"
-  ) +
-  theme_bw(base_size = 11) +
-  theme(legend.position = "bottom")
-
-
-# ----------------------------------------------------------------------------
-# Pointwise T1E
-# ----------------------------------------------------------------------------
-
-diagonal_df <- results_grid |>
-  filter(Theta_t == Theta_c) |>
-  mutate(Prior = factor(Prior, levels = prior_names))
-
-p5 <- diagonal_df |>
-  ggplot(aes(x = Theta_c, y = Power, colour = Prior, group = Prior)) +
-  geom_line(linewidth = 0.8) +
-  geom_point(size = 2) +
-  geom_hline(yintercept = 0.05, linetype = "dashed", colour = "grey40", linewidth = 0.5) +
-  scale_colour_manual(values = prior_colours) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  labs(
-    title    = "Pointwise T1E",
-    x        = "theta (true effect, same for both arms)",
-    y        = "Rejection probability under H0",
-    colour   = "Control prior"
-  ) +
-  theme_bw(base_size = 11) +
-  theme(legend.position = "bottom")
-
-
-
-
-
-
-
-# ---------------------------------------------------------------
-# Weight plot
-# ---------------------------------------------------------------
-weight_df <- results_fixed |>
-  filter(Delta %in% c(0, 70)) |>
-  select(Prior, Delta, Weight_S1, Weight_S2) |>
-  pivot_longer(cols = starts_with("Weight_S"), names_to = "Stage", values_to = "Weight") |>
-  mutate(
-    Stage = as.numeric(str_extract(Stage, "\\d+")),
-    Drift_Scenario = ifelse(Delta == 0, "No Drift (Delta = 0)", "Severe Drift (Delta = 70)")
-  ) |>
-  filter(Prior %in% c("MAP", "Robust", "Robust_t", "Robust_0.5", "Robust_t_0.5")) #vague and skep dont have weights
-
-p6 <- ggplot(weight_df, aes(x = Stage, y = Weight, colour = Prior, group = Prior)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3) +
-  scale_colour_manual(values = prior_colours) +
-  scale_x_continuous(breaks = c(1, 2), labels = c("Stage 1 (n=10)", "Stage 2 (n=20)")) +
-  scale_y_continuous(limits = c(0, 1), labels = scales::percent_format(accuracy = 1)) +
-  facet_wrap(~ Drift_Scenario) +
-  labs(
-    title    = "Dynamic Prior Weight Trajectory",
-    subtitle = "Tracking the expected weight of the informative component across interim looks",
-    x        = "Interim Look",
-    y        = "Expected Posterior Weight (w)",
-    colour   = "Control Prior"
-  ) +
-  theme_bw(base_size = 11) +
-  theme(legend.position = "bottom")
-
-# Print individual plots so they appear in the viewer during interactive use
-print(p2)
-print(p1)
-print(p5)
-print(p4)
-print(p3)
-
-
-
-
-
-y2_test <- seq(-80, -20, by = 10)
-
-for (pname in names(priors)) {
-  bnd <- RBesT::decision2S_boundary(prior.t, priors[[pname]], 40, 20, dual.crit.95)
-  cat(pname, ":\n")
-  print(data.frame(y2 = y2_test, crit_y1 = bnd(y2_test)))
-}
 
 
 
@@ -461,6 +361,49 @@ for (pname in names(priors)) {
 
 
 
+# ----------------------------------------------------------------------------
+# Pointwise T1E
+# ----------------------------------------------------------------------------
+
+null_diagonal <- results_grid |> 
+  filter(Theta_t == Theta_c)
+
+ggplot(null_diagonal, aes(x = Theta_c, y = Power, color = Prior, group = Prior)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "black") +
+  scale_y_continuous(labels = scales::percent, breaks = seq(0, 0.4, by = 0.05)) +
+  labs(
+    title = "Pointwise Type I Error Risk Across True Control Spaces",
+    subtitle = "Extracted along the Null Diagonal (Theta_T = Theta_C)",
+    x = "True Control Parameter Value (Theta_C)",
+    y = "Actual Type I Error Rate"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+
+
+
+#2D GRID for POwe? I dont like it
+power_surface <- results_grid |> 
+  filter(Theta_t < Theta_c)
+
+ggplot(power_surface, aes(x = Theta_c, y = Theta_t, fill = Power)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "viridis", labels = scales::percent) +
+  facet_wrap(~Prior, nrow = 2) +
+  labs(
+    title = "Global Sequential Power Topographies",
+    subtitle = "Faceted by Control Arm Prior Specification Structure",
+    x = "True Control Parameter (Theta_C)",
+    y = "True Treatment Parameter (Theta_T)",
+    fill = "Power"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    axis.text.x = element_text(angle = 45, hj = 1),
+    panel.spacing = unit(1, "lines")
+  )
 
 
 
@@ -471,6 +414,49 @@ for (pname in names(priors)) {
 
 
 
+#
+# SOME PLOTS of the weights? Maybe add it in the end 
+#
+
+plot_df <- results_grid |> 
+select(Prior, Theta_t, Theta_c, Power, Weight_S1, Weight_S2) %>%
+  mutate(
+    Delta = Theta_c - Theta_t
+  )
+
+
+  plot_df %>%
+  filter(grepl("Robust", Prior)) %>%
+  ggplot(aes(
+    x = Delta,
+    y = Weight_S2,
+    colour = Prior
+  )) +
+  geom_line(aes(group = interaction(Prior, Theta_c))) +
+  facet_wrap(~ Theta_c) +
+  theme_bw() +
+  labs(
+    title = "Borrowing weight vs treatment effect",
+    y = "Stage 2 weight"
+  )
+
+
+results_grid %>%
+  filter(grepl("Robust", Prior)) %>%
+  filter(!Theta_c %in% c(-40, -50, -60))  |> 
+  ggplot(aes(
+    x = Weight_S1,
+    y = Weight_S2,
+    colour = Prior
+  )) +
+  geom_point(alpha = 0.7) +
+  geom_abline(
+    slope = 1,
+    intercept = 0,
+    linetype = "dashed"
+  ) +
+  theme_bw() +
+  coord_equal()
 
 
 
@@ -480,11 +466,20 @@ for (pname in names(priors)) {
 
 
 
-
-
-
-
-
-
+results_grid %>%
+  filter(grepl("Robust", Prior)) %>%
+  ggplot(aes(
+    x = Theta_c,
+    y = Weight_S2,
+    colour = Prior
+  )) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  labs(
+    title = "Adaptive borrowing as function of control-prior conflict",
+    x = expression(theta[C]),
+    y = "Stage 2 informative weight"
+  )
 
 
