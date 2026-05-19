@@ -16,7 +16,7 @@ library(patchwork)
 library(stringr)
 library(scales)
 library(parallel)
-library(pbapply)
+library(pbmcapply)
 
 source("scripts/prior_on_control/00.functions.MC.R")
 
