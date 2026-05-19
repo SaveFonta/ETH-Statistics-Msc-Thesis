@@ -1,12 +1,6 @@
 # =============================================================================
-# WORST-CASE AVG T1E OVER [0, 40]
+# assurance
 # =============================================================================
-# delta = theta_C - theta_T, positive = treatment better
-# False positive region: delta in [0, 40] (drug works but not enough)
-# Worst-case avgT1E = sup over this grid
-# =============================================================================
-
-
 
 library(RBesT)
 library(dplyr)
@@ -36,6 +30,7 @@ decision_list <- list(
 
 n1_seq <- c(20, 40)
 n2_seq <- c(10, 20)
+
 
 
 
@@ -112,40 +107,23 @@ priors <- list(MAP = p_MAP,
                Robust_t_0.5 = p_rob_t.dist0.5)
 prior_names <- names(priors)
 
+cat("Prior defined")
 
 
 
 
 
 
-cat("prior defined")
+assurance_deltas <- c(0, 40, 50, 60, 70)
 
-
-
-
-
-
-
-# =============================================================================
-# WORST-CASE AVG T1E 
-# =============================================================================
-
-h0_grid <- seq(0, 40, by = 5)
-
-# Build all combinations 
 jobs <- expand.grid(
   analysis_prior = prior_names,
   design_prior   = prior_names,
-  Delta = h0_grid, 
+  Delta = assurance_deltas,
   stringsAsFactors = FALSE
-)
+) 
 
-
-cat("Total jobs:", nrow(jobs), "\n")  # n_priors^2 * length(h0_grid)
-
-# -----------------------------------------------------------------------------
-# Run jobs in parallel
-# -----------------------------------------------------------------------------
+cat("Total jobs:", nrow(jobs), "\n")
 
 job_list <- split(jobs, seq_len(nrow(jobs)))
 
@@ -155,18 +133,15 @@ results_raw <- pbmclapply(job_list, function(job) {
   dp <- job$design_prior
   d  <- job$Delta
   
-  pr_analysis <- priors[[ap]]
-  pr_design   <- priors[[dp]]
-  
   oc <- tryCatch(
     avgoc2_seq_mc.normMix(
       prior_1        = prior.t,
-      prior_2        = pr_analysis,
+      prior_2        = priors[[ap]],
       n1_seq         = n1_seq,
       n2_seq         = n2_seq,
       decisions_list = decision_list,
       delta          = d,
-      design_prior_c = pr_design,  
+      design_prior_c = priors[[dp]],
       sigma_1        = sigma,
       sigma_2        = sigma,
       n_sim          = N_SIM,
@@ -184,54 +159,41 @@ results_raw <- pbmclapply(job_list, function(job) {
     Analysis_Prior = ap,
     Design_Prior   = dp,
     Delta          = d,
-    AvgT1E         = oc$Overall["Power"],
+    Assurance      = oc$Overall["Power"],
     MCE            = oc$Overall["MCE_Power"]
   )
   
 }, mc.cores = 8)
 
+assurance_df <- do.call(rbind, Filter(Negate(is.null), results_raw))
+rownames(assurance_df) <- NULL
 
-
-avg_t1e_df <- do.call(rbind, Filter(Negate(is.null), results_raw))
-rownames(avg_t1e_df) <- NULL
-
-worst_case_t1e <- avg_t1e_df |>
-  group_by(Analysis_Prior, Design_Prior) |>
-  slice_max(AvgT1E, n = 1, with_ties = FALSE) |>
-  rename(
-    WorstCase_Delta  = Delta,
-    WorstCase_AvgT1E = AvgT1E,
-    WorstCase_MCE    = MCE
-  ) |>
-  ungroup()
-
-
-saveRDS(worst_case_t1e, file = "data/worst_case_t1e.rds")
-cat("Results saved")
+cat("Simulation finished")
 
 
 # -----------------------------------------------------------------------------
-# PLOT 1: heatmap of worst-case avgT1E — analysis prior x design prior
+# PLOT 1: heatmap per delta — one facet per delta value
 # -----------------------------------------------------------------------------
 
-p_heatmap <- worst_case_t1e |>
-  ggplot(aes(x = Design_Prior, y = Analysis_Prior, fill = WorstCase_AvgT1E)) +
+p_heatmap <- assurance_df |>
+  ggplot(aes(x = Design_Prior, y = Analysis_Prior, fill = Assurance)) +
   geom_tile(colour = "white", linewidth = 0.5) +
-  geom_text(aes(label = sprintf("%.3f\n(\u03b4=%g)", WorstCase_AvgT1E, WorstCase_Delta)),
-            size = 2.8, lineheight = 0.9) +
+  geom_text(aes(label = sprintf("%.3f", Assurance)), size = 2.8) +
   scale_fill_gradient2(
     low      = "#2E6DA4",
     mid      = "white",
     high     = "#E04F39",
-    midpoint = 0.025,
+    midpoint = 0.5,
     labels   = percent_format(accuracy = 0.1),
-    name     = "Worst-case\nAvg T1E"
+    name     = "Assurance"
   ) +
+  facet_wrap(~ Delta, ncol = 3,
+             labeller = labeller(Delta = function(x) paste0("\u03b4 = ", x))) +
   labs(
-    title    = "Worst-case Avg T1E: analysis prior \u00d7 design prior",
-    subtitle = "Colour = sup over \u03b4 \u2208 [0,40] | Cell label: T1E and worst-case \u03b4",
-    x        = "Design Prior (theta_C draws)",
-    y        = "Analysis Prior (posterior)"
+    title = "Assurance: analysis prior \u00d7 design prior",
+    subtitle = "Facet = true delta | Colour = assurance",
+    x = "Design Prior (theta_C draws)",
+    y = "Analysis Prior (posterior)"
   ) +
   theme_bw(base_size = 11) +
   theme(
@@ -241,26 +203,29 @@ p_heatmap <- worst_case_t1e |>
   )
 
 # -----------------------------------------------------------------------------
-# PLOT 2: T1E curves across delta grid, faceted by analysis prior,
+# PLOT 2: assurance curves across delta, faceted by analysis prior,
 #         coloured by design prior
 # -----------------------------------------------------------------------------
 
-p_curves <- avg_t1e_df |>
-  ggplot(aes(x = Delta, y = AvgT1E,
+p_curves <- assurance_df |>
+  ggplot(aes(x = Delta, y = Assurance,
              colour = Design_Prior, group = Design_Prior)) +
   geom_line(linewidth = 0.7) +
   geom_point(size = 1.4) +
-  geom_hline(yintercept = 0.025, linetype = "dashed",
-             colour = "grey40", linewidth = 0.5) +
-  scale_x_continuous(breaks = h0_grid) +
+  geom_ribbon(aes(ymin = Assurance - 1.96 * MCE,
+                  ymax = Assurance + 1.96 * MCE,
+                  fill = Design_Prior),
+              alpha = 0.1, colour = NA) +
+  scale_x_continuous(breaks = assurance_deltas) +
   scale_y_continuous(labels = percent_format(accuracy = 0.1)) +
   scale_colour_brewer(palette = "Dark2", name = "Design Prior") +
+  scale_fill_brewer(palette = "Dark2", guide = "none") +
   facet_wrap(~ Analysis_Prior, ncol = 3) +
   labs(
-    title    = "Avg T1E across \u03b4 \u2208 [0,40]",
-    subtitle = "Facet = analysis prior | Colour = design prior | Dashed = 0.025",
+    title    = "Assurance across \u03b4 by prior combination",
+    subtitle = "Facet = analysis prior | Colour = design prior",
     x        = expression(delta == theta[C] - theta[T]),
-    y        = "Avg Type I Error"
+    y        = "Assurance"
   ) +
   theme_bw(base_size = 11) +
   theme(

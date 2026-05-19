@@ -280,6 +280,12 @@ prior_colours <- c(
   Robust_t_0.5   = "#11ff00"
 )
 
+results_fixed$Prior <- factor(
+  results_fixed$Prior,
+  levels = c("MAP", "Robust_0.20", "Robust_0.5", "Robust_t_0.20", "Robust_t_0.5", "Vague", "Skeptical", "Normal")
+)
+
+
 # ----------------------------------------------------------------------------
 # T1E and Power at fixed deltas (line + point per prior)
 # ----------------------------------------------------------------------------
