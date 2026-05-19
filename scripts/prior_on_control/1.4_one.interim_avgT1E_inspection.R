@@ -66,19 +66,19 @@ Normal <- mixnorm(c(1, -49, 20), sigma = sigma, param = "mn")
 # ---------------------------------------------------------
 # parameters of heavy-tailed prior
 # ---------------------------------------------------------
-mu_robust <- -50    
-scale_robust <- 88 
-nu <- 3            # Degrees of freedom (3 is the standard for robust priors)
+# mu_robust <- -50    
+# scale_robust <- 88 
+# nu <- 3            # Degrees of freedom (3 is the standard for robust priors)
 
 
-set.seed(123)
-n_samples <- 500000
-t_samples <- mu_robust + scale_robust * rt(n_samples, df = nu)
+#set.seed(123)
+#n_samples <- 500000
+#t_samples <- mu_robust + scale_robust * rt(n_samples, df = nu)
 
 
-approx_robust_prior <- automixfit(t_samples, Nc = 15)
+#approx_robust_prior <- automixfit(t_samples, Nc = 15)
 
-print(approx_robust_prior)
+approx_robust_prior <- readRDS("data/t.prior.rds")
 
 # Combine with Informative MAP
 
