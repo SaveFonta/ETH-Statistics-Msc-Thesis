@@ -168,8 +168,8 @@ results_raw <- pbmclapply(job_list, function(job) {
 assurance_df <- do.call(rbind, Filter(Negate(is.null), results_raw))
 rownames(assurance_df) <- NULL
 
-cat("Simulation finished")
-
+saveRDS(assurance_df, file = "data/assurance_df")
+cat("Results saved")
 
 # -----------------------------------------------------------------------------
 # PLOT 1: heatmap per delta — one facet per delta value
