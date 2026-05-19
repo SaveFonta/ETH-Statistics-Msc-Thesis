@@ -208,9 +208,19 @@ avgoc2_seq_mc.normMix <- function(prior_1, prior_2,
                                   n_sim = 100000, seed = 123) {
  
   set.seed(seed)  
-  theta_c_draws <- RBesT::rmix(design_prior_c, n_sim)
+
+  # take the first decision value and see if the decision is lower tail or not
+  # the sanity check on the list of decision values will be done by oc2_seq_mc.normMix
+  is_lower_tail <- attr(decisions_list[[1]][["success"]], "lower.tail")
+  
+  
+    theta_c_draws <- RBesT::rmix(design_prior_c, n_sim)
+
+  if (is_lower_tail) { 
+    theta_t_draws <- theta_c_draws - delta
+  } else {
   theta_t_draws <- theta_c_draws + delta
- 
+  }
 
   return(oc2_seq_mc.normMix(
     theta_1       = theta_t_draws,
