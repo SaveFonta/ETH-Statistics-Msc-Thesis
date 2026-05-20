@@ -27,7 +27,7 @@ res <- list(
 delta.0 = oc2_seq_mc.normMix(-49 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7), #can also use p.vague instead of prior.t
 delta.10 = oc2_seq_mc.normMix(-59 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7), 
 delta.20 = oc2_seq_mc.normMix(-69 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7), 
-delta.0 = oc2_seq_mc.normMix(-79 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7), #
+delta.30 = oc2_seq_mc.normMix(-79 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7), #
 delta.40 = oc2_seq_mc.normMix(-89 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
 delta.50 = oc2_seq_mc.normMix(-99 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
 delta.60 = oc2_seq_mc.normMix(-109 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
@@ -108,22 +108,22 @@ cat("Results saved \n")
 
 
 
-data <- readRDS("data/reproduce.Gsponer.rds")
-res <- data$res
-res.avg <- data$res.avg
+#data <- readRDS("data/reproduce.Gsponer.rds")
+#res <- data$res
+#res.avg <- data$res.avg
 
 
-final_tab <- format.results(res)
-final_tab$per_stage
-final_tab$overall
+#final_tab <- format.results(res)
+#final_tab$per_stage
+#final_tab$overall
 
 
-euii <- compute_euii(res)
+#euii <- compute_euii(res)
 
 
-res.avg <- data$res.avg
-final_tab.avg <- format.results(res.avg)
-euii.avg <- compute_euii(res.avg)
+#res.avg <- data$res.avg
+#final_tab.avg <- format.results(res.avg)
+#euii.avg <- compute_euii(res.avg)
 # so the euii for the avg OC is lower, also the Power, while the T1E is increased. Does iit make sense ?
 # I mean we know that assurance is always closer to 50 wrt to conditional Power. 
 
@@ -136,10 +136,10 @@ euii.avg <- compute_euii(res.avg)
 ## In the 1.4 evaluates predictive OC under different mixture. 
 
 
-pointwiseT1E <- data$pointwiseT1E
+#pointwiseT1E <- data$pointwiseT1E
 
-T1E_col <- sapply(pointwiseT1E, function(x) x$Overall[["Power"]])
-true_c <- seq(-91, 26, 3)
+#T1E_col <- sapply(pointwiseT1E, function(x) x$Overall[["Power"]])
+#true_c <- seq(-91, 26, 3)
 
  
-df_T1E <- data.frame(theta_c = true_c, T1E = T1E_col)
+#df_T1E <- data.frame(theta_c = true_c, T1E = T1E_col)
