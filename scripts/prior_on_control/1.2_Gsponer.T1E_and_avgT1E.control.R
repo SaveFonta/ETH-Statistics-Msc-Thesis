@@ -32,8 +32,8 @@ delta.40 = oc2_seq_mc.normMix(-89 , -49 , prior.t, prior.c, c(20, 40), c(10,20),
 delta.50 = oc2_seq_mc.normMix(-99 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
 delta.60 = oc2_seq_mc.normMix(-109 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
 delta.70 = oc2_seq_mc.normMix(-119 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
-delta.70 = oc2_seq_mc.normMix(-129 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
-delta.70 = oc2_seq_mc.normMix(-139 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7)
+delta.80 = oc2_seq_mc.normMix(-129 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
+delta.90 = oc2_seq_mc.normMix(-139 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7)
 )
 
 
@@ -73,8 +73,8 @@ delta.40 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), d
 delta.50 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 50, design_prior_c = design.prior, decision_list, n_sim = 1e7),
 delta.60 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 60, design_prior_c = design.prior, decision_list, n_sim = 1e7),
 delta.70 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 70, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.80 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 70, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.90 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 70, design_prior_c = design.prior, decision_list, n_sim = 1e7)
+delta.80 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 80, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+delta.90 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 90, design_prior_c = design.prior, decision_list, n_sim = 1e7)
 )
 
 return(res)
