@@ -107,19 +107,19 @@ priors <- list(MAP = p_MAP,
                Robust_t_0.5 = p_rob_t.dist0.5)
 prior_names <- names(priors)
 
-cat("Prior defined")
+cat("Prior defined \n")
 
 
 
 
 
 
-assurance_deltas <- c(0, 40, 50, 60, 70)
+deltas <- c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90)
 
 jobs <- expand.grid(
   analysis_prior = prior_names,
   design_prior   = prior_names,
-  Delta = assurance_deltas,
+  Delta = deltas,
   stringsAsFactors = FALSE
 ) 
 
@@ -163,19 +163,20 @@ results_raw <- pbmclapply(job_list, function(job) {
     MCE            = oc$Overall["MCE_Power"]
   )
   
-}, mc.cores = 8)
+}, mc.cores = 15)
 
-assurance_df <- do.call(rbind, Filter(Negate(is.null), results_raw))
-rownames(assurance_df) <- NULL
+avgT1e <- do.call(rbind, Filter(Negate(is.null), results_raw))
+rownames(avgT1e) <- NULL
 
-saveRDS(assurance_df, file = "data/assurance_df")
-cat("Results saved")
+saveRDS(avgT1e, file = "data/avgT1e.sequential.rds")
+cat("Results saved \n")
 
 # -----------------------------------------------------------------------------
 # PLOT 1: heatmap per delta — one facet per delta value
 # -----------------------------------------------------------------------------
+#avgT1e <- readRDS("data/avgT1e")
 
-p_heatmap <- assurance_df |>
+p_heatmap <- avgT1e |>
   ggplot(aes(x = Design_Prior, y = Analysis_Prior, fill = Assurance)) +
   geom_tile(colour = "white", linewidth = 0.5) +
   geom_text(aes(label = sprintf("%.3f", Assurance)), size = 2.8) +
@@ -207,7 +208,7 @@ p_heatmap <- assurance_df |>
 #         coloured by design prior
 # -----------------------------------------------------------------------------
 
-p_curves <- assurance_df |>
+p_curves <- avgT1e |>
   ggplot(aes(x = Delta, y = Assurance,
              colour = Design_Prior, group = Design_Prior)) +
   geom_line(linewidth = 0.7) +
@@ -216,7 +217,7 @@ p_curves <- assurance_df |>
                   ymax = Assurance + 1.96 * MCE,
                   fill = Design_Prior),
               alpha = 0.1, colour = NA) +
-  scale_x_continuous(breaks = assurance_deltas) +
+  scale_x_continuous(breaks = deltas) +
   scale_y_continuous(labels = percent_format(accuracy = 0.1)) +
   scale_colour_brewer(palette = "Dark2", name = "Design Prior") +
   scale_fill_brewer(palette = "Dark2", guide = "none") +
