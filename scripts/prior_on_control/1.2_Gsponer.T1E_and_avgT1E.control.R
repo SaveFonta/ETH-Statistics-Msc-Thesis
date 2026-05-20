@@ -25,10 +25,15 @@ prior.t <- mixnorm(c(1, 0, 8800), sigma = sigma)
 
 res <- list(
 delta.0 = oc2_seq_mc.normMix(-49 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7), #can also use p.vague instead of prior.t
+delta.10 = oc2_seq_mc.normMix(-59 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7), 
+delta.20 = oc2_seq_mc.normMix(-69 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7), 
+delta.0 = oc2_seq_mc.normMix(-79 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7), #
 delta.40 = oc2_seq_mc.normMix(-89 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
 delta.50 = oc2_seq_mc.normMix(-99 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
 delta.60 = oc2_seq_mc.normMix(-109 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
-delta.70 = oc2_seq_mc.normMix(-119 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7)
+delta.70 = oc2_seq_mc.normMix(-119 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
+delta.70 = oc2_seq_mc.normMix(-129 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7),
+delta.70 = oc2_seq_mc.normMix(-139 , -49 , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7)
 )
 
 
@@ -61,10 +66,15 @@ euii <- compute_euii(res)
 run.avgoc <- function (analysis.prior = prior.c, design.prior = prior.c){
 res <- list(
 delta.0 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 0, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.40 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = -40, design_prior_c = design.prior,  decision_list, n_sim = 1e7),
-delta.50 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = -50, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.60 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = -60, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.70 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = -70, design_prior_c = design.prior, decision_list, n_sim = 1e7)
+delta.10 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 10, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+delta.20 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 20, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+delta.30 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 30, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+delta.40 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 40, design_prior_c = design.prior,  decision_list, n_sim = 1e7),
+delta.50 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 50, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+delta.60 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 60, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+delta.70 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 70, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+delta.80 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 70, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+delta.90 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 70, design_prior_c = design.prior, decision_list, n_sim = 1e7)
 )
 
 return(res)
@@ -91,7 +101,7 @@ cat("Parallel computation worked")
 saveRDS(list(res = res, res.avg = res.avg, pointwiseT1E = pointwiseT1E), file= "data/reproduce.Gsponer.rds")
 
 
-cat("Results saved")
+cat("Results saved \n")
 
 # inspection
 
@@ -127,18 +137,6 @@ euii.avg <- compute_euii(res.avg)
 
 
 pointwiseT1E <- data$pointwiseT1E
-
-
-
-
-library(parallel)
-library(pbmcapply)
-true_c <- seq(-100, 0, 10)
-
-pointwiseT1E <- pbmclapply(true_c, function(x) 
-{oc2_seq_mc.normMix(x , x , prior.t, prior.c, c(20, 40), c(10,20), decision_list, n_sim = 1e7)
-}, mc.cores = 5)
-
 
 T1E_col <- sapply(pointwiseT1E, function(x) x$Overall[["Power"]])
 true_c <- seq(-91, 26, 3)
