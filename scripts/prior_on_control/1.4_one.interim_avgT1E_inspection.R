@@ -174,9 +174,23 @@ cat("Results saved \n")
 # -----------------------------------------------------------------------------
 # PLOT 1: heatmap per delta — one facet per delta value
 # -----------------------------------------------------------------------------
-#avgT1e <- readRDS("data/avgT1e")
+avgT1e <- readRDS("data/avgT1e.sequential.rds")
 
-p_heatmap <- avgT1e |>
+
+
+
+# I ran the full simulation but now I filter
+to_plot <- avgT1e  |> 
+filter (Delta != 90, Analysis_Prior != "Skeptical")  |> 
+select(Delta, Analysis_Prior, Design_Prior, Assurance)
+
+
+# I restrict deleting the t robust since it has very similar results
+to_plot_restricted <- to_plot  |> 
+filter (!Analysis_Prior %in% c("Robust_t_0.20", "Robust_t_0.5"), 
+!Design_Prior %in% c("Robust_t_0.20", "Robust_t_0.5"))
+
+p_heatmap <- to_plot_restricted |>
   ggplot(aes(x = Design_Prior, y = Analysis_Prior, fill = Assurance)) +
   geom_tile(colour = "white", linewidth = 0.5) +
   geom_text(aes(label = sprintf("%.3f", Assurance)), size = 2.8) +
@@ -191,10 +205,9 @@ p_heatmap <- avgT1e |>
   facet_wrap(~ Delta, ncol = 3,
              labeller = labeller(Delta = function(x) paste0("\u03b4 = ", x))) +
   labs(
-    title = "Assurance: analysis prior \u00d7 design prior",
-    subtitle = "Facet = true delta | Colour = assurance",
-    x = "Design Prior (theta_C draws)",
-    y = "Analysis Prior (posterior)"
+    title = "Average OC",
+    x = "Design Prior",
+    y = "Analysis Prior)"
   ) +
   theme_bw(base_size = 11) +
   theme(
@@ -208,7 +221,7 @@ p_heatmap <- avgT1e |>
 #         coloured by design prior
 # -----------------------------------------------------------------------------
 
-p_curves <- avgT1e |>
+p_curves <- to_plot_restricted |>
   ggplot(aes(x = Delta, y = Assurance,
              colour = Design_Prior, group = Design_Prior)) +
   geom_line(linewidth = 0.7) +
@@ -223,9 +236,9 @@ p_curves <- avgT1e |>
   scale_fill_brewer(palette = "Dark2", guide = "none") +
   facet_wrap(~ Analysis_Prior, ncol = 3) +
   labs(
-    title    = "Assurance across \u03b4 by prior combination",
+    title    = "Assurance by prior combination",
     subtitle = "Facet = analysis prior | Colour = design prior",
-    x        = expression(delta == theta[C] - theta[T]),
+    x        = "Treatment effect",
     y        = "Assurance"
   ) +
   theme_bw(base_size = 11) +
@@ -237,3 +250,98 @@ p_curves <- avgT1e |>
 
 print(p_heatmap)
 print(p_curves)
+
+
+
+
+
+
+
+
+
+
+
+# =============================================================================
+# PLOT C — Heatmap of assurance range across design priors
+# =============================================================================
+
+plot_c_df <- to_plot_restricted |>
+  group_by(Analysis_Prior, Delta) |>
+  summarise(
+    Range      = max(Assurance) - min(Assurance),
+    .groups    = "drop"
+  )
+
+p_C <- plot_c_df |>
+  ggplot(aes(x = factor(Delta), y = Analysis_Prior, fill = Range)) +
+  geom_tile(colour = "white", linewidth = 0.5) +
+  geom_text(aes(label = sprintf("%.3f", Range)), size = 2.8) +
+  scale_fill_gradient(
+    low    = "white",
+    high   = "#E04F39",
+    name   = "Assurance\nRange",
+    labels = percent_format(accuracy = 0.1)
+  ) +
+  labs(
+    title    = "Sensitivity of assurance to design prior choice",
+    subtitle = "Cell = max - min assurance across all design priors | Red = high sensitivity",
+    x        = expression(delta == theta[C] - theta[T]),
+    y        = "Analysis Prior"
+  ) +
+  theme_bw(base_size = 11) +
+  theme(
+    panel.grid       = element_blank(),
+    strip.background = element_rect(fill = "grey92")
+  )
+
+# =============================================================================
+# PLOT D — Fan chart per analysis prior
+# =============================================================================
+
+plot_d_df <- to_plot_restricted |>
+  group_by(Analysis_Prior, Delta) |>
+  summarise(
+    Assurance_min = min(Assurance),
+    Assurance_max = max(Assurance),
+    .groups       = "drop"
+  ) |>
+  # pull the matched diagonal separately and join in
+  left_join(
+    to_plot_restricted |>
+      filter(Analysis_Prior == Design_Prior) |>
+      select(Analysis_Prior, Delta, Assurance) |>
+      rename(Assurance_matched = Assurance),
+    by = c("Analysis_Prior", "Delta")
+  )
+
+p_D <- plot_d_df |>
+  ggplot(aes(x = Delta)) +
+  geom_ribbon(aes(ymin = Assurance_min, ymax = Assurance_max),
+              fill = "#2E6DA4", alpha = 0.2) +
+  geom_line(aes(y = Assurance_matched),
+            colour = "#2E6DA4", linewidth = 0.9) +
+  geom_point(aes(y = Assurance_matched),
+             colour = "#2E6DA4", size = 1.8) +
+  # add min/max boundary lines as dashed
+  geom_line(aes(y = Assurance_min),
+            colour = "#2E6DA4", linewidth = 0.4, linetype = "dashed") +
+  geom_line(aes(y = Assurance_max),
+            colour = "#2E6DA4", linewidth = 0.4, linetype = "dashed") +
+  scale_x_continuous(breaks = deltas) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1),
+                     limits = c(0, 1)) +
+  facet_wrap(~ Analysis_Prior, ncol = 3) +
+  labs(
+    title    = "Assurance fan chart by analysis prior",
+    subtitle = "Line = matched prior (diagonal) | Band = range across all design priors",
+    x        = expression(delta == theta[C] - theta[T]),
+    y        = "Assurance"
+  ) +
+  theme_bw(base_size = 11) +
+  theme(
+    strip.background = element_rect(fill = "grey92"),
+    panel.grid.minor = element_blank()
+  )
+
+print(p_C)
+print(p_D)
