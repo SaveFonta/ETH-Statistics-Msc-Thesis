@@ -107,7 +107,7 @@ cat("Total jobs:", nrow(jobs), "\n")
 job_list <- split(jobs, seq_len(nrow(jobs)))
 
 
-simulate <- function(decision_list, job_list = job_list) {
+simulate <- function(decision_list) {
   results <- pbmclapply(job_list, function(job) {
   
   ap <- job$analysis_prior
