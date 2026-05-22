@@ -62,26 +62,29 @@ euii <- compute_euii(res)
 # what if Gsponer used Bayesian OC ? 
 
 
+## i COMMENT this out, since the new version of 'avgoc2_seq_mc.normMix' is vectorized over delta.
 
-run.avgoc <- function (analysis.prior = prior.c, design.prior = prior.c){
-res <- list(
-delta.0 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 0, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.10 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 10, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.20 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 20, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.30 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 30, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.40 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 40, design_prior_c = design.prior,  decision_list, n_sim = 1e7),
-delta.50 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 50, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.60 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 60, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.70 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 70, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.80 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 80, design_prior_c = design.prior, decision_list, n_sim = 1e7),
-delta.90 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 90, design_prior_c = design.prior, decision_list, n_sim = 1e7)
-)
+# run.avgoc <- function (analysis.prior = prior.c, design.prior = prior.c){
+# res <- list(
+# delta.0 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 0, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+# delta.10 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 10, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+# delta.20 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 20, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+# delta.30 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 30, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+# delta.40 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 40, design_prior_c = design.prior,  decision_list, n_sim = 1e7),
+# delta.50 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 50, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+# delta.60 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 60, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+# delta.70 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 70, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+# delta.80 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 80, design_prior_c = design.prior, decision_list, n_sim = 1e7),
+# delta.90 = avgoc2_seq_mc.normMix(prior.t, analysis.prior, c(20, 40), c(10,20), delta = 90, design_prior_c = design.prior, decision_list, n_sim = 1e7)
+# )
 
-return(res)
-}
+# return(res)
+# }
 
-res.avg <- run.avgoc()
+# res.avg <- run.avgoc()
 
+
+res.avg <- avgoc2_seq_mc.normMix(prior.t, prior.c, c(20, 40), c(10,20), delta = seq(0, 90, by = 10), design_prior_c = prior.c, decision_list, n_sim = 1e7)
 
 # we can show the more robustness of avgt1e, since T1E varyies ppointwise and we are trusting a T1E that assumes the true value 
 #of control and treatment is the same as the mean of the historical borrowing of control:

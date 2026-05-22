@@ -121,17 +121,28 @@ set.seed(SEED)
 # I want to have a super nested list: 
 
 # $decisions[["ap.MAP_dp.MAP"]][["delta.0"]]
-simulate <- function(dec_list) {
-  results <- pbmclapply(job_list, function(job) {
+#
+
+# final list 
+
+all_results <- list()
+
+for (dec_name in names(all_dec)) {  #Uso un cicle perche se uso un lapply cannot go further than 4 cores 
+  
+  cat("\n========================================\n")
+  cat("PROCESSING Decision list:", dec_name, "\n")
+  cat("========================================\n")
+  
+  res_jobs <- pbmclapply(job_list, function(job) {
     ap <- job$analysis_prior
     dp <- job$design_prior
-
+    
     avgoc2_seq_mc.normMix(
       prior_1        = prior.t,
       prior_2        = priors[[ap]],
       n1_seq         = n1_seq,
       n2_seq         = n2_seq,
-      decisions_list = dec_list,
+      decisions_list = all_dec[[dec_name]],
       delta          = deltas,
       design_prior_c = priors[[dp]],
       sigma_1        = sigma,
@@ -139,17 +150,17 @@ simulate <- function(dec_list) {
       n_sim          = N_SIM,
       seed           = NULL
     )
-  }, mc.cores = 15
-  )
-
-  names(results) <- paste0("ap.", jobs$analysis_prior, "_dp.", jobs$design_prior)
-  return(results)
+  }, mc.cores = 15)
+  
+  names(res_jobs) <- paste0("ap.", jobs$analysis_prior, "_dp.", jobs$design_prior)
+  
+  all_results[[dec_name]] <- res_jobs
 }
 
-all_results <- lapply(names(all_dec), function(dec_name) {
-  simulate(all_dec[[dec_name]])
-})
-names(all_results) <- names(all_dec)
+# Salvataggio
+saveRDS(all_results, file = "data/1.6.rds")
+cat("\nResults saved!!\n")
+
 
 # Then compute EUII per job per decision list:
 # euii_results <- lapply(all_results, function(dec_res) {
@@ -161,16 +172,10 @@ names(all_results) <- names(all_dec)
 
 
 
-saveRDS(list( all_results = all_results), file = "data/1.6")
-cat("results saved!!")
-
-
-
-
-decision_list <- all_results$decision_list
-decision_list_nofut<- all_results$decision_list_nofut
-decision_list_norel <- all_results$decision_list_norel
-decision_list_nofut.norel <- all_results$decision_list_nofut.norel
+res_decision_list <- all_results$decision_list
+res_decision_list_nofut<- all_results$decision_list_nofut
+res_decision_list_norel <- all_results$decision_list_norel
+res_decision_list_nofut.norel <- all_results$decision_list_nofut.norel
 
 
 
