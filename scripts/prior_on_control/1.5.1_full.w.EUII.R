@@ -2,6 +2,9 @@
 # assurance, to compute EUII I need to save the whole list of results
 # =============================================================================
 
+# this GONNA REPLACE 1.5 at some point since it will also include the classic
+
+
 library(RBesT)
 library(dplyr)
 library(tidyr)
@@ -95,13 +98,16 @@ decision_list_norel <- list(
   list(success = sign.95, futility = NULL)
 )
 
+all_dec <- list (decision_list = decision_list, decision_list_nofut = decision_list_nofut,
+                   decision_list_nofut.norel= decision_list_nofut.norel, decision_list_norel= decision_list_norel)
+
+
 
 deltas <- c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90)
 
 jobs <- expand.grid(
   analysis_prior = prior_names,
   design_prior   = prior_names,
-  Delta = deltas,
   stringsAsFactors = FALSE
 ) 
 
@@ -109,55 +115,80 @@ cat("Total jobs:", nrow(jobs), "\n")
 
 job_list <- split(jobs, seq_len(nrow(jobs)))
 
-
 RNGkind("L'Ecuyer-CMRG")
 set.seed(SEED)
 
-simulate <- function(decision_list) {
+# I want to have a super nested list: 
+
+# $decisions[["ap.MAP_dp.MAP"]][["delta.0"]]
+simulate <- function(dec_list) {
   results <- pbmclapply(job_list, function(job) {
-  
-  ap <- job$analysis_prior
-  dp <- job$design_prior
-  d  <- job$Delta
-  
-  oc <- avgoc2_seq_mc.normMix(
+    ap <- job$analysis_prior
+    dp <- job$design_prior
+
+    avgoc2_seq_mc.normMix(
       prior_1        = prior.t,
       prior_2        = priors[[ap]],
       n1_seq         = n1_seq,
       n2_seq         = n2_seq,
-      decisions_list = decision_list,
-      delta          = d,
+      decisions_list = dec_list,
+      delta          = deltas,
       design_prior_c = priors[[dp]],
       sigma_1        = sigma,
       sigma_2        = sigma,
       n_sim          = N_SIM,
-      seed           = SEED
+      seed           = NULL
     )
-}, mc.cores = 15)
+  }, mc.cores = 15
+  )
 
+  names(results) <- paste0("ap.", jobs$analysis_prior, "_dp.", jobs$design_prior)
   return(results)
 }
 
+all_results <- lapply(names(all_dec), function(dec_name) {
+  simulate(all_dec[[dec_name]])
+})
+names(all_results) <- names(all_dec)
+
+# Then compute EUII per job per decision list:
+# euii_results <- lapply(all_results, function(dec_res) {
+#   lapply(dec_res, compute_euii)
+# })
 
 
 
-res <- simulate(decision_list)
-cat("One done \n")
-
-res_nofut <- simulate(decision_list_nofut)
-cat("2 done \n")
-
-res_nofut.norel <- simulate(decision_list_nofut.norel)
-cat("3 done \n")
-
-res_norel <- simulate(decision_list_norel)
-cat("4 done \n")
 
 
-saveRDS(list( res = res, res_nofut = res_nofut, res_nofut.norel = res_nofut.norel, res_norel = res_norel), file = "data/1.6")
+
+saveRDS(list( all_results = all_results), file = "data/1.6")
 cat("results saved!!")
 
 
-# Now with this list should feed it to compute_euii
 
 
+decision_list <- all_results$decision_list
+decision_list_nofut<- all_results$decision_list_nofut
+decision_list_norel <- all_results$decision_list_norel
+decision_list_nofut.norel <- all_results$decision_list_nofut.norel
+
+
+
+
+# formatted 
+euii <- lapply(all_results, function(dec.func) {
+  lapply(dec.func, function(job) {
+      compute_euii(job) #or format_results
+ })
+}
+)
+
+
+
+# formatted 
+formatted <- lapply(all_results, function(dec.func) {
+  lapply(dec.func, function(job) {
+      format_results(job) 
+ })
+}
+)

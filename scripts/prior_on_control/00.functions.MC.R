@@ -215,15 +215,13 @@ avgoc2_seq_mc.normMix <- function(prior_1, prior_2,
   is_lower_tail <- attr(decisions_list[[1]][["success"]], "lower.tail")
   
   
-    theta_c_draws <- RBesT::rmix(design_prior_c, n_sim)
+  theta_c_draws <- RBesT::rmix(design_prior_c, n_sim)
 
-  if (is_lower_tail) { 
-    theta_t_draws <- theta_c_draws - delta
-  } else {
-  theta_t_draws <- theta_c_draws + delta
-  }
-
-  return(oc2_seq_mc.normMix(
+#function to process one specific delta value
+  process <- function(d) {
+   theta_t_draws <- if (is_lower_tail) theta_c_draws - d  else theta_c_draws + d
+  
+  oc2_seq_mc.normMix(
     theta_1       = theta_t_draws,
     theta_2       = theta_c_draws,
     prior_1       = prior_1,
@@ -235,7 +233,17 @@ avgoc2_seq_mc.normMix <- function(prior_1, prior_2,
     sigma_2       = sigma_2,
     n_sim         = n_sim,
     seed          = NULL
-  ))
+  )
+  }
+
+
+  if (length(delta) == 1) { #only one delta provided
+    return(process(delta))
+  } else {
+    res_list <- lapply(delta, process)
+    names(res_list) <- paste0("delta.",delta)
+    return(res_list)
+  }
 }
  
 
@@ -373,8 +381,8 @@ compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5)) {
  out <- lapply(prior_H1, function(x) {
     pointwise_metrics |>
     mutate(
-      LR_pos = Power / T1E,
-      LR_neg = (1 - Power) / (1 - T1E),
+      LR_pos = pmax(Power / max(T1E, eps), eps),
+      LR_neg = pmax((1 - Power) / max(1 - T1E, eps), eps),
       
       post_odds_sig = LR_pos * (x / (1 - x)), # Posterior odds of H_1  O(H_1 | sign)
       Pr_H1_sig     = post_odds_sig / (1 + post_odds_sig), # Posterior probability of H_1 P(H_1 | sign)
@@ -388,12 +396,16 @@ compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5)) {
       E_invN_nonsig = (E_invN_nonsig_null * Pr_H0_nonsig) + (E_invN_nonsig_cond * Pr_H1_nonsig)
     ) |>
     mutate(
-      EUII = (LR_pos ^ E_invN_sig) / (LR_neg ^ E_invN_nonsig)
-    )  |> 
-    select ("Delta" = delta,  LR_pos, LR_neg, E_invN_sig, E_invN_nonsig, EUII)
+        log_EUII = (E_invN_sig * log(LR_pos)) - (E_invN_nonsig * log(LR_neg)), # log scale 
+        EUII     = exp(log_EUII)
+            )  |> 
+    select ("Delta" = delta,  LR_pos, LR_neg, E_invN_sig, E_invN_nonsig, log_EUII, EUII)
  }
  )
 
  names(out) <- as.character(prior_H1)
   return(out)
 }
+
+
+
