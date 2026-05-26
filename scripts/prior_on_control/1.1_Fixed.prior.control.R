@@ -1,4 +1,4 @@
-source("data/00.functions.R")
+source("scripts/prior_on_control/00.functions.R")
 
 
 # this part will use it for the Rnw
