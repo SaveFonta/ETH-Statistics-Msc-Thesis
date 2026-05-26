@@ -249,7 +249,7 @@ final_table <- bind_rows(tab1, tab2, tab3, tab4)
 
 # Let's add different deltas 
 get_avg_power_table <- function(crit_name, succ.crit, 
-                                 deltas = seq(0, 90, by = 10)) {
+                                 deltas = c(0,-10,-20,-30, -40, -50, -60, -70, -80, -90)) {
 
   # define the 3 oc objects for the 3 analysis priors
   avgoc_vague <- avgoc2S.normMix(
@@ -310,7 +310,6 @@ saveRDS(tab4_power, file = "data/Assurance.fixed.rds")
 cat("fixed data saved")
 
 final_table <- readRDS("data/avgT1E.fixed.rds")
-
 
 
 
@@ -398,6 +397,7 @@ print(p_power_full)
 
 # PLOT FOR ASSURANCE for each design x analysis prios
 
+tab4_power<- readRDS("data/Assurance.fixed.rds")
 
 # Pivot to long for plotting
 df_plot_power <- tab4_power |>
@@ -420,7 +420,7 @@ p_power_tab4 <- df_plot_power |>
              colour = "grey40", linewidth = 0.4) +
   facet_wrap(~ Design_Prior, ncol = 2) +
   scale_x_continuous(breaks = seq(0, 90, 10)) +
-  scale_y_continuous(labels = percent_format(accuracy = 1),
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),
                      limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
   scale_colour_manual(values = c(
     "Vague"  = "#E69F00",
