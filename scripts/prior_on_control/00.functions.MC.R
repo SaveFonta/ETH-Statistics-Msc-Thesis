@@ -338,7 +338,7 @@ format.results <- function(res) {
 }
  
  
-compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5)) {
+compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5), eps = 1e-8) {
  
   # --- build stage-level table ----
   per_stage <- bind_rows(
