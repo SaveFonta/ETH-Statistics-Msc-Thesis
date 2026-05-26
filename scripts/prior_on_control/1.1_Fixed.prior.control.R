@@ -1,4 +1,4 @@
-source("00.functions.R")
+source("data/00.functions.R")
 
 
 # this part will use it for the Rnw
