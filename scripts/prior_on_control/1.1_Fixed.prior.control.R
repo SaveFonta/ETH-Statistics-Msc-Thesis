@@ -240,8 +240,74 @@ tab4 <- get_avg_t1e_table("Dual (97.5%)", dual.crit.975)
 final_table <- bind_rows(tab1, tab2, tab3, tab4)
 
 
+
+
+
+
+
+
+
+# Let's add different deltas 
+get_avg_power_table <- function(crit_name, succ.crit, 
+                                 deltas = seq(0, 90, by = 10)) {
+
+  # define the 3 oc objects for the 3 analysis priors
+  avgoc_vague <- avgoc2S.normMix(
+    prior1 = p_vague, prior2 = p_vague, n1 = n.act, n2 = n.pbo,
+    decision = succ.crit, delta = 0, design_prior2 = p_vague,
+    sigma1 = sigma, sigma2 = sigma
+  )
+
+  avgoc_MAP <- avgoc2S.normMix(
+    prior1 = p_vague, prior2 = p_MAP, n1 = n.act, n2 = n.pbo,
+    decision = succ.crit, delta = 0, design_prior2 = p_vague,
+    sigma1 = sigma, sigma2 = sigma
+  )
+
+  avgoc_rob <- avgoc2S.normMix(
+    prior1 = p_vague, prior2 = p_rob, n1 = n.act, n2 = n.pbo,
+    decision = succ.crit, delta = 0, design_prior2 = p_vague,
+    sigma1 = sigma, sigma2 = sigma
+  )
+
+  # For each delta, evaluate across all design prior x analysis prior combinations
+  bind_rows(lapply(deltas, function(d) {
+    data.frame(
+      Decision_Criteria = crit_name,
+      Delta             = d,
+      Analysis_Prior    = c("Vague",               "MAP",               "Robust"),
+
+      Vague     = c(avgoc_vague(delta_new = d),    avgoc_MAP(delta_new = d),    avgoc_rob(delta_new = d)),
+      Skeptical = c(avgoc_vague(delta_new = d, design_prior2_new = p_skep),
+                    avgoc_MAP( delta_new = d, design_prior2_new = p_skep),
+                    avgoc_rob( delta_new = d, design_prior2_new = p_skep)),
+      MAP       = c(avgoc_vague(delta_new = d, design_prior2_new = p_MAP),
+                    avgoc_MAP( delta_new = d, design_prior2_new = p_MAP),
+                    avgoc_rob( delta_new = d, design_prior2_new = p_MAP)),
+      Robust    = c(avgoc_vague(delta_new = d, design_prior2_new = p_rob),
+                    avgoc_MAP( delta_new = d, design_prior2_new = p_rob),
+                    avgoc_rob( delta_new = d, design_prior2_new = p_rob))
+    )
+  }))
+}
+
+
+# Run for dual criterion 97.5%
+tab4_power <- get_avg_power_table("Dual (97.5%)", dual.crit.975)
+
+
+
+
+
+
+
+
+
+
+
 saveRDS(final_table, file = "data/avgT1E.fixed.rds")
-cat("avgT1E fixed data saved")
+saveRDS(tab4_power, file = "data/Assurance.fixed.rds")
+cat("fixed data saved")
 
 final_table <- readRDS("data/avgT1E.fixed.rds")
 
@@ -295,15 +361,86 @@ df_plot_avg <- final_table  |>
     )
 
 
+p_power_full <- df_power |>
+  filter(decision_list == "Classic") |>
+  ggplot(aes(x = delta, y = Power,
+             colour = analysis_prior,
+             group  = analysis_prior)) +
+  geom_line(linewidth = 0.8) +
+  geom_hline(yintercept = 0.80, linetype = "dashed",
+             colour = "grey40", linewidth = 0.4) +
+  facet_wrap(~ design_prior, ncol = 3) +
+  scale_x_continuous(breaks = seq(0, 90, 20)) +
+  scale_y_continuous(labels = percent_format(accuracy = 1),
+                     limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
+  labs(
+    title    = "Power curves — Classic decision list",
+    subtitle = "Facets = design prior  |  Colour = analysis prior",
+    x        = "Delta",
+    y        = "Power",
+    colour   = "Analysis prior"
+  ) +
+  theme_bw(base_size = 11) +
+  theme(
+    strip.background = element_rect(fill = "grey92"),
+    strip.text       = element_text(face = "bold", size = 9),
+    panel.grid.minor = element_blank(),
+    legend.position  = "bottom",
+    plot.title       = element_text(face = "bold")
+  )
+
+print(p_power_full)
 
 
 
 
 
 
+# PLOT FOR ASSURANCE for each design x analysis prios
 
 
+# Pivot to long for plotting
+df_plot_power <- tab4_power |>
+  pivot_longer(cols = c("Vague", "Skeptical", "MAP", "Robust"),
+               names_to  = "Design_Prior",
+               values_to = "Power") |>
+  mutate(
+    Analysis_Prior = factor(Analysis_Prior, levels = c("Vague", "MAP", "Robust")),
+    Design_Prior   = factor(Design_Prior,   levels = c("Vague", "Skeptical", "MAP", "Robust"))
+  )
 
+# Plot
+p_power_tab4 <- df_plot_power |>
+  ggplot(aes(x = Delta, y = Power,
+             colour = Analysis_Prior,
+             group  = Analysis_Prior)) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 1.6) +
+  geom_hline(yintercept = 0.80, linetype = "dashed",
+             colour = "grey40", linewidth = 0.4) +
+  facet_wrap(~ Design_Prior, ncol = 2) +
+  scale_x_continuous(breaks = seq(0, 90, 10)) +
+  scale_y_continuous(labels = percent_format(accuracy = 1),
+                     limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
+  scale_colour_manual(values = c(
+    "Vague"  = "#E69F00",
+    "MAP"    = "#56B4E9",
+    "Robust" = "#009E73"
+  )) +
+  labs(
+    title    = "Power curves — Dual criterion (97.5%)",
+    subtitle = "Facets = design prior  |  Colour = analysis prior",
+    x        = "Delta",
+    y        = "Power",
+    colour   = "Analysis prior"
+  ) +
+  theme_bw(base_size = 11) +
+  theme(
+    strip.background = element_rect(fill = "grey92"),
+    strip.text       = element_text(face = "bold", size = 9),
+    panel.grid.minor = element_blank(),
+    legend.position  = "bottom",
+    plot.title       = element_text(face = "bold")
+  )
 
-
-
+print(p_power_tab4)
