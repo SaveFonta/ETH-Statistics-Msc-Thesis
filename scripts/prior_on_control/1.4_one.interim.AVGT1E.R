@@ -113,6 +113,7 @@ jobs <- expand.grid(
 
 cat("Total jobs:", nrow(jobs), "\n")
 
+# Newed a list so that I can use lapply on this
 job_list <- split(jobs, seq_len(nrow(jobs)))
 
 RNGkind("L'Ecuyer-CMRG")
@@ -157,7 +158,7 @@ for (dec_name in names(all_dec)) {  #Uso un cicle perche se uso un lapply cannot
   all_results[[dec_name]] <- res_jobs
 }
 
-# Salvataggio
+#
 saveRDS(all_results, file = "data/1.6.rds")
 cat("\nResults saved!!\n")
 
@@ -170,7 +171,8 @@ cat("\nResults saved!!\n")
 
 
 
-
+res_decision_list$ap.MAP_dp.MAP
+all_results <- readRDS ("data/1.6.rds")
 
 res_decision_list <- all_results$decision_list
 res_decision_list_nofut<- all_results$decision_list_nofut
@@ -189,11 +191,15 @@ euii <- lapply(all_results, function(dec.func) {
 )
 
 
+euii$decision_list$ap.MAP_dp.MAP[["0.01"]]  #shows the specific df of the euii 
 
 # formatted 
 formatted <- lapply(all_results, function(dec.func) {
   lapply(dec.func, function(job) {
-      format_results(job) 
+      format.results(job) 
  })
 }
 )
+
+formatted$decision_list$ap.MAP_dp.MAP$per_stage # or $overall
+formatted$decision_list$ap.MAP_dp.MAP$overall

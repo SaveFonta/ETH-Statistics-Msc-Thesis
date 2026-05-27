@@ -11,13 +11,27 @@
 \usepackage{array}
 \usepackage{multirow}
 \usepackage{amsthm}
-\usepackage{mdframed} 
+\usepackage{mdframed}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{tcolorbox}
+\usepackage{algpseudocode}
+\usepackage{float}
+\newcommand{\note}[1]{\textcolor{red}{#1}}
 
 \title{Title of thesis}
 \author{Saverio Fontana}
 \date{\today}
 
 \begin{document}
+
+<<setup, include=FALSE>>=
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.height = 3.2,
+  fig.align = "center"
+)
+@
 
 \maketitle
 
@@ -26,7 +40,7 @@
 \end{abstract}
 
 \tableofcontents
-\newpage
+
 
 \section{Introduction (with Literature Review)}
 
@@ -45,7 +59,7 @@ help the current study.
 
 Conversely, Bayesian statistical frameworks offer a mathematically rigorous solution to this challenge by incorporating external evidence 
 through informative prior distributions. Integrating background knowledge during the planning phase can lead to highly efficient designs, 
-accelerating trial execution, reducing operational waste, and limiting the number of concurrent patients required for the control arm (\textcolor{red}{Citations of examples?}). 
+accelerating trial execution, reducing operational waste, and limiting the number of concurrent patients required for the control arm (\note{Citations of examples? Stallard has nice examples}). 
 This not only decreases the overall sample size but also makes the trial more attractive to potential participants, who face a lower 
 probability of being assigned to a placebo group. As noted by O'Hagan et al., \textit{"the design of a trial 
 is ultimately the sponsor’s decision and its outcome is the sponsor’s risk; therefore, the design should incorporate all available information to 
@@ -62,12 +76,11 @@ on the treatment effect or on one (or both) arms:
 \begin{itemize}
         \item \textbf{Prior on the Control Group:} when recruiting patients for a standard-of-care or placebo arm is ethically challenging or 
     operationally slow, historical data can be used to inform the control parameters. Designs that supplement a smaller concurrent control group 
-    with historical information are formally referred to in the literature as hybrid-control trials. \textcolor{red}{Weru cites a lot of hybrid control trials.} 
+    with historical information are formally referred to in the literature as hybrid-control trials. \note{Weru cites a lot of hybrid control trials.} 
 
 
     \item \textbf{Prior on the Treatment Effect:} When the primary goal is to use existing efficacy data to support a new indication or 
-    demographic, such as leveraging established adult data to pediatric cohorts, the prior is typically constructed to inform the active treatment 
-    parameter or the treatment contrast directly \cite{psioda_bayesian_2019}.
+    demographic, such as leveraging adult data to pediatric cohorts, the prior can be placed on the treatment contrast directly \cite{psioda_bayesian_2019}.
 \end{itemize}
 
 
@@ -81,47 +94,55 @@ statistically significant result \cite{spiegelhalter1993bayesian, ohagan_assuran
 
 Despite these fundamentally different philosophies regarding power, it remains common practice to evaluate Bayesian designs with informative priors 
 using the classical, frequentist Type I error rate. However, when Type I error is defined traditionally, conditioning solely on the sampling distribution 
-of the current trial's data, it is mathematically impossible to strictly control it if external information is actively being borrowed 
+of the current trial's data, it is mathematically impossible to strictly control it if external information is being borrowed 
 \cite{viele_use_2014, psioda_bayesian_2019, kopp-schneider_power_2020}. 
 
-Therefore, evaluating a Bayesian design requires a distinctly Bayesian error metric, one that possesses the same essential property for 
+Therefore, evaluating a Bayesian design requires a distinctly Bayesian error metric, one that possesses the same property for 
 Bayesian designs that the classical Type I error holds for frequentist designs, namely, that it can be rigorously controlled at a pre-specified level. This 
 goal is obtained through the Average Type I Error\cite{best_beyond_2025}, a metric that marginalizes the false positive 
 risk over a specified design prior (in contrast to the analysis prior, obtained by historical data), providing a more appropriate evaluation of Bayesian 
-operating characteristics. \textcolor{red}{Also talk abou tthe other metric in case of prior on trt }
+operating characteristics. 
+
+\note{Not sure this last paragraph makes sense: the avgT1E is controlled only in the case of prior on control... Also need to talk about the metric proposed for prior on delta}
 
 \subsection{Information Borrowing and Prior-Data Conflict}
 
-While borrowing historical data presents clear efficiency gains, it is not without risk. It is possible that historical data and current trial 
-data are fundamentally heterogeneous due to shifts in demographics, standard of care, or measurement techniques \cite{evans_checking_2006}. If a model 
+While borrowing historical data presents clear adavantages, it is not without risk. It is possible that historical data and current trial 
+data are heterogeneous due to shifts in demographics, standard of care, or measurement techniques \cite{evans_checking_2006}. If a model 
 forces the integration of historical and concurrent data when such a discrepancy exists, it can lead to severely biased estimates and inflated error rates. 
-Indeed, the naive pooling of historical data leads to unacceptable Type I error inflation under prior-data 
-conflict, firmly establishing the necessity for dynamic borrowing techniques \cite{viele_use_2014}.
+Indeed, the naive use of historical data leads to unacceptable Type I error inflation under prior-data 
+conflict.
 
-\textcolor{red}{Schmidli 2015 has a nice lit review}
+\note{Schmidli 2015 has a nice lit review about all possible borrowing methods}
 Recognizing these dangers, early frequentist guidelines emphasized strict criteria to ensure external data were 
-sufficiently comparable before any pooling \cite{pocock_combination_1976}. \textcolor{red}{NOT SURE ABOUT THIS} While traditional frequentist approaches often relied on rigid "test-and-pool" 
-methods, modern Bayesian frameworks address the risk of prior-data conflict through dynamic borrowing. Rather than blindly pooling 
-or entirely discarding historical data, dynamic borrowing algorithms assess the congruency between the historical evidence and the accumulating new data.
- If the historical data aligns well with the current trial, the model "borrows" strength from it, thereby increasing precision. Conversely, if there is a 
- substantial true difference between the historical and current parameters, commonly referred to as "drift", the model dynamically discounts the historical 
- information, relying more heavily on the concurrent data.
+sufficiently comparable before any pooling \cite{pocock_combination_1976}. Modern Bayesian frameworks address the risk of prior-data conflict through dynamic 
+borrowing. Rather than blindly pooling or entirely discarding historical data, dynamic borrowing algorithms assess the congruency between the historical evidence and the accumulating new data.
+ If the historical data aligns well with the current trial, the model "borrows" strength from it, increasing precision. Conversely, if there is a 
+ true difference between the historical and current parameters, commonly referred to as "drift" (\note{Maybe some citations}), the model dynamically discounts the historical 
+ information, relying more on the observed data.
 
 Several approaches have been proposed to achieve this dynamic behavior. Examples include Power Priors \cite{ibrahim_power_2000}, 
 Commensurate Priors \cite{hobbs_2011}, and Meta-Analytic-Predictive (MAP) priors \cite{noauthor_summarizing_nodate}. This thesis will focus
- primarily on the MAP framework, and specifically on its robust extension. By summarizing historical information into a predictive prior, MAP priors allow 
- for structured borrowing \cite{noauthor_summarizing_nodate}. Because standard MAP priors can sometimes be too slow to react to severe prior-data conflict, 
- \textit{Robust Mixture Priors} jave been proposed \cite{schmidli_robust_2014}. By blending an informative MAP component with a diffuse robust component, 
- these priors provide a highly flexible mechanism that safely adapts to varying degrees of drift, ensuring robust inference even under severe prior 
- misspecification \cite{schmidli_robust_2014}. \textcolor{red}{"Information Borrowing in Bayesian Clinical Trials: choice of Tuning Parameters for the Robust Mixture Prior" has other citations in the intro}
+ primarily on the MAP framework, and specifically on its robust extension. Standard MAP summarize historical information into a predictive prior, but it can be sometimes be too slow to react to prior-data conflict, 
+ Robust Mixture Priors jave therefore been proposed \cite{schmidli_robust_2014}. By blending an informative MAP component with a diffuse robust component, 
+ these priors provide safer results in presence of drift, ensuring robust inference even under prior misspecification \cite{schmidli_robust_2014}. 
+ \note{"Information Borrowing in Bayesian Clinical Trials: choice of Tuning Parameters for the Robust Mixture Prior" has other citations in the intro and maybe can extend these}
+
+ \note{Two paper that that use mixture priors in practical appliacations: Richeldi, L., Azuma, A., Cottin, V., Hesslinger, C., Stowasser, S., Valenzuela, C., Wijsenbeek, M. S., Zoz, D. F., Voss, F., and Maher, T. M.; 1305-0013 Trial Investigators (2022), “Trial of a Preferential Phosphodiesterase 4b Inhibitor for Idiopathic Pulmonary Fibrosis,”
+ Chen, R., Wei, L., Dai, Y., Wang, Z., Yang, D., Jin, M., Xiong, C., Li, T., Hu, S., Song, J., Chan, R., Kumar, S., Abdelkarim, A., and Zhong, N. (2024), “Efficacy and Safety of Mepolizumab in a Chinese Population with Severe Asthma:}
+
 
  
 \subsection{Sequential Clinical Trial Designs}
  
-Historically, interim monitoring has been governed by the frequentist group-sequential frameworks \cite{jennison_group_1999}, which rely on error-spending functions to control the overall Type I error rate.
-Talk about ethical and financial necessity of interim monitoring, but also the probllems of inflating T1E.
+Historically, the use of interim analyses has been mostly applied in the frequentist framework \cite{jennison_group_1999}, relying on error-spending functions to control the overall Type I error rate.
+\note{NEED TO WRITE THIS}
+
+Talk about ethical and financial necessity of interim monitoring, but also the problems of inflating T1E as we peak more at data. 
 Cite Stallard et al. to compare frequentist group-sequential designs with Bayesian sequential methods \cite{stallard_comparison_2020}. 
-Add also the EUII. 
+
+Also talk about the possibility for futility stopping. Various methods for that. 
+Since futility stopping cannot result in a significant result, it can only decrease the T1E (and Power)
 
 THIS IS COPY PASTED by Schmindli:
 historical and concurrent control data are in clear conflict, 
@@ -130,17 +151,20 @@ This may result in inconclusive trial results, as not enough control
  information may then be available. Adaptive designs allow to increase 
  number of controls based on interim data, and hence reduce this risk
 
-\subsection{Bayesian sequential trial designs}
+Add also something about EUII that allows us to compare sequential design meaningfully by looking at the unit evidentiary value.  
 
+\subsection{Bayesian sequential trial designs}
  Ryan et al. debate regarding whether adjusting for interim analyses is required in Bayesian adaptive trials \cite{ryan_we_2020}.
  FOCUS on Zhou \& Ji to categorize debate into three distinct perspectives: frequentist-oriented, calibrated Bayesian, and subjective Bayesian \cite{zhou_bayesian_2024}.
 Shi \& Yin provides solutions to calibrate Bayesian cutoff boundaries to mimic frequentist $\alpha$-spending \cite{shi_control_2019}.
+Talk about Gsponer and some other examples 
 
-    Talk about Gsponer and some other examples 
+Again talk about futility stopping ? 
 
 \subsection{Dual Criterion?}
 Only if there is time: Roychoudhury et al. \cite{roychoudhury_beyond_2018}, integration in gsponer for dual sequential bayesian. 
 In Gsponer there are interesting paragraph and citations about the need of extednding to clinical relevance, not only significance, I higlighted those in yellow. 
+
 
 \subsection{Thesis Objective}
 Extend Bayesian fixed-design metrics (specifically Average Type I Error and Assurance) to sequential designs with robust mixture priors. 
@@ -149,20 +173,34 @@ evidentiary value per unit than the fixed-design framework.
 Optionally extend to dual criterion.
 
 \section{Methodology}
-For the remainder of the manuscript we will focus on two sample clinical trials, one sided, with Normal endpoint and known $\sigma$ following Best and also the paper from 2026 gives a justification for using only Normal data 
+For the remainder of the manuscript, we focus on two-sample clinical trials with a continuous Normal endpoint and known standard deviation $\sigma$. 
+Let $\theta_T$ and $\theta_C$ denote the true parameters of the treatment and control groups, respectively. The treatment contrast is defined as $\delta = \theta_C - \theta_T$,
+where we assume without loss of generality that lower values of $\theta$ represent a better clinical response. Moreover, we evaluate the one-sided hypothesis test:  
+$$H_0: \delta = \delta_0 \quad \text{versus} \quad H_1: \delta > \delta_0$$
+
+Where $\delta_0$ denotes the clinically meaningful threshold or non-inferiority margin.  
+
+This is translated in the bayesian framework by using the posterior probability of $\delta$ exceedeing a certain treshold:
+$$1\{Pr(\delta_{new} > \delta^{null} | y_{new}) \ge 1 - \alpha\}$$ 
+If the indicator is 1, then the Bayesian decision rule rejects $H_0$.
+
 
 \subsection{Formulating the Priors}
-Basically here talk about schmindli  2014 and about the tuning of parameter 2026 
+\note{Here I want to talk about schmindli  2014 and about the tuning of parameter in Weru paper and maybe some other paper that talk about the Robust MAP appraoch}
+
 
 \begin{itemize}
-    \item Talk abt the robust mixture prior's tuning parameters (form, mean, variance). Cite Weru et al. to highlight how the location of the robust component influences \cite{weru_information_2026} and that As Weru et al. highlight, achieving true robustness 
+    \item Talk abt the robust mixture prior's tuning parameters (form, mean, variance). Cite Weru et al. to highlight how the location of the robust component influences \cite{weru_information_2026} and that As Weru et al. ù
+    highlight, achieving true robustness 
 against prior-data conflict requires a prior distribution with "heavy tails" \cite{weru_information_2026}. While a true Student's $t$-distribution provides these 
-ideal heavy-tailed properties, applying it directly introduces severe computational challenges. Because the $t$-distribution is not mathematically conjugate to a 
-Normal data likelihood, it precludes the use of exact, closed-form posterior calculations, forcing reliance on computationally demanding approximations (such as Markov Chain Monte Carlo). 
+ideal heavy-tailed properties, applying it directly introduces computational challenges. Because the $t$-distribution is not conjugate to a 
+Normal data likelihood, we need approximation using MCMC. 
 
-To resolve this, the Robust Mixture Prior is typically constructed as a discrete mixture of Normal distributions, specifically, blending an informative MAP component with a diffuse, high-variance Normal component. 
+To resolve this, the Robust Mixture Prior is constructed as a discrete mixture of Normal distributions, specifically, blending an informative MAP component with a diffuse, high-variance Normal component. 
+By using KL divergence with MCMC estimate. 
 
-    \item Discuss the complexity of assigning weights to these mixture components, using Neuenschwander et al. to contrast fixed versus uncertain mixture prior weights \cite{neuenschwander_fixed_2023}.
+    \item  \cite{neuenschwander_fixed_2023} suggest to use Fixed weights $w_i$: it is not necessary to give a prior on it (es a Beta), since also those w are updated.
+    \item Also interesting: Summarizing historical information on controls in clinical trials - Beat Neuenschwander, Gorana Capkun-Niggli, Michael Branson, David J Spiegelhalter, 2010
 \end{itemize}
 
 \subsection{Classic and Bayesian Fixed-Design Metrics}
@@ -172,112 +210,101 @@ Frequentist Type I error and power are well-established metrics used to evaluate
 design, strict point-wise control of the frequentist Type I error is impossible \cite{viele_use_2014, kopp-schneider_power_2020}. Consequently, evaluating Bayesian designs requires alternative metrics, such 
 as Assurance \cite{ohagan_assurance_2005} or Predictive Power \cite{micheloud_power_2022, spiegelhalter_monitoring_1986}.
 
-As noted by \cite{best_beyond_2025}, all these metrics are special cases of a common metric $m$ which can be expressed as the expected probability of study success, integrated over a 
-specified prior distribution for the parameter of interest $\theta$:
+All these metrics are special cases of a common metric $m$ \cite{best_beyond_2025}, which can be expressed as the expected probability of study success, integrated over a 
+specified prior distribution for the parameter of interest $\delta$:
 \begin{equation}
   \label{eq:m}
-m (CP(\delta), p(\delta)) = \int \Pr\left(\text{Success} \mid \theta\right) p(\theta) \, d\theta
+m (CP(\delta), p(\delta)) = \int \Pr\left(\text{Success} \mid \delta\right) p(\delta) \, d\delta
 \end{equation}
-
-Which is simply the expected value of the conditional power with respect to the design prior, $E_{p(\theta)}[CP(\theta)]$.
-
-If $p(\theta)$ is defined as a Dirac delta function at a specific point estimate $\theta^*$ (i.e., assuming the parameter is fixed and known), Equation~\ref{eq:m} collapses into the classical 
-frequentist conditional power (or classical point-wise Type I error if evaluated under the null hypothesis). Relying on this conditional formulation ignores the inherent 
-uncertainty of the underlying parameter, this is why $p(\theta)$ can be specified as a continuous probability distribution representing the uncertainty surrounding the true parameter. In this case,
-Equation~\ref{eq:m} yields the predictive power, often referred to as \textit{Assurance} \cite{ohagan_assurance_2005}, probability of study success 
-\cite{wang_evaluating_2013}, or Bayesian predictive power \cite{spiegelhalter_predictive_1986}. This specification allows us to obtain a more conservative value, since the power
-obtained with predictive methods is always closer to 50\% than the power obtained with conditional methods \textcolor{red}{(Spiegelhalter, Abrams and Myles, 2004, Grouin et al.,
-2007, Dallow and Fina, 2011)}.
-
 
 
 
 We differentiate between design and analysis prior \cite{ohagan_bayesian_2001}.  
 The analysis prior is the distribution used in the actual analysis to derive the posterior (e.g., an informative prior obtained via a Meta-Analytic-Predictive approach). Conversely, 
-the design prior $p(\theta)$, which appears in formula \ref{eq:m}, represents the assumed distribution of the underlying true parameter used to evaluate the design's operating characteristics.
+ the design prior $p(\delta)$, which appears in formula \ref{eq:m}, represents the assumed distribution of the underlying true parameter used to evaluate the design's operating characteristics.
 
 When evaluating these operating characteristics, using the exact same prior beliefs for both the data generation (design) and the inference (analysis) is known as calculating the 
-fully Bayesian power \cite{micheloud_power_2022}. Utilizing the same prior in both stages is considered the most logically consistent and natural approach by many Bayesian 
+fully Bayesian power \cite{micheloud_power_2022}, this approach is considered the most logically consistent and natural by many Bayesian 
 methodologists \cite{ohagan_bayesian_2001}.
-However, the differentiation of design and analysis prior allows for sensitivity analysis in order to calibrate the design. This allows to understand the behavior of a Bayesian design under 
-"drift" scenarios where the prior information used for analysis differs from the true data generating process, practice that has been advocated by sevewal authors (Wang and Gelfand 2002; Spiegelhalter, Abrams, and Myles 2004)
-
+However, it may be not acceptable to regulatory authorities, and a more comprehensive sensitivity analysis may be of use to calibrate the design under  
+"drift" scenarios where the prior information used for analysis differs from the true data generating process.
 
 
 \subsubsection{Prior on control}
-When analysis prior information is available on the control $\theta_2$ and/or $\theta_1$, we can modify Equation~\ref{eq:m} toa account for design priors $p(\theta_2)$ and/or $p(\theta_1)$:
-$$m (CP(\theta_1, \theta2), p(\theta_1, \theta_2)) = \int_{-\infty}^{\infty} \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_1, \theta_2\right) p(\theta_1) p(\theta_2) \, d\theta_1 \, d\theta_2$$
+When analysis prior information is available on $\theta_C$ and/or $\theta_T$, we can modify Equation~\ref{eq:m} toa account for design priors $p(\theta_C)$ and/or $p(\theta_T)$:
+$$m (CP(\theta_T, \theta_C), p(\theta_T, \theta_C)) = \int_{-\infty}^{\infty} \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_T, \theta_C\right) p(\theta_T) p(\theta_C) \, d\theta_T \, d\theta_C$$
 
 
 The traditional definitions of both Type I Error and power impose deterministic constraints 
 on the relationship between the treatment and control parameters. Specifically, we can fix the treatment 
-contrast at a constant value $\delta^*$, such that $\theta_1 = \theta_2 + \delta^*$. In this framework,
-$\delta^*$ represents the null effect (e.g., $\delta^* = 0$) when evaluating Type I Error, or the 
-targeted alternative effect when evaluating power. Therefore, a design prior is only required for one of these parameters to evaluate the design.
+  contrast at a constant value $\delta$, such that $\theta_T = \theta_C - \delta$. In this framework,
+  $\delta$ represents the null effect, e.g., $\delta = 0$ when evaluating Type I Error, or the 
+targeted alternative effect for power. Therefore, a design prior is only required for one of these parameters to evaluate the design.
 
 \begin{equation}
   \label{eq:avgT1E}
-  m = \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_2, \theta_1 = \theta_2 + \delta^*\right) p(\theta_2) \, d\theta_2
+  m = \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_C, \theta_T = \theta_C - \delta\right) p(\theta_C) \, d\theta_C
 \end{equation}
 
-When $\delta^* = 0$, we refer to Equation~\eqref{eq:avgT1E} as \textbf{Average Type I Error}:  
+When $\delta = 0$, we refer to Equation~\eqref{eq:avgT1E} as \textbf{Average Type I Error}:  
 \begin{equation}
   \label{eq:avg-type1-error}
-  \alpha_{avg} = \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_2, \theta_1 = \theta_2\right) p(\theta_2) \, d\theta_2
+  \alpha_{avg} = \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_C, \theta_T = \theta_C\right) p(\theta_C) \, d\theta_C
 \end{equation}
 
 
-Note that in this case, the classical T1E, obtaining by defining $p(\theta_2)$ as a Dirac in $\theta_2$, is no longer a single constant, instead it becomes a pointwise rate that varies as a function of $\theta_2$. 
+Note that in this case, the classical T1E, obtained by defining $p(\theta_C)$ as a Dirac in $\theta_C$, is no longer a single constant, instead it becomes a pointwise constant that varies as a function of $\theta_C$. 
 It has been proved the if the specified design prior coincides with the analysis prior, then the design achieves strict asymptotic control of $\alpha_{avg}$ at the nominal level \cite{best_beyond_2025}. 
 
 As an alternative, it is also proposed to compute the maximum (or minimum) operating characteristic over a plausible subset of the parameter space, 
-denoted as $\Theta_2$. Then this restricted maximum Type I error is expressed as:
-$$\max_{\theta_2 \in \Theta_2} \Pr\left(\text{Success} \mid \theta_2, \theta_1 = \theta_2 + \delta^*\right)$$
+denoted as $\Theta_C$. Then this restricted maximum Type I error is expressed as:
+$$\max_{\theta_C \in \Theta_C} \Pr\left(\text{Success} \mid \theta_C, \theta_T = \theta_C - \delta\right)$$
 
 
 
 \paragraph{Computational Framework}
-Let $y_1$ and $y_2$ denote the sufficient statistics, (in this case the sample means Since as mentioned in Intro, we are working with normally distributed endpoints) for the treatment 
-and control arms, respectively. Then assume wlog that lower values are better
 
-Success is determined by a decision function $D(y_1, y_2) \in \{0, 1\}$, which evaluates whether the posterior distribution of the treatment contrast, 
-$\Delta = \theta_1 - \theta_2$, satisfies a set of predefined conditions. For instance, a standard design requires the posterior probability to 
-exceed a specific treshold: $\Pr(\theta_1 - \theta_2 \le q_c \mid y_1, y_2) > p_c$ for specific critical values $q_c$ and probabilities $p_c$.
+Let $y_T$ and $y_C$ denote the sample means (sufficient statistics for Normal endpoints) for the treatment and control arms, respectively. 
+
+Success is determined by a decision function $D(y_T, y_C) \in \{0, 1\}$, which evaluates whether the posterior distribution of the treatment contrast, 
+  $\delta = \theta_C - \theta_T$, satisfies a set of predefined conditions. For instance, a standard design requires the posterior probability to 
+  exceed a specific threshold: $\Pr(\delta \ge q_c \mid y_T, y_C) > p_c$ for specific critical values $q_c$ and probabilities $p_c$.
 
 When evaluating multiple conditions simultaneously, such as in dual-criterion designs requiring both statistical significance and clinical relevance 
 \cite{roychoudhury_beyond_2018}, the decision is formulated as the product of Heaviside step functions for each condition\footnote{Note that this product 
 formulation naturally generalizes to an arbitrary number of conditions} $H(x)$, where $H(x) = 1$ for $x > 0$ and $0$ for $x \le 0$:
 
-$$D(y_1, y_2) = \prod_{i} H\Big(\Pr(\theta_1 - \theta_2 \le q_{c,i} \mid y_1, y_2) - p_{c,i}\Big)$$ 
+$$D(y_T, y_C) = \prod_{i} H\Big(\Pr(\delta \ge q_{c,i} \mid y_T, y_C) - p_{c,i}\Big)$$ 
 
 
 
-The specification of priors, the sample sisez ($n_1$, $n_2$), and the decision function $D(y_1, y_2)$ uniquely define a conditional Decision Boundary 
-$D_1(y_2)$ for each observed control outcome $y_2$,
-$$D_1(y_2) = \max\{y_1 : D(y_1, y_2) = 1\}$$ 
-This represents the maximal threshold the treatment data $y_1$ must satisfy to declare success.
+The specification of priors, the sample sisez ($n_T$, $n_C$), and the decision function $D(y_T, y_C)$ uniquely define a conditional Decision Boundary 
+$D_T(y_C)$ for each observed control outcome $y_C$,
+$$D_T(y_C) = \max\{y_T : D(y_T, y_C) = 1\}$$ 
+This represents the maximal threshold the treatment data $y_T$ must satisfy to declare success.
 
-Given this boundary, we can compute the conditional probability of success $\Pr(\text{Success} \mid \theta_1, \theta_2)$ required in Equation \ref{eq:m}. Assuming
- true parameters $\theta_1$ and $\theta_2$, the overall probability of a "Go" decision is the expectation of crossing the boundary $D_1(y_2)$ over the sampling 
+Given this boundary, we can compute the conditional probability of success $\Pr(\text{Success} \mid \theta_T, \theta_C)$ required in Equation \ref{eq:m}. Assuming
+ true parameters $\theta_T$ and $\theta_C$, the overall probability of a successm is the expectation of crossing the boundary $D_T(y_C)$ over the sampling 
  distribution of the control data:
 \begin{equation}
   \label{eq:oc2S_general}
-  \Pr(\text{Success} \mid \theta_1, \theta_2) = \int_{-\infty}^{\infty} F_1\left(D_1(y_2) \mid \theta_1\right) f_2\left(y_2 \mid \theta_2\right) \, dy_2
+  \Pr(\text{Success} \mid \theta_T, \theta_C) = \int_{-\infty}^{\infty} F_T\left(D_T(y_C) \mid \theta_T\right) f_C\left(y_C \mid \theta_C\right) \, dy_C
 \end{equation}
-where $F_1\left(\cdot \mid \theta_1\right)$ is the cumulative distribution function of the treatment statistic evaluated at the decision boundary, and
- $f_2\left(\cdot \mid \theta_2\right)$ is the probability density function of the control statistic.
+where $F_T\left(\cdot \mid \theta_T\right)$ is the cumulative distribution function of the treatment statistic evaluated at the decision boundary, and
+ $f_C\left(\cdot \mid \theta_C\right)$ is the probability density function of the control statistic.
 
 Because we are working with normally distributed endpoints, the sampling distributions for the sample means are normal: 
-$y_k \sim \mathcal{N}(\theta_k, SEM_k^2)$ for $k \in \{1, 2\}$, where $SEM_k = \sigma_k / \sqrt{n_k}$. Consequently, the general integral in 
+$y_m \sim \mathcal{N}(\theta_m, SEM_m^2)$ for $m \in \{T, C\}$, where $SEM_m = \sigma_m / \sqrt{n_m}$. Consequently, the general integral in 
 Equation \ref{eq:oc2S_general} can be evaluated directly using the standard normal CDF ($\Phi$) and PDF ($\phi$):
 \begin{equation}
   \label{eq:oc2S_normal}
-  \Pr(\text{Success} \mid \theta_1, \theta_2) = \int_{-\infty}^{\infty} \Phi\left(\frac{D_1(y_2) - \theta_1}{SEM_1}\right) \frac{1}{SEM_2} \phi\left(\frac{y_2 - \theta_2}{SEM_2}\right) \, dy_2
+  \Pr(\text{Success} \mid \theta_T, \theta_C) = \int_{-\infty}^{\infty} \Phi\left(\frac{D_T(y_C) - \theta_T}{SEM_T}\right) \frac{1}{SEM_C} \phi\left(\frac{y_C - \theta_C}{SEM_C}\right) \, dy_C
 \end{equation}
  
-\textcolor{red}{SAY that RBEST allows this, should I state more in depth computational details? }
+\note{SAY that RBEST allows this and cite the paper for RBesT}
 
 \subsubsection{Prior on treatment}
+\note{TODO}
 Reference to the average t1e metric propose by Psioda and Ibrahim. which averages the conditional power over the null design prior, (restricted tot the null trat effect)
 Best point that when you borrow information on a treatment contrast, the prior information usually supports a positive, non-null treatment effect. 
 This creates a "fundamental inconsistency" between the analysis prior (which favors efficacy) and the null design prior (which assumes no efficacy). 
@@ -292,93 +319,888 @@ If you want you can compute it anyway, otw, focus on the proposed better alterna
 
 
 
-\subsection{Extending to Sequential Bayesian Metrics}
-The concepts established for fixed-sample designs naturally extend to group sequential designs. In a GSD, the data are evaluated at $K$ interim 
-looks. Let $n_{1,k}$ and $n_{2,k}$ denote the cumulative sample sizes at stage $k \in \{1, \dots, K\}$, and let $y_{1,k}$ and $y_{2,k}$ represent the 
-corresponding sufficient statistics (sample means).
+\subsection{Group Sequential Design}
+In a GSD, the data are evaluated at $K$ interim analyses. Let $n_{m,k}$ denote the cumulative sample size at stage $k \in \{1, \dots, K\}$ for arm $m \in \{T, C\}$, where $n_{m,1} < n_{m,2} < \dots < n_{m,K}$.
+Since we assume enpoints are continuous and normally distributed with known variance $\sigma_m^2$, the sufficient statistic at look $k$ is the cumulative sample mean, $y_{m,k}$ and $SEM_{m,k} = \frac{\sigma_m} {\sqrt{n_{m,k}}}$.
 
-At each interim look $k$, the decision to stop for efficacy, stop for futility, or continue to the next stage is dictated by the posterior distribution 
-of the treatment contrast $\Delta = \theta_1 - \theta_2$. To evaluate these sequential operating characteristics, we must define the distribution of the 
-data across the interim looks. Because the cumulative sample sizes monotonically increase ($n_{m,1} < n_{m,2} < \dots < n_{m,K}$ for arm $m \in \{1, 2\}$), 
-the data at any stage perfectly contains all information from the previous stages. 
 
-\paragraph{Stage 1 (Marginal Distribution)}
+\begin{tcolorbox}
+\note{I AM NOT SURE WHETER THIS PART is relevant. I just added cause it was the first idea I tried to implement}
+
+
+\paragraph{Stage 1}
 At the first interim analysis, the observed sample mean depends entirely on the true underlying effect $\theta_m$ and the initial sample size $n_{m,1}$. 
-The standard error is simply $SEM_{m,1} = \sigma_m / \sqrt{n_{m,1}}$. Therefore, the initial cumulative mean follows a normal distribution centered on the 
-true effect:$$y_{m,1} \sim \mathcal{N}(\theta_m, SEM_{m,1}^2)$$
+The initial cumulative mean follows a normal distribution centered on the true effect:
+$$y_{m,1} \sim \mathcal{N}(\theta_m, SEM_{m,1}^2)$$
 
-\paragraph{Subsequent Stages (Conditional Distributions)}If the trial continues to a subsequent stage $k$ (where $1 < k \le K$), the new cumulative mean 
-$y_{m,k}$ is not entirely random; it is anchored by the data already observed at the previous stage, $y_{m,k-1}$. The final cumulative mean is a
+
+
+\paragraph{Subsequent Stages}
+If the trial continues to a subsequent stage $k$ (where $1 < k \le K$), the new cumulative mean $y_{m,k}$ is not entirely random; 
+it is anchored by the data already observed at the previous stage, $y_{m,k-1}$. The final cumulative mean is a
 weighted average of the known interim data and the data from the new cohort of patients, denoted $\Delta n_{m,k} = n_{m,k} - n_{m,k-1}$.
 Given the prior interim result $y_{m,k-1}$, the expected value of the updated mean pulls the observed data toward the true underlying effect $\theta_m$:
-$$\mathbb{E}[y_{m,k} \mid y_{m,k-1}] = \frac{n_{m,k-1}y_{m,k-1} + \Delta n_{m,k}\theta_m}{n_{m,k}}$$
+\begin{equation}
+\label{eq:exp_val_stagek}
+\mathbb{E}[y_{m,k} \mid y_{m,k-1}] = \frac{n_{m,k-1}y_{m,k-1} + \Delta n_{m,k}\theta_m}{n_{m,k}}
+\end{equation}
 
-Since the variance of the fixed historical data $y_{m,k-1}$ is zero, the variance of the new cumulative mean derives entirely from the new patients, 
-shrinking proportionally to the contribution of the new cohort: 
-$$\mathbb{V}\text{ar}(y_{m,k} \mid y_{m,k-1}) = \frac{\sigma_m^2 \Delta n_{m,k}}{n_{m,k}^2}$$
+Since the variance of the fixed historical data $y_{m,k-1}$ is zero, the variance of the new cumulative mean derives entirely from the new patients:
+\begin{equation}
+\label{eq:var_stagek}
+\mathbb{V}\text{ar}(y_{m,k} \mid y_{m,k-1}) = \frac{\sigma_m^2 \Delta n_{m,k}}{n_{m,k}^2}
+\end{equation}
 
-Consequently, the data at any stage $k$, conditional on the result of the preceding stage, follows a shifted and narrowed normal transition density:
+
+Consequently, the data at any stage $k$, conditional on the result of the preceding stage, follows a shifted and narrowed normal:
 
 $$f_{m, k|k-1}(y_{m,k}) \sim \mathcal{N}\left( \mathbb{E}[y_{m,k}] , \mathbb{V}\text{ar}(y_{m,k}) \right)$$
+\end{tcolorbox}
 
 
-\textcolor{red}{Extend from Stallar} --> data can also be seen as Brownian Motions 
+However, this formulation is computationally invonvenient to evaluate. \\
+
+Another approach is provided in Chapter 3 of \cite{jennison_group_1999}. 
+We can define the parameter of interest as the treatment contrast $\delta$.
+ The sufficient statistic for $\delta$ at look $k$ is the observed cumulative mean difference:
+$$D_k = y_{C,k} - y_{T,k}$$
+
+The sampling distribution is $D_k \mid \delta \sim \mathcal{N}(\delta, V_k)$, where $V_k = \sigma_T^2/n_{T,k} + \sigma_C^2/n_{C,k}$. 
+Let $\mathcal{I}_k = V_k^{-1}$ represent the cumulative information for the contrast. As we progress in the trial, this information will stricly grow: 
+$\mathcal{I}_1 < \mathcal{I}_2 < \dots < \mathcal{I}_K$.
+Let $D_{\Delta}$ denote the mean difference calculated exclusively from the new cohort enrolled between $k_1$ and $k_2$ (where $k_1 \le k_2$). 
+Because $D_{\Delta}$ is derived from entirely different patients than $D_{k_1}$, the two statistics are independent:
+$$\text{Cov}(D_{k_1}, D_{\Delta}) = 0$$
+
+Trivially, $\mathcal{I}_{k_2} = \mathcal{I}_{k_1} + \mathcal{I}_{\Delta}$. Moreover, we can extend formula \ref{eq:exp_val_stagek} to $D_{k_2}$: 
+$$D_{k_2} = \frac{n_{k_1} \times D_{k_1} + \Delta n_{k_1,k_2} \times D_{\Delta}}{n_{k_2}}$$
+and by dividing numerator and denominator by $\sigma^2$: 
+$$D_{k_2} = \frac{\frac{n_{k_1}}{\sigma^2} \times D_{k_1} + \frac{\Delta n_{k_1,k_2}}{\sigma^2} \times D_{\Delta}}{\frac{n_{k_2}}{\sigma^2}} = \frac{\mathcal{I}_{k_1} \times D_{k_1} + \mathcal{I}_{\Delta} \times D_{\Delta}}{\mathcal{I}_{k_2}}$$
 
 
 
-\subsubsection{Posterior distribution of treatment effect}
+The covariance between the earlier and later cumulative mean can be therefore written as:
+$$\text{Cov}(D_{k_1}, D_{k_2}) = \text{Cov}\left(D_{k_1}, \frac{\mathcal{I}_{k_1} D_{k_1} + \mathcal{I}_{\Delta} D_{\Delta}}{\mathcal{I}_{k_2}}\right) = $$
+$$\frac{\mathcal{I}_{k_1}}{\mathcal{I}_{k_2}} \mathbb{V}\text{ar}(D_{k_1}) + \frac{\mathcal{I}_{\Delta}}{\mathcal{I}_{k_2}} \text{Cov}(D_{k_1}, D_{\Delta}) = $$
+
+$$ = \frac{\mathcal{I}_{k_1}}{\mathcal{I}_{k_2}} \left( \frac{1}{\mathcal{I}_{k_1}} \right) + 0 = \frac{1}{\mathcal{I}_{k_2}}$$
+
+By standardizing the cumulative mean differences: $Z_k = D_k \sqrt{\mathcal{I}_k}$, we obtain the vector $\left\{ Z_1, \dots, Z_K \right\}$. Notably, it is a multivariate normal, since each $Z_k$ is a linear combination 
+of the independent normal $y_{C,k} - y_{T,k}$ and marginally: $Z_k \sim N(\delta \sqrt{\mathcal{I}_k}, 1) $
+
+Additionally, the covariance of the Z-scores becomes:
+$$\text{Cov}(Z_{k_1}, Z_{k_2}) = \text{Cov}\left(D_{k_1} \sqrt{\mathcal{I}_{k_1}}, D_{k_2} \sqrt{\mathcal{I}_{k_2}}\right) = $$
+$$ \sqrt{\mathcal{I}_{k_1} \mathcal{I}_{k_2}} \, \text{Cov}(D_{k_1}, D_{k_2}) = \sqrt{\mathcal{I}_{k_1} \mathcal{I}_{k_2}} \left( \frac{1}{\mathcal{I}_{k_2}} \right) = \sqrt{\frac{\mathcal{I}_{k_1}}{\mathcal{I}_{k_2}}}$$
+
+
+It is finally possible to note that $\left\{ Z_1, \dots, Z_K \right\}$ is a Markov Sequence and the sequence of score statistics $\{S_1, \dots, S_K\}$, where $S_k = D_k \cdot \mathcal{I}_k$, 
+can be viewed as a Brownian motion with drift $\delta$ observed at "information times" $\{\mathcal{I}_1, \dots, \mathcal{I}_K\}$.  
+\note{cite: Lan and Zucker (1993) and J Whitehead - 1997}
+
+
+Given this joint distribution, the standard and traditional way to evaluate sequential designs, can be found in Chapter 19 of \cite{jennison_group_1999}. 
+Given the decision boundaries $(a_1, b_1), \dots, (a_K, b_K)$, computed following the chosen group sequential method (e.g. Pocock, O'Brien-Fleming \note{add citations}), where $(a_k, b_k)$ denote the continuation region at stage $k$, 
+with $a_k$ the futility boundary and $b_k$ the efficacy boundary, 
+the conditional operating characteristics can be computed as: 
+  \begin{equation}
+\label{eq:}
+P_{\delta} \left( \bigcup_{k=1}^{K} \{ a_j < Z_j < b_j \text{ for } j = 1, \dots, k-1 \text{ and } Z_k \ge b_k \} \right)
+\end{equation}
+
+To compute this OC, we need to define the probability of exiting the trial at a specific analysis $k$, $\psi_k(\delta)$. 
+\begin{equation}
+\label{eq:exit_prob}
+\psi_k(\delta) = P_\delta \{ a_1 < Z_1 < b_1, \dots, a_{k-1} < Z_{k-1} < b_{k-1}, Z_k \ge b_k \}
+\end{equation}
+
+
+Evaluating Equation \ref{eq:exit_prob} directly, requires solving a $k$-fold multiple integral:
+\begin{equation}
+\label{eq:multiple_integral}
+\psi_k(\delta) = \int_{a_1}^{b_1} \dots \int_{a_{k-1}}^{b_{k-1}} \int_{b_k}^{\infty} f_1(z_1; \delta) f_2(z_2 \mid z_1; \delta) \dots f_k(z_k \mid z_{k-1}; \delta) \, dz_k \,dots dz_1
+\end{equation}
+
+where $f_1(z_1; \theta)$ is the marginal density of $Z_1$, and $f_j(z_j \mid z_{j-1})$ is the conditional density of $z_j$ given $z_{j-1}$  
+
+As the number of interim analyses $K$ increases, direct numerical integration of Equation \ref{eq:multiple_integral} becomes computationally intractable.
+
+Thus, the Markov property of $\{Z_1, \dots, Z_K\}$ can be exploited: the conditional distribution of $Z_k$ given $Z_1, \dots, Z_{k-1}$, depends only on $Z_{k-1}$. 
+
+By defining $\Delta_k = \mathcal{I}_k - \mathcal{I}_{k-1}$, the conditional density is:
+\begin{equation}
+f_k(z_{k-1}, z_k; \delta) = \sqrt{\frac{\mathcal{I}_k}{\Delta_k}} \phi \left( \frac{z_k\sqrt{\mathcal{I}_k} - z_{k-1}\sqrt{\mathcal{I}_{k-1}} - \delta\Delta_k}{\sqrt{\Delta_k}} \right)
+\end{equation}
+
+Then, sub-densities are construced recursively. 
+At the first interim analysis, the sub-density is simply the marginal density of $Z_1$:
+\begin{equation}
+g_1(z_1; \delta) = f_1(z_1; \delta) = \phi(z_1 - \delta\sqrt{\mathcal{I}_1})
+\end{equation}
+
+For subsequent stages $k = 2, \dots, K$, the sub-density is obtained by integrating the previous stage's sub-density over the continuation region:
+\begin{equation}
+\label{eq:recursive_subdensity}
+g_k(z_k; \delta) = \int_{a_{k-1}}^{b_{k-1}} g_{k-1}(z_{k-1}; \delta) f_k(z_{k-1}, z_k; \delta) \, dz_{k-1}
+\end{equation}
+
+
+Then, $\psi_k(\delta)$ simplifies to a sequence of K 1D integrals instead of K-dim integrals
+\begin{equation}
+\psi_k(\delta) = \int_{b_k}^{\infty} g_k(z_k; \delta) \, dz_k
+\end{equation}
+
+
+
+
+While this approach appears appealing, it is only possible to use it when teh prior on treatment is available. Infact, in that case, the boundary is a fixed 
+constant on the Z-scale, while in the case of a prior on control, the boundary is a function of the observed data. Thus, we rely on Monte Carlo simulation to estimate 
+the Operating Characteristics in that case (\note{I remember I read somewhere that they talk that in Bayesian is very common to rely on simualtions for OC}). 
+
+\note{I think it would also be interesting adding like the posterior distribution of theta given data.
+It is just a Normal Normal conjugancy but just need also to add the mixture component update. Everything is closed form for both prior on delta and prior on control.  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsubsection{Prior on treatment}
 A conjugate prior-likelihood pair has the convenient property that the posterior is in the same distributional class as the prior. This property also applies to mixtures of conjugate priors.
 This mean that assuming Normal likelihood and prior as a mixture of Normals, it is possible to extract closed formulas.
 
 
 Extending the formula of Normal priors \cite{gsponer_practical_2014} is therefore straightforward. 
 
-\textcolor{red}{....}
+\note{....}
 Also stallard say that you can reproduce frequentist (like Pockock) using bayesian but only if prior on treamtnt 
 
 
-\subsubsection{Sequential Decision Boundaries and Regions}
-Similar to the fixed-design case, the Bayesian decision functions evaluated at each look $k$ uniquely define conditional boundaries on the data scale. 
-Assuming wlog that lower values indicate efficacy, we define two critical boundaries for the treatment mean given the observed control mean 
-$y_{2,k}$:\begin{itemize}\item \textbf{Efficacy Boundary} $D_{1,k}(y_{2,k})$: The maximal threshold $y_{1,k}$ must satisfy to declare early or final 
-study success.\item \textbf{Futility Boundary} $F_{1,k}(y_{2,k})$: The minimal threshold below which $y_{1,k}$ must fall to justify continuing the trial; 
-otherwise, the trial stops for futility.\end{itemize}
-
-These boundaries partition the bivariate sample space at stage $k$ into three mutually exclusive regions:
-\begin{align*}\text{Efficacy Region:} \quad &\mathcal{R}k = { (y{1,k}, y_{2,k}) : y_{1,k} \le D_{1,k}(y_{2,k}) } \\text{Futility Region:} \quad &\mathcal{F}k = { (y{1,k}, y_{2,k}) : y_{1,k} > F_{1,k}(y_{2,k}) } \\text{Continuation Region:} \quad &\mathcal{C}_k = \left( \mathcal{R}_k \cup \mathcal{F}_k \right)^c\end{align*}Note that at the final stage $K$, the continuation region is empty ($\mathcal{C}_K = \emptyset$), forcing a terminal decision.
 
 
-\subsubsection{Sequential Conditional and Average Operating Characteristics}
-In the sequential framework, the conditional probability of success $\Pr(\text{Success} \mid \theta_1, \theta_2)$ from Equation~\ref{eq:m} is the probability of the trial trajectory entering an efficacy region $\mathcal{R}_k$ at any stage $k$, conditional on having survived the continuation regions $\mathcal{C}_j$ at all previous stages $j < k$.This pointwise sequential operating characteristic is expressed as a sum of joint probabilities:\begin{equation}\label{eq:seq_conditional_success}\Pr(\text{Success} \mid \theta_1, \theta_2) = \sum_{k=1}^{K} \Pr\left( (y_{1,k}, y_{2,k}) \in \mathcal{R}k ;\bigcap{j=1}^{k-1}; (y_{1,j}, y_{2,j}) \in \mathcal{C}_j \Big| \theta_1, \theta_2 \right)\end{equation}When evaluated under the null hypothesis constraint ($\theta_1 = \theta_2 + \delta^*$ where $\delta^* = 0$), Equation~\ref{eq:seq_conditional_success} yields the conditional sequential Type I error, $T1E(\theta_2)$.Because the efficacy and futility boundaries $D_{1,k}(\cdot)$ and $F_{1,k}(\cdot)$ dynamically shift based on the degree of conflict between the interim control data $y_{2,k}$ and the analysis prior $p(\theta_2)$, $T1E(\theta_2)$ is highly sensitive to the true value of $\theta_2$. To obtain a robust design metric, we marginalize this conditional sequential error over the design prior $p(\theta_2)$, defining the \textbf{Sequential Average Type I Error}:\begin{equation}\label{eq:seq_avg_t1e}\alpha_{avg, seq} = \int_{-\infty}^{\infty} \left[ \sum_{k=1}^{K} \Pr\left( (y_{1,k}, y_{2,k}) \in \mathcal{R}k ;\bigcap{j=1}^{k-1}; (y_{1,j}, y_{2,j}) \in \mathcal{C}_j \Big| \theta_2, \theta_1=\theta_2 \right) \right] p(\theta_2) , d\theta_2\end{equation}As in the fixed design, the alignment of the design prior with the analysis prior governs the behavior of the Average Type I Error. However, the exact asymptotic control achieved in fixed designs does not directly translate to the group sequential setting. Because the data are monitored at discrete interim looks, the sequential trajectory of the posterior probability forms a martingale under the prior predictive distribution. By Doob's maximal inequality, if the design prior perfectly matches the analysis prior, evaluating a constant posterior probability threshold $p_c$ across all interim looks guarantees a conservative upper bound on the Sequential Average Type I Error: $\alpha_{avg, seq} \le 1 - p_c$.Strict equality (exact control) is generally not achieved due to boundary overshoot; the discrete accumulation of data causes the posterior probability to jump past the threshold rather than land exactly on it. Consequently, achieving a precise target level for $\alpha_{avg, seq}$ in a Bayesian sequential design requires actively calibrating the boundaries $D_{1,k}(\cdot)$, for instance by numerically tuning the posterior thresholds $p_c$ to account for the sequential overshoot.\paragraph{Computational Framework for Sequential Metrics}In a fixed design, Equation~\ref{eq:oc2S_normal} allows for rapid computation of $\alpha_{avg}$ via single or double numerical quadrature. However, the sequential equation (Equation~\ref{eq:seq_avg_t1e}) requires evaluating the integral of a $2K$-dimensional multivariate normal density over complex, non-linear boundaries defined by mixture analysis priors.For $K \ge 2$, direct numerical integration becomes computationally prohibitive. Instead, $\alpha_{avg, seq}$ is efficiently evaluated using Monte Carlo integration tailored to the properties of cumulative sufficient statistics. The algorithm proceeds by defining the boundaries $\mathcal{R}_k$ and $\mathcal{F}_k$ exclusively on the data scale \textit{a priori}, stripping the computationally expensive Bayesian mixture updating out of the simulation loop.By drawing $S$ independent samples of the true control parameter from the design prior, $\theta_2^{(s)} \sim p(\theta_2)$, we simulate the incremental sequence of data. The incremental mean for stage $k$ depends only on the new patients $\Delta n_{m,k} = n_{m,k} - n_{m,k-1}$, drawn as independent normal increments:$$\Delta y_{m,k}^{(s)} \sim \mathcal{N}\left(\theta_m^{(s)}, \frac{\sigma_m^2}{\Delta n_{m,k}}\right)$$The cumulative mean $y_{m,k}^{(s)}$ is then recursively formed as a sample-size weighted average of the prior cumulative mean and the increment. The sequential Average Type I Error converges to the empirical proportion of simulated trajectories that cross $D_{1,k}(y_{2,k}^{(s)})$ at any stage $k \le K$
+\subsubsection{Prior on control}
+As mentioned in the previous section, to estimate the Operating Characteristics we rely on a Monte Carlo algorithm.
+Let $S$ be the total number of simulated trials. The initialization of the true control effect depends on whether we are evaluating predictive or conditional operating characteristics. 
+For predictive OC, we draw the true control effect from the specified design prior $p_D(\theta_C)$, while if we are evaluating conditional OC, we fix the true control effect to a specific 
+true value $\theta_C^*$. 
+
+For each trial $s \in \{1, \dots, S\}$, the control effect is assigned as follows:
+$$
+\theta_C^{(s)} = 
+\begin{cases} 
+\text{drawn from } p_D(\theta_C) & \text{for predictive OC} \\
+\theta_C^* & \text{for conditional OC}
+\end{cases}
+$$
+
+The true effect on treatment arm is then deterministically obtained from the control arm by the specified true treatment effect $\delta$:
+$$ \theta_T^{(s)} = \theta_C^{(s)} - \delta $$
+
+For each trial $s$, the trajectory is simulated stage by stage exploiting the independent increments.
+At stage $k=1$, the sample means are drawn directly from:
+$$ y_{m,1}^{(s)} \sim \mathcal{N}\left(\theta_m^{(s)}, \frac{\sigma_m^2}{n_{m,1}}\right) \quad \text{for } m \in \{T, C\} $$
+
+
+At subsequent stages, we determine the number of newly enrolled patients, $\Delta n_{m,k} = n_{m,k} - n_{m,k-1}$. The sample mean is then sampled from: 
+$$ y_{m,\Delta}^{(s)} \sim \mathcal{N}\left(\theta_m^{(s)}, \frac{\sigma_m^2}{\Delta n_{m,k}}\right) $$
+
+And we obtain the cumulative statistic for stage $k$ as a weighted average: 
+$$ y_{m,k}^{(s)} = \frac{n_{m,k-1} y_{m,k-1}^{(s)} + \Delta n_{m,k} y_{m,\Delta}^{(s)}}{n_{m,k}} $$
+
+
+Let $c_{T,k}(y_{C,k}^{(s)})$ denote the critical threshold for the treatment arm mean given a specific value of the control arm computed via root-finding (using \texttt{RbBesT}).
+A trial stops for efficacy at stage $k$ if:
+$$ y_{T,k}^{(s)} < c_{T,k}(y_{C,k}^{(s)}) $$
+
+And the oppostive procedure is applied for dynamically computed futility boundaries.  \\
+Let $I_{k}^{(s)}$ be an indicator function taking the value $1$ if trial $s$ crosses the efficacy boundary at stage $k$ (and has not stopped at any prior stage), and $0$ otherwise. Trials that cross either an efficacy or futility boundary are removed from the active simulation pool for subsequent stages. 
+
+By aggregating the outcomes of the $S$ simulated trajectories, we obtain Monte Carlo estimators for the trial's operating characteristics. We can thus obtain probabilty of success at
+stage $k$: $$ \widehat{P}(\text{Success at k}) = \frac{1}{S} \sum_{s=1}^S I_{k}^{(s)} $$
+and also the overall probability of trial success:
+$$ \widehat{P}(\text{Success}) = \sum_{k=1}^K \widehat{P}(\text{Success at k})  $$
 
 
 
 
-\subsection{Extend for treatment}
+For traditiional OC, where the control effect is fixed at a specific true value $\theta_C^*$, the estimator converges to the Conditional Power (or classic Type I Error in case $\delta = 0$):
+$$ \widehat{P}(\text{Success} \mid \theta_C^*, \delta) \xrightarrow{p} \int P\left( \bigcup_{k=1}^K \{ y_{T,k} < c_{T,k}(y_{C,k}) \} \Big| \mathbf{y}_C, \theta_C^*, \delta \right) f(\mathbf{y}_C \mid \theta_C^*) \, d\mathbf{y}_C $$
 
+Conversely, for \textbf{predictive OC}, the uncertainty around $\theta_C$ is incorporated into the design and the estimator converges to $E_{p_D(\theta)}[CP(\theta)]$: 
+$$ 
+\widehat{P}(\text{Pred Success} \mid \delta) \xrightarrow{p} \int \left[ \int P\left( \bigcup_{k=1}^K \{ y_{T,k} < c_{T,k}(y_{C,k}) \} \Big| \mathbf{y}_C, \theta_C, \delta \right) f(\mathbf{y}_C \mid \theta_C) \, d\mathbf{y}_C \right] p_D(\theta_C) \, d\theta_C 
+$$
+
+\note{What about also writing an algorithm box?}
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{EUII}
 Introduce the EUII as  measure of evidence efficiency per experimental unit. DOR normalized by sample size. 
 
+Say that we are going to evaluate also the EUII using not only the conditional OC, but also the predictive
 
-
+ 
 \section{Applications}
 
-This section contains your actual simulation studies using normally distributed data.
-Cite RBest paper for that 
-
-\subsection{Simulation Framework and Setup}
-\textbf{Concept:} Describe the computational setup in R (e.g., using \texttt{RBesT} or \texttt{gsbDesign}). State the assumption of normally distributed endpoints. \\
-\textit{How to use:} Anchor this setup strictly to the methodology evaluated by Weru et al. for normally distributed endpoints \cite{weru_information_2026}.
+<<load.functions, include=FALSE, cache=FALSE>>=
+source("../scripts/prior_on_control/00.functions.MC.R")
+library(xtable)
+library(knitr)
+library(kableExtra)
+library(RBesT)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+@ 
 
 \subsection{Application 1: Borrowing on the Control Arm}
-\textbf{Concept:} Simulating a hybrid-control trial where historical data informs the placebo/control arm. \\
-\textit{How to use:} Vary the tuning parameters (variance, location, weight) of the robust component. Evaluate how $at1e_{seq}$, Assurance, and the \textbf{expected EUII} behave across various prior-data conflict (drift) scenarios, directly mirroring the investigations in Weru et al. but with sequential stopping \cite{weru_information_2026}.
+
+We evaluate the design of a PoC study in Crohn’s disease, an inflammatory bowel disease, where the primary endpoint is the change from baseline to week 6 in the Crohn’s Disease Activity Index,
+a continuous measure where lower scores indicate clinical imporvement. 
+
+The original trial evaluated the efficacy of secukinumab against a placebo (\note{cite Hueber}). 
+To define the treatment effect, we let $\theta_C$ and $\theta_T$ the true underlying mean changes for the control and treatment arms respectively. 
+The treatment effect is therefore $\delta = \theta_C - \theta_T$. This scenario was evaluated also by Best, and Gsponer, where the first reduces it to a fixed design. 
+
+The original design derived an informative prior for the placebo arm using historical data from six previous Crohn’s disease trials. 
+To appropriately account for between-trial variation, the data from the 671 historical placebo patients were down-weighted to an effective sample size of 20 patients. 
+
+The original protocol planned two interim analyses when 17 and 41 patients, respectively, had reached the 6-week evaluation time point.
+
+Gsponer changed this design into a two-stage group sequential where 10 patients are allocated to placebo and 20 to the experimental treatment in the first stage.
+If neither the success nor the futility boundaries are crossed at the interim analysis, a second stage enrolls an additional 10 placebo and 20 experimental patients. 
+For completeness we will evaluate both. 
+
+Another cause of divergence is that Gsponer allowed for the futility analysis at final analysis, leading to three different outcomes: futility, success, and indeterminate. 
+We will use the original formulation, which doesn't perform a futility analysis at the last stage, allowing a binary outcome for the trial.
+
+
+
+
+
+
+
+ 
+The trial evaluates a dual success criterion requiring strong evidence of a positive treatment effect $$p(\delta > 0 \mid \text{Data}) \ge 0.95$$
+and evidence of a clinically relevant effect size $$p(\delta > 50 \mid \text{Data}) \ge 0.50$$
+
+The design also incorporates a futility criterion defined as 
+$$p(\delta < 40 \mid \text{Data}) \ge 0.90$$
+
+
+
+ 
+
+
+\subsubsection{One interim analysis}
+We now reproduce the results from \cite{gsponer_practical_2014} using as priors an informative $\theta_C \sim N(-49, (88 / 20)^2)$ and a vague $\theta_T \sim N(-50, 8800^2) $. To compute the traditional Type I error, we assume a fixed true value $\theta_C = -49$,
+while for the Average Type I error we assume that design prior coincides with analysis prior, see Figure~\ref{fig:GSPONER.plot} for the full Operating Charatcteristics. 
+
+
+
+<<GSPONER.preparation, echo=FALSE, cache=TRUE, results='asis', cache.extra=file.mtime("../scripts/prior_on_control/1.2_Gsponer.T1E_and_avgT1E.control.R")>>=
+gsponer <- readRDS("../data/reproduce.Gsponer.rds")
+res <- gsponer$res
+final_tab <- format.results(res)
+
+tab.gsponer <- final_tab$per_stage %>%
+  select(
+    Delta, 
+    P_Succ.Interim_1,
+    P_Succ.Final, P_Fut.Interim_1, P_Ind.Final, Cum_P_Succ.Final
+  )
+
+overall <- final_tab$overall %>%
+select(Delta, E_N, E_N_Succ, E_N_Fail)
+
+
+# Average metrics
+res.avg <- gsponer$res.avg
+final_tab.avg <- format.results(res.avg)
+
+tab.gsponer.avg <- final_tab.avg$per_stage %>%
+  select(
+    Delta, 
+    P_Succ.Interim_1,
+    P_Succ.Final, P_Fut.Interim_1, P_Ind.Final, Cum_P_Succ.Final
+  )
+
+overall.avg <- final_tab.avg$overall %>%
+select(Delta, E_N, E_N_Succ, E_N_Fail)
+@
+
+
+
+
+
+<<GSPONER.combined_panel, echo=FALSE, results='asis', cache=FALSE, dependson="GSPONER.preparation", cache.extra=file.mtime("../scripts/prior_on_control/1.2_Gsponer.T1E_and_avgT1E.control.R")>>=
+
+
+#  Open floating table environment
+cat("\\begin{table}[htbp]\n")
+cat("\\centering\n")
+cat("\\caption{Operating characteristics (Gsponer design): Conditional metrics (top) vs. average metrics (bottom).\\label{tab:combined_gsponer}}\n")
+cat("\\vspace{0.5em}\n")
+
+# Panel A: Pointwise Conditional Table wrapped in a manual LaTeX resizebox
+cat("{\\small\\textbf{Operating characteristics (Gsponer design)}}\\par\\smallskip\n")
+cat("\\resizebox{\\linewidth}{!}{%\n")
+print(knitr::kable(tab.gsponer, format = "latex", booktabs = TRUE))
+cat("}\n")
+
+# Panel B: Average Table wrapped in a manual LaTeX resizebox
+cat("{\\small\\textbf{Average operating characteristics (design prior = analysis prior)}}\\label{tab:avg}\\par\\smallskip\n")
+cat("\\resizebox{\\linewidth}{!}{%\n")
+print(knitr::kable(tab.gsponer.avg, format = "latex", booktabs = TRUE))
+cat("}\n")
+
+cat("\\end{table}\n")
+@
+
+
+<<GSPONER.overall_side_by_side, echo=FALSE, results='asis', dependson="GSPONER.preparation">>=
+
+
+# Open a single shared table float environment to hold both panels side-by-side
+cat("\\begin{table}[htbp]\n")
+cat("\\centering\n")
+cat("\\caption{Overall operating characteristics for the Gsponer sequential design: Pointwise conditional metrics (left) vs. average metrics (right).\\label{tab:overall_side_by_side}}\n")
+cat("\\vspace{0.5em}\n")
+
+# --- Left Panel: Conditional Metrics ---
+cat("\\begin{minipage}[t]{0.48\\linewidth}\n")
+cat("\\centering\n")
+cat("{\\small\\textbf{Conditional Operating Characteristics}}\\par\\smallskip\n")
+cat("\\resizebox{\\linewidth}{!}{%\n")
+print(knitr::kable(overall, format = "latex", booktabs = TRUE))
+cat("}\n")
+cat("\\end{minipage}\n")
+
+# Horizontal space separation between the two minipages
+cat("\\hfill\n")
+
+# --- Right Panel: Average Metrics ( marginalized over q(theta) ) ---
+cat("\\begin{minipage}[t]{0.48\\linewidth}\n")
+cat("\\centering\n")
+cat("{\\small\\textbf{Average Operating Characteristics}}\\par\\smallskip\n")
+cat("\\resizebox{\\linewidth}{!}{%\n")
+print(knitr::kable(overall.avg, format = "latex", booktabs = TRUE))
+cat("}\n")
+cat("\\end{minipage}\n")
+
+# Close parent table environment float container
+cat("\\end{table}\n")
+@
+
+
+We observe the well known effect that the power obtained with predictive methods is always closer to 50\% than the power obtained with conditional methods.
+Infact, as showed in Table~\ref{tab:avg}, when the conditional power exceed 50\%, Assurance is lower, while under the null hypotesis ($\delta = 0$), or when
+the treatment effect is not sufficiently large (e.g. $\delta = 40$), the average Operating characteristic is larger. 
+\note{What is the mathematical reason for this?}
+
+Figure~\ref{fig:GSPONER.plot} highlights a limitation of relying solely on pointiwise conditional operating characteristics. We obtain a Type I error of 1.2\% assuming
+a fixed true value of $\theta_C = -49$, but the type I error varies based on our assumption on $\theta_C$ (and consequently on $\theta_T$). 
+Since the actual parameter value is practically unknown, adopting the average T1E by averaging over the entire design prior, provides a more realistic 
+assessment of the design performance, allowing us to account for uncertainty in $\theta_C$. 
+
+
+<<GSPONER.plot, echo=FALSE, cache=FALSE, results='asis', fig.cap="Pointwise type I error across true control values. The red dashed line indicates the nominal 5\\% level and the blue line the average type I error.  The larger black point highlights the value used by Gsponer to compute the conditional type I error", cache.extra=file.mtime("../scripts/prior_on_control/1.2_Gsponer.T1E_and_avgT1E.control.R")>>=
+
+pointwiseT1E <- gsponer$pointwiseT1E
+
+
+
+T1E_col <- sapply(pointwiseT1E, function(x) x$Overall[["Power"]])
+true_c <- seq(-91, 26, 3)
+
+ 
+df_T1E <- data.frame(theta_c = true_c, T1E = T1E_col)
+
+#also extract the avgT1E
+avgT1E <- res.avg$delta.0$Overall[["Power"]]
+  
+ggplot(df_T1E, aes(x = theta_c, y = T1E)) +
+  geom_line() +
+  geom_point() +
+    geom_point(
+    data = subset(df_T1E, theta_c == -49),
+    size = 4,
+    color = "black"
+  )+  
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = avgT1E, color ="blue") + 
+  labs(
+    x ="True control value (= treatment arm)",
+    y = "Type I Error"
+      ) +
+      coord_cartesian(xlim = c(-91, 0)) +
+  theme_minimal()
+@
+
+
+
+
+It is also possible to compute two different EUII, using conditional vs average OC. Results are reported in Figure~\ref{fig:GSPONER.plot.euii}.
+The EUII computed with conditional OC, rely on the assumption $\theta_C = -49$, while the average EUII rely on a more realistic and less stringent assumption: $\theta_C \sim N(-49, 88 / 20)$. 
+
+<<GSPONER.plot.euii, echo=FALSE, cache=FALSE, results='asis', fig.cap="EUII", cache.extra=file.mtime("../scripts/prior_on_control/1.2_Gsponer.T1E_and_avgT1E.control.R")>>=
+euii <- compute_euii(res)
+euii.avg <- compute_euii(res.avg)
+
+df_conditional <- bind_rows(euii, .id = "P_H1") |> 
+  mutate(Type = "Conditional")
+
+df_average <- bind_rows(euii.avg, .id = "P_H1") |> 
+  mutate(Type = "Average")
+
+
+df_euii <- bind_rows(df_conditional, df_average) |> 
+  filter(Delta != 0) |> 
+  mutate(P_H1 = as.factor(P_H1))
+
+  
+ggplot(df_euii, aes(x = Delta, y = EUII, color = Type, linetype = P_H1)) + 
+  geom_line(linewidth = 1) + 
+  geom_point(size = 2) +
+  labs(
+    x = "Effect Size (Delta)",
+    y = "EUII",
+    color = "Metric",
+    linetype = "Prior P(H1)"
+  ) +
+  theme_minimal()
+@
+
+
+\paragraph{Varying prior}
+Historical information is often heterogeneous and may not be fully compatible with the current stud, this is why a limitation can be the use of a Normal prior, 
+sensitive to prior-data conflict.
+It is therefore natural to consider more flexible prior specifications based on mixture distributions:
+
+
+\begin{itemize}
+      \item \textbf{Vague (flat) prior.}  
+    $p_{\text{vague}} = \mathcal{N}(-50,\,8800^2)$
+
+    \item \textbf{MAP prior} obtained by MAP approach on six previous Crohn’s disease trials.   
+    $ p_{\text{MAP}} = 0.51\,\mathcal{N}(-51,\,19.9^2)
+    +0.44\,\mathcal{N}(-46.8,\,7.6^2)
+    +0.05\,\mathcal{N}(-54.1,\,51.7^2)$
+
+    \item \textbf{Robust MAP prior with weight $0.2$.}  
+    Robustified version of MAP using a vague component with weight $0.2$, leading to a prior where $80\%$ of the weight is assigned to the informative MAP component and $20\%$ to the robust component.
+
+    \item \textbf{Robust MAP prior with weight $0.5$.}  
+        Robustified version of MAP using a vague component centered at $-50$ with weight $0.5$,
+
+    \item \textbf{Skeptical prior.} obtained from a stand-alone analysis of the historical study exhibiting the most extreme placebo effect.
+    $p_{\text{skep}} = \mathcal{N}(-90,\,25^2)$
+    \item \textbf{Normal}, the assumed prior by Gsponer
+   $ \mathcal{N}(-49,\,20^2).$
+
+    \item \textbf{Robustified MAP priors using heavy-tailed distributions} following \cite{weru_information_2026}, we also inspect the use of an approximated t distribution as robust component:
+    $t_3(-50,\,88)$ by a mixture of 15 Normals (using w = 0.2 and w = 0.5)
+\end{itemize}
+
+Note that the first 3 priors are the same evalauted in \citet{best_beyond_2025}:
+
+
+\paragraph{Classic T1E with varying prior}
+Figure~\ref{fig:GSPONER.plot.T1E} reports the Type I error obtained when the true 
+control effect is fixed at $\theta_C=-49$. 
+%MAP prior and the mildly robustified priors ($w=0.2$) keep Type I error well below the nominal $5\%$ threshold. 
+Increasing the robustness weight decreases 
+the amount of borrowing and leads to slightly more conservative behavior, while the vague prior produces larger Type I error values due to the absence of historical 
+information. The skeptical prior is the most conservative specification, resulting in extremely small Type I error since the use of an historical value
+for the control really extreme, lead to a generally reduced possibility of declaring success. 
+
+However, as Figure~\ref{fig:GSPONER.plot.pointwiseT1E} shows, as $\theta_C$ drifts away from the prior center, robustified priors maintain better T1E 
+stability compared to strictly informative priors
+
+These results also illustrate a practical difficulty of evaluating Bayesian adaptive designs using pointwise Type I error alone. For each prior specification, 
+Type I error must be assessed over a range of plausible control values, and additional evaluations of power are required for each treatment effect scenario. 
+This leads to a very large number of operating scenarios to inspect. The use of average Type I error can therefore provide a more concise summary of 
+the frequentist properties of the design by reducing the evaluation to a single measure for each prior specification, while assurance can still be studied
+separately across different treatment effect assumptions.
+
+Finally, note that the Operating Characteristis obtained using a vague Normal or a t-distribution as Robust component, are practically the same, see Figure~\ref{fig:GSPONER.plot.pointwiseT1E}.
+For easier reporting we will thus focus on classic Robust component \note{Maybe put results using t-distr in appendix}.
+
+
+
+<<GSPONER.prep_priors, echo=FALSE, cache=FALSE, results='asis', cache.extra=file.mtime("../scripts/prior_on_control/1.3_one.interim.T1E.inspection.R")>>=
+
+t1e_seq <- readRDS("../data/T1E.sequential.rds")
+
+results_fixed <- t1e_seq$results_fixed
+results_grid <- t1e_seq$results_grid
+
+
+prior_colours <- c(
+  MAP            = "#2f00ff",
+
+  Normal         = "#0099cc",
+
+  Vague          = "#8d7f7f",
+  Skeptical      = "#232323",
+
+  Robust_0.20    = "#ff0000",
+  Robust_0.5     = "#ffa600",
+
+  Robust_t_0.20  = "darkgreen",
+  Robust_t_0.5   = "#11ff00"
+)
+@
+
+
+
+
+<<GSPONER.plot.T1E, echo=FALSE, cache=FALSE, results='asis', fig.cap="T1E varying priors, assuming $\theta_c = -49$", cache.extra=file.mtime("../scripts/prior_on_control/1.3_one.interim.T1E.inspection.R")>>=
+
+t1e_df <- results_fixed |> filter(Delta == 0)
+
+t1e_df |>
+  ggplot(aes(x = Prior, y = Power, fill = Prior)) +
+  geom_col(width = 0.6) +
+  geom_hline(yintercept = 0.05, linetype = "dashed", colour = "grey40", linewidth = 0.6) +
+  geom_text(aes(label = sprintf("%.1f%%", 100 * Power)),
+            vjust = -0.4, size = 3.5) +
+  scale_fill_manual(values = prior_colours) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                     limits = c(0, max(t1e_df$Power) * 1.25)) +
+  labs(
+    x        = "Control prior",
+    y        = "T1E",
+    fill     = "Control prior"
+  ) +
+  theme_bw(base_size = 11) +
+  theme(legend.position = "none",    axis.text.x = element_text(angle = 30, hjust = 1)
+
+)
+
+
+
+@
+
+
+<<GSPONER.plot.pointwiseT1E, echo=FALSE, cache=FALSE, results='asis', fig.cap="Pointwise T1E for varying priors", cache.extra=file.mtime("../scripts/prior_on_control/1.3_one.interim.T1E.inspection.R")>>=
+
+null_diagonal <- results_grid |> 
+  filter(Theta_t == Theta_c)
+
+ggplot(null_diagonal, aes(x = Theta_c, y = Power, color = Prior, group = Prior)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "black") +
+  scale_y_continuous(labels = scales::percent, breaks = seq(0, 0.4, by = 0.05)) +
+  labs(
+    x = "True Control Value (= treatment arm)",
+    y = "T1E"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+@
+
+
+
+%\paragraph{Important discussion on the actual desing}
+%I now suggest to stop and really understand the design choices made. From my perspective, there are two different ideas on how the 
+%designers created the clinical trial:
+
+%\begin{itemize}
+%  \item IDEA 1: the point of adding the futility stop is only to calibrate the design such that the T1E is not inflated, but 
+%  value of the estimated delta below the futility treshold (in this case $\delta_{fut} = 40$) and above the significant treshold $\delta_{sign} = 0$ also are considered a success of the trial. 
+%  Then, e.g. an estimated value of $\delta = 20$ still means the drug is effectively working, then adding the clinical relevance treshold $\delta_{rel} = 50$ results in power for $\delta < 50$ that 
+%  cannot be larger than 50\% by construction of DC. This is really counterintutive. 
+
+%  \item IDEA 2: the success is only declared if the estimated $\delta > 40$ with high confidence, then the choice of using a DC makes sense, but evaluating the T1E only at $\delta = 0$ not much, 
+%   Since a false positive would also come up if for example delta = 30. So we should use the worst case scenario T1E: 
+%   $\sup_{\delta \in H_0} \mathbb{P}(\text{success} \mid \delta)$
+
+%\end{itemize}
+
+
+
+\paragraph{Important discussion on the actual design}
+It is important to highlight how the Dual Criterion works in the context of hypotesis testing. 
+\cite{roychoudhury_beyond_2018} keeps the standard statistical null hypothesis unchanged (no treatment effect) but modifies the definition of success by additionally requiring clinical relevance. 
+Hence, the DC framework does not redefine the null hypothesis, but instead restricts the rejection region by introducing a clinically motivated decision value.
+
+For example, in this case study, effects satisfying $0 < \delta < 40$ correspond to situations where the treatment has a positive effect, but the effect may be considered clinically insufficient. 
+Declaring success in this region is not a Type I error, since the null hypothesis is false, however, from a clinical perspective, advancing a treatment with such a small effect may still be undesirable. 
+
+By construction, the power if $\delta =$ DV is approximately $50\%$, so for values $\delta \in [0, 40]$ Power cannot be larger that 50\%, nonetheless \cite{roychoudhury_beyond_2018} emphasizes that operating characteristics 
+should not only be evaluated at the null value, but across the full parameter space. 
+
+
+
+
+
+
+<<GSPONER.prep_avgpriors, echo=FALSE, cache=FALSE, results='asis', cache.extra=file.mtime("../scripts/prior_on_control/1.4_one.interim_avgT1E_inspection.R")>>=
+all_results <- readRDS("../data/1.6.rds")
+
+
+euii <- lapply(all_results, function(dec.func) {
+  lapply(dec.func, function(job) {
+    compute_euii(job)
+  })
+})
+
+
+# trasform "ap.MAP_dp.Robust_0.20" -> list(ap, dp) 
+parse_job_name <- function(job_name) {
+  ap <- sub("^ap\\.(.+)_dp\\..+$", "\\1", job_name)
+  dp <- sub("^ap\\..+_dp\\.(.+)$", "\\1", job_name)
+  list(ap = ap, dp = dp)
+}
+
+
+# -- Flatten $Overall (power) across all decision lists / jobs / deltas --
+flatten_power <- function(all_results) {
+  bind_rows(lapply(names(all_results), function(dec_name) {
+    dec_res <- all_results[[dec_name]]
+    bind_rows(lapply(names(dec_res), function(job_name) {
+      parsed <- parse_job_name(job_name)
+      job    <- dec_res[[job_name]]        # named list: delta.0, delta.10, ...
+      bind_rows(lapply(names(job), function(delta_name) {
+        d  <- as.numeric(sub("delta\\.", "", delta_name))
+        ov <- job[[delta_name]]$Overall
+        data.frame(
+          decision_list  = dec_name,
+          analysis_prior = parsed$ap,
+          design_prior   = parsed$dp,
+          delta          = d,
+          as.data.frame(t(ov)),
+          check.names    = FALSE
+        )
+      }))
+    }))
+  }))
+}
+
+
+# -- Flatten EUII across all decision lists / jobs / prior_H1 values --
+flatten_euii <- function(euii) {
+  bind_rows(lapply(names(euii), function(dec_name) {
+    dec_res <- euii[[dec_name]]
+    bind_rows(lapply(names(dec_res), function(job_name) {
+      parsed   <- parse_job_name(job_name)
+      job_euii <- dec_res[[job_name]]      # named list: "0.01", "0.1", "0.5"
+      bind_rows(lapply(names(job_euii), function(prior_h1) {
+        job_euii[[prior_h1]] |>
+          mutate(
+            decision_list  = dec_name,
+            analysis_prior = parsed$ap,
+            design_prior   = parsed$dp,
+            prior_H1       = as.numeric(prior_h1)
+          )
+      }))
+    }))
+  }))
+}
+
+df_power <- flatten_power(all_results)
+df_euii  <- flatten_euii(euii)
+
+
+# Not use skeptical as analysiis prior since this is what Best did, but 
+#also cause we would never use the skeptical as historical
+df_power <- df_power  |> filter (analysis_prior != "Skeptical")
+df_euii <- df_euii  |> filter (analysis_prior != "Skeptical")
+
+
+
+
+# rename different decisions
+dec_labels <- c(
+  "decision_list"             = "Classic",
+  "decision_list_nofut"       = "No Futility",
+  "decision_list_norel"       = "No Relevance",
+  "decision_list_nofut.norel" = "No Futility No Relevance"
+)
+
+DEC_LEVELS <- c("Classic", "No Futility", "No Relevance", "No Futility No Relevance")
+
+df_power <- df_power |>
+  mutate(decision_list = dplyr::recode(decision_list, !!!dec_labels),
+         decision_list = factor(decision_list, levels = DEC_LEVELS))  |> 
+         select(decision_list, analysis_prior, design_prior, delta, Power)
+
+df_euii <- df_euii |>
+  mutate(decision_list = dplyr::recode(decision_list, !!!dec_labels),
+         decision_list = factor(decision_list, levels = DEC_LEVELS))
+
+AP_LEVELS  <- c("MAP", "Normal", "Robust_0.20", "Robust_0.5", "Vague")
+DP_LEVELS  <- c("MAP", "Normal", "Robust_0.20", "Robust_0.5", "Vague", "Skeptical")
+
+df_power <- df_power |>
+  mutate(analysis_prior = factor(analysis_prior, levels = AP_LEVELS),
+         design_prior   = factor(design_prior,   levels = DP_LEVELS))
+
+df_euii <- df_euii |>
+  mutate(analysis_prior = factor(analysis_prior, levels = AP_LEVELS),
+         design_prior   = factor(design_prior,   levels = DP_LEVELS))
+
+
+
+df_classic <- df_power  |> filter (
+  decision_list == "Classic", delta != 90)
+
+@
+
+
+
+<<GSPONER.plot.avgT1E, echo=FALSE, cache=FALSE, results='asis', fig.width=10, fig.height=7, fig.cap="Average Operating characterstics for varying desing and analysis priors", cache.extra=file.mtime("../scripts/prior_on_control/1.4_one.interim_avgT1E_inspection.R")>>=
+df_classic |>
+  ggplot(aes(x = design_prior, y = analysis_prior, fill = Power)) +
+  geom_tile(colour = "white", linewidth = 0.5) +
+  geom_text(aes(label = sprintf("%.3f", Power)), size = 2.8) +
+  scale_fill_gradient2(
+    low      = "#2E6DA4",
+    mid      = "white",
+    high     = "#E04F39",
+    midpoint = 0.5,
+    labels   = scales::percent_format(accuracy = 0.1),
+    name     = "Power"
+  ) +
+  facet_wrap(~ delta, ncol = 3,
+             labeller = labeller(delta = function(x) paste0("delta = ", x))) +
+  labs(  x = "Design Prior",
+    y = "Analysis Prior"
+  ) +
+  theme_bw(base_size = 11) +
+  theme(
+    axis.text.x      = element_text(angle = 35, hjust = 1),
+    panel.grid       = element_blank(),
+    strip.background = element_rect(fill = "grey92")
+  )
+@
+
+
+<<GSPONER.plot.Assurance, echo=FALSE, cache=FALSE, results='asis', fig.width=10, fig.height=7, fig.cap="Average Operating characterstics, facet by design prior, colours analysis priors", cache.extra=file.mtime("../scripts/prior_on_control/1.4_one.interim_avgT1E_inspection.R")>>=
+df_classic |>
+  ggplot(aes(
+    x = delta,
+    y = Power,
+    colour = analysis_prior,
+    group = analysis_prior
+  )) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  facet_wrap(
+    ~ design_prior,
+    ncol = 3
+  ) +
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 0.1)
+  ) +
+  labs(
+    x = expression(delta),
+    y = "Power",
+    colour = "Analysis Prior"
+  ) +
+  theme_bw(base_size = 11) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.background = element_rect(fill = "grey92"),
+    legend.position = "bottom"
+  )
+@
+
+\paragraph{Final Analysis}
+The results in Figure~\ref{fig:GSPONER.plot.avgT1E} and Figure~\ref{fig:GSPONER.plot.Assurance} suggest that the Design Prior has more influence than the Analysis Prior on Assurance ($\delta > 0$). At $\delta = 0$, $avgT1E$ is controlled (2.5\% to 6.6\%) for MAP, Robust, and Normal design priors, with 
+the MAP-MAP design resulting in an avgt1E at 2.5\%. 
+Notably, the Vague design prior produces an assurance of nearly 50\% across all $\delta$ values. Conversely, the Skeptical design prior inflates $at1e$ up to 22\% under the null, as it places substantial mass on large control arm responses
+
+\medskip
+\hrule
+\medskip
+
+\note{In the paper from Best, when they have prior on control, 
+ they focus on the avgT1e. They don't mention at all how they would compute Assurance (or Power) in that situation. Therefore I assumed the correct version was using 
+ a deterministic $\delta^*$, but maybe we should use a distribution $p(\delta)$}.
+ 
+INFACT: 
+What I am computing is:
+$$\text{Power}(\delta^*) = \int Pr(\text{Study success} | \theta_c, \theta_t = \theta_c + \delta^*) p(\theta_c) d\theta_c$$
+
+where $\delta^*$ is fixed, 
+while \textbf{REAL ASSURANCE} should be:
+$$\text{Assurance} = \iint Pr(\text{Study success} | \theta_c, \theta_t = \theta_c + \delta) p(\theta_c) p(\delta) d\theta_c d\delta$$
+where we would need a design prior on $\delta$ ($p(\delta)$) which we actually don't have, but can use skeptical or some other distirbutions.
+
+%\paragraph{Weight evolution?}
+
+
+
+\subsubsection{Two interim analysis}
+SAME
+
+
+
+
+
+
+
+
+
 
 \subsection{Application 2: Borrowing on the Treatment Effect}
-\textbf{Concept:} Simulating scenarios where external data directly informs the treatment contrast (e.g., extrapolation). \\
-\textit{How to use:} Base this application on the concepts in Psioda \& Xue, showing how adult data is extrapolated to pediatric populations \cite{psioda_bayesian_2020}. Show how $at1e_{seq}$ and EUII react when early stopping is permitted based on this extrapolated information.
 
 \section{Conclusion}
-
+ 
 
 \bibliographystyle{plainnat}
 \bibliography{Thesis.lit.rev}
