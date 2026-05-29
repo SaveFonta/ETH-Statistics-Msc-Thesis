@@ -194,6 +194,9 @@ ggplot(df_plot, aes(x = theta, y = T1E, color = Prior)) +
 # EVALUATE Average T1E
 # ----------------------------------
 
+
+
+
 get_avg_t1e_table <- function(crit_name, succ.crit) {
   
   # define the 3 oc for the 3 analysis prior
@@ -269,6 +272,8 @@ final_table <- bind_rows(tab1, tab2, tab3, tab4)
 # COMPUTE ASSURANCE 
 # -------------------------------------
 
+# This can actuallly be interesting, it is the avgt1e for Dual Criterion for FIXED DESIGN
+# Can even look at Power in that case
 
 # just for chdebugging, we try a prior that is way off --> Normal equal to 20 individuals, with a mean of -10 
 p_off  <- mixnorm(c(1, -10, 20), sigma = sigma, param = "mn") 
@@ -305,7 +310,12 @@ jobs <- names(analysis_priors)
 RNGkind("L'Ecuyer-CMRG")
 set.seed(123)
 
-results_list <- pbmclapply(jobs, function(ap_name) {
+sign.crit.975 <- decision2S(pc = 0.975, qc = 0, lower.tail = TRUE)
+dual.crit.975 <- decision2S(pc = c(0.975, 0.5), qc = c(0, -50), lower.tail = TRUE)
+
+
+simulate_fixed <- function(decision_to_use) { 
+  pbmclapply(jobs, function(ap_name) {
 
   ap <- analysis_priors[[ap_name]]
 
@@ -316,7 +326,7 @@ results_list <- pbmclapply(jobs, function(ap_name) {
     prior2         = ap,
     n1             = n.act,
     n2             = n.pbo,
-    decision       = dual.crit.975,
+    decision       = decision_to_use, 
     delta          = 0,
     design_prior2  = p_vague,   
     sigma1         = sigma,
@@ -337,24 +347,91 @@ results_list <- pbmclapply(jobs, function(ap_name) {
   }))
 
 }, mc.cores = 5)
+}
+
+
+
+result_sign <- simulate_fixed(sign.crit.975)
+result_dual <- simulate_fixed(dual.crit.975)
+
+
+
+
 
 # Combine all results
-df_power_full <- bind_rows(results_list) |>
+df_power_sign <- bind_rows(result_sign) |>
   mutate(
     Analysis_Prior = factor(Analysis_Prior, levels = names(analysis_priors)),
     Design_Prior   = factor(Design_Prior,   levels = names(design_priors))
   )
 
 
+df_euii_sign <- df_power_sign  |> 
+  group_by(Analysis_Prior, Design_Prior)  |> 
+  mutate(
+    T1E = Power[Delta == 0],
+    DOR = (Power / T1E) / ((1 - Power) / (1 - T1E))
+  )  |> 
+  ungroup()  |> 
+  mutate(
+    EUII = DOR^(1/ (n.act + n.pbo)), 
+    Decision = "Only Significance") 
 
 
+
+
+df_power_dual <- bind_rows(result_dual) |>
+  mutate(
+    Analysis_Prior = factor(Analysis_Prior, levels = names(analysis_priors)),
+    Design_Prior   = factor(Design_Prior,   levels = names(design_priors))
+  )
+
+df_euii_dual <- df_power_dual  |> 
+  group_by(Analysis_Prior, Design_Prior)  |> 
+  mutate(
+    T1E = pmax(Power[Delta == 0], 1e-6), # Ensure T1E is never 0
+    Power_safe = pmin(Power, 1 - 1e-6), # Ensure Power is never 1
+    DOR = (Power_safe / T1E) / ((1 - Power_safe) / (1 - T1E))
+  )  |> 
+  ungroup()  |> 
+  mutate(EUII = DOR^(1/ (n.act + n.pbo)), 
+    Decision = "Dual Criterion") 
+
+
+df_final <- bind_rows(df_euii_sign, df_euii_dual)
+
+
+library(ggplot2)
+
+# Create a clean plot
+ggplot(df_final, aes(x = abs(Delta), y = EUII, 
+                     colour = Analysis_Prior, 
+                     linetype = Decision)) + 
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  # Using facet_grid to create a matrix of plots
+  # Rows = Design_Prior, Columns = Analysis_Prior
+  facet_wrap( ~Design_Prior ) +
+  theme_minimal() +
+  labs(
+    title = "Expected Utility of Informed Inference (EUII) by Prior Combination",
+    x = "Delta",
+    y = "EUII",
+    colour = "Decision Rule",
+    linetype = "Decision Rule"
+  ) +
+  theme(
+    legend.position = "bottom",
+    strip.text = element_text(face = "bold", size = 8),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
 
 
 
 
 
 saveRDS(final_table, file = "data/avgT1E.fixed.rds")
-saveRDS(df_power_full, file = "data/Assurance.fixed.rds")
+saveRDS(list(df_power_sign = df_power_sign, df_power_dual=df_power_dual ), file = "data/Assurance.fixed.rds")
 cat("Assurance data saved")
 
 final_table <- readRDS("data/avgT1E.fixed.rds")
@@ -368,12 +445,18 @@ final_table <- readRDS("data/avgT1E.fixed.rds")
 
 # PLOT FOR ASSURANCE for each design x analysis prios
 
-df_power_full<- readRDS("data/Assurance.fixed.rds")
+X<- readRDS("data/Assurance.fixed.rds")
+df_power_sign <- X$df_power_sign
+df_power_dual <- X$df_power_dual
 
 
 
 
+avgT1E <- df_power_full  |> filter(Delta == 0)
+avgT1E  |>  pivot_wider(names_from = Design_Prior, values_from = Power)
 
+
+?pivot_wider
 
 
 

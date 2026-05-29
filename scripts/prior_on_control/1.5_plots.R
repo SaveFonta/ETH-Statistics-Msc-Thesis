@@ -306,7 +306,6 @@ plot_euii <- function(df_euii, fixed_ap, show_linetype = SHOW_PRIOR_H1_LINETYPE)
   p
 }
 
-cat("Building EUII plots (one per analysis prior)...\n")
 euii_plots <- lapply(AP_LEVELS, function(ap) {
   plot_euii(df_euii, ap)
 }) |> setNames(AP_LEVELS)
@@ -340,7 +339,6 @@ plot_t1e <- t1e_df |>
     axis.text.x      = element_text(angle = 30, hjust = 1)
   )
 
-cat("Building T1E plot...\n")
 
 
 
@@ -349,21 +347,10 @@ cat("Building T1E plot...\n")
 
 
 print(plot_t1e)
-readline(prompt = "Press [Enter] for power plots...")
-
-for (ap in AP_LEVELS) {
-  cat("Analysis prior:", ap, "\n")
-  print(power_plots[[ap]])
-  readline(prompt = "Press [Enter] for next plot...")
-}
-
-for (ap in AP_LEVELS) {
-  cat("Analysis prior:", ap, "\n")
-  print(euii_plots[[ap]])
-  readline(prompt = "Press [Enter] for next plot...")
-}
-
-
+#   print(power_plots[[ap]])
+  
+#   print(euii_plots[[ap]])
+  
 
 
 
