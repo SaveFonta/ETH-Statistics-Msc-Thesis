@@ -7,6 +7,8 @@
 *.synctex.gz
 *.bbl
 *.blg
+*.fls
+*.fdb_latexmk
 
 # R/Markdown generated files
 *.tex
@@ -30,6 +32,7 @@
 *.json
 *.xml
 *.tsv
+*.deb
 
 # IDE and system files
 .Rproj.user
@@ -42,6 +45,9 @@
 .DS_Store
 Thumbs.db
 
+# Windows/WSL metadata (Zone.Identifier alternate data streams)
+*:Zone.Identifier
+
 # Build outputs
 build/
 dist/
@@ -50,4 +56,7 @@ dist/
 .cache/
 cache/
 figure/
+Output/
+plots/
+data/
 scripts/gsbDesign

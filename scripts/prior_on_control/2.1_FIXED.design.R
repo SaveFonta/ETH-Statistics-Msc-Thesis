@@ -1,161 +1,277 @@
-# Script 2.1 
+# =============================================================================
+# Fixed Design — Conditional and Average Operating Characteristics
+# =============================================================================
+# Part 1 – Conditional T1E and Power (Sign criterion, all analysis priors)
+# Part 2 – Average T1E and Power (Sign criterion,
+#           all analysis prior × design prior combinations)
+## =============================================================================
+
 library(RBesT)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-library(checkmate)  
-library(assertthat) 
+library(gridExtra)
+source("scripts/prior_on_control/00.functions.R")
 
-# FIRST THING FIRST:
-# Define Analysis priors and Design priors
 
-# ---- Design parameters ---
-sigma <- 88
-n_T <- 40
-n_C <- 20
+# ---------------------------------------------------------------------------
+# Design parameters
+# ---------------------------------------------------------------------------
+sigma      <- 88
+n_T        <- 40
+n_C        <- 20
+delta_MCID <- 50 #I chose to plot Powerusing this delta 
+mu_A       <- -49   # prior mean — reference vline
 
-# ----- Analysis priors -----
 
-analysis_priors <- list (
-    p_normal = mixnorm(c(1, -49, 20), sigma = sigma, param = "mn"),
-    p_MAP  = mixnorm(c(0.51, -51, 19.9), c(0.44, -46.8, 7.6), c(0.05, -54.1, 51.7),
-                  sigma = sigma, param = "ms"),
-    p_rob.2  = robustify(p_MAP, 0.2, mean = -49), 
-    p_rob.4  = robustify(p_MAP, 0.4, mean = -49),  # maybe once I will change this mean to adapt it to have the mean of data as Weru suggests, not today
-    p_rob.6  = robustify(p_MAP, 0.6, mean = -49),
-    p_rob.8  = robustify(p_MAP, 0.8, mean = -49),
-    p_vague = mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
+# ---------------------------------------------------------------------------
+# Analysis priors
+# ---------------------------------------------------------------------------
+p_MAP <- mixnorm(
+  c(0.51, -51, 19.9), c(0.44, -46.8, 7.6), c(0.05, -54.1, 51.7),
+  sigma = sigma, param = "ms"
 )
-list2env(analysis_priors, envir = .GlobalEnv)
+p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
 
-# ----- Design priors ----
-
-design_priors <- list (
-    p_dirac = mixnorm(c(1, -49, 1e-16), sigma = sigma, param = "ms"),
-    p_normal = mixnorm(c(1, -49, 20), sigma = sigma, param = "mn"),
-    p_MAP  = mixnorm(c(0.51, -51, 19.9), c(0.44, -46.8, 7.6), c(0.05, -54.1, 51.7),
-                  sigma = sigma, param = "ms"),
-    # p_vague = mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms"),
-    p_skep  = mixnorm(c(1, -90, 25), sigma = sigma, param = "ms"),  #posterior distribution of a stand-alone analysis of the historical study with the “most extreme” placebo effect
-    p_off  = mixnorm(c(1, -10, 20), sigma = sigma, param = "mn") 
+analysis_priors <- list(
+  "MAP"            = p_MAP,
+  "Robust (w=0.2)" = robustify(p_MAP, 0.2, mean = -49),
+  "Robust (w=0.4)" = robustify(p_MAP, 0.4, mean = -49),
+  "Robust (w=0.6)" = robustify(p_MAP, 0.6, mean = -49),
+  "Robust (w=0.8)" = robustify(p_MAP, 0.8, mean = -49),
+  "Vague"          = p_vague
 )
-list2env(design_priors, envir = .GlobalEnv)
+prior_names <- names(analysis_priors)
 
 
+# ---------------------------------------------------------------------------
+# Design priors
+# ---------------------------------------------------------------------------
+design_priors <- list(
+  "Dirac (−49)"    = mixnorm(c(1, -49, 1e-16), sigma = sigma, param = "ms"),
+  "MAP"               = mixnorm(c(0.51, -51, 19.9), c(0.44, -46.8, 7.6), c(0.05, -54.1, 51.7),
+                                sigma = sigma, param = "ms"),
+  "Skeptical (−90)" = mixnorm(c(1, -90, 25),  sigma = sigma, param = "ms"),
+  "Misspecified (−10)"  = mixnorm(c(1, -10, 25),   sigma = sigma, param = "ms")
+)
+dprior_names <- names(design_priors)
 
-# --- Decision criteria ---
+
+# ---------------------------------------------------------------------------
+# Decision criterion (Sign only)
+# ---------------------------------------------------------------------------
 sign.crit <- decision2S(pc = 0.975, qc = 0, lower.tail = TRUE)
-dual.crit <- decision2S(pc = c(0.975, 0.5), qc = c(0, -50), lower.tail = TRUE) #for the moment I will ignore this 
 
 
+# ---------------------------------------------------------------------------
+# Shared theme
+# ---------------------------------------------------------------------------
+my_theme <- theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_blank())
 
 
+# =============================================================================
+# PART 1 — Conditional T1E and Power
+# =============================================================================
+theta_c <- seq(-110, 10, by = 2)
+
+oc_funs <- lapply(analysis_priors, function(prior_C) {
+  oc2S(prior1 = p_vague, prior2 = prior_C,
+       n1 = n_T, n2 = n_C, decision = sign.crit)
+})
+
+df_cond <- bind_rows(lapply(prior_names, function(pname) {
+  f <- oc_funs[[pname]]
+  data.frame(
+    Prior   = pname,
+    theta_C = theta_c,
+    T1E     = f(theta_c,              theta_c),
+    Power   = f(theta_c - delta_MCID, theta_c)
+  )
+})) |> mutate(Prior = factor(Prior, levels = prior_names))
+
+# --- Left panel: Conditional T1E ---
+p_cond_T1E <- ggplot(df_cond,
+                     aes(x = theta_C, y = T1E,
+                         color = Prior, linetype = Prior == "Vague")) +
+  geom_line(linewidth = 1.2) +
+  geom_hline(yintercept = 0.025, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  geom_vline(xintercept = mu_A, linetype = "dotted",
+             color = "gray", linewidth = 0.8) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression("True Control Mean (" * theta[C] * ")"),
+       y = "Conditional Type I Error") +
+  my_theme
+
+# --- Right panel: Conditional Power at delta == 50 ---
+p_cond_Power <- ggplot(df_cond,
+                       aes(x = theta_C, y = Power,
+                           color = Prior, linetype = Prior == "Vague")) +
+  geom_line(linewidth = 1.2) +
+  geom_vline(xintercept = mu_A, linetype = "dotted",
+             color = "gray", linewidth = 0.8) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression("True Control Mean (" * theta[C] * ")"),
+       y = bquote("Conditional Power (" * delta * " = 50)")) +
+  my_theme
+
+grid.arrange(p_cond_T1E, p_cond_Power, ncol = 2)
+
+saveRDS(list(df_cond = df_cond), file = "Output/FIXED_cond.RDS")
+cat("Conditional results saved to Output/FIXED_cond.RDS\n")
 
 
-#################################################
-#                 CLASSIC T1E
-################################################ 
-# It is P(success | theta_c, delta = 0) and it is a function of the real theta_c
+# =============================================================================
+# PART 2 — Average T1E and Power (all analysis prior x design prior x delta)
+# =============================================================================
+# avgoc2S.normMix returns design_fun(delta_new, design_prior2_new).
+# theta_T = theta_C + delta_new, so delta_new = -delta (lower is better).
+# avgT1E is delta-independent (evaluated at delta_new = 0 only once per pair).
+
+delta_values <- seq(0, 100, by = 10)
+
+rows_avg <- lapply(prior_names, function(aname) {
+  avg_fun <- avgoc2S.normMix(
+    prior1        = p_vague,
+    prior2        = analysis_priors[[aname]],
+    n1            = n_T,
+    n2            = n_C,
+    decision      = sign.crit,
+    delta         = 0,
+    design_prior2 = design_priors[[1]]
+  )
+  lapply(dprior_names, function(dname) {
+    dp         <- design_priors[[dname]]
+    t1e_val    <- avg_fun(delta_new = 0, design_prior2_new = dp)
+    bind_rows(lapply(delta_values, function(dv) {
+      data.frame(
+        Analysis_Prior = aname,
+        Design_Prior   = dname,
+        delta          = dv,
+        avgT1E         = t1e_val,
+        avgPower       = avg_fun(delta_new = -dv, design_prior2_new = dp)
+      )
+    }))
+  })
+})
+
+# rows_avg is a list of list of dataframes. SO rows_avg[[1]][[2]] recovers the df with analysis prior 1 (MAP)
+# and design priro 2 (MAP)
+rows_avg[[1]][[2]]
+
+df_avg <- bind_rows(unlist(rows_avg, recursive = FALSE)) |> # use recursive so it unlist only one layer
+  mutate(
+    Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+    Design_Prior   = factor(Design_Prior,   levels = dprior_names)
+  )
+
+# --- Left panel: Average T1E ---
+p_avg_T1E <- ggplot(df_avg,
+                    aes(x = Design_Prior, y = avgT1E,
+                        color = Analysis_Prior,
+                        group = Analysis_Prior,
+                        linetype = Analysis_Prior == "Vague")) +
+  geom_point(size = 2.5) +
+  geom_line(linewidth = 1.0) +
+  geom_hline(yintercept = 0.025, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = "Design Prior", y = "Average Type I Error") +
+  my_theme
+
+# --- Right panel: Average Power ---
+p_avg_Power <- ggplot(df_avg,
+                      aes(x = Design_Prior, y = avgPower,
+                          color = Analysis_Prior,
+                          group = Analysis_Prior,
+                          linetype = Analysis_Prior == "Vague")) +
+  geom_point(size = 2.5) +
+  geom_line(linewidth = 1.0) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = "Design Prior",
+       y = bquote("Average Power (" * delta * " = 50)")) +
+  my_theme
+
+grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
+
+saveRDS(list(df_avg = df_avg), file = "Output/FIXED_avg.RDS")
+cat("Average results saved to Output/FIXED_avg.RDS\n")
 
 
-# create functions 
-oc_normal <- oc2S(prior1 = p_vague, prior2 = p_normal, n1 = n_T, n2 = n_C, decision = sign.crit)
-oc_MAP <- oc2S(prior1 = p_vague, prior2 = p_MAP, n1 = n_T, n2 = n_C, decision = sign.crit)
-oc_rob.2 <- oc2S(prior1 = p_vague, prior2 = p_rob.2, n1 = n_T, n2 = n_C, decision = sign.crit)
-oc_rob.4 <- oc2S(prior1 = p_vague, prior2 = p_rob.4, n1 = n_T, n2 = n_C, decision = sign.crit)
-oc_rob.6 <- oc2S(prior1 = p_vague, prior2 = p_rob.6, n1 = n_T, n2 = n_C, decision = sign.crit)
-oc_rob.8 <- oc2S(prior1 = p_vague, prior2 = p_rob.8, n1 = n_T, n2 = n_C, decision = sign.crit)
-oc_vague <- oc2S(prior1 = p_vague, prior2 = p_vague, n1 = n_T, n2 = n_C, decision = sign.crit)
+# =============================================================================
+# PART 3 — EUII 
+# =============================================================================
+# DOR  = (avgPower / (1-avgPower)) / (avgT1E / (1-avgT1E))
+# EUII = DOR ^ (1 / n_trial)   where n_trial = n_T + n_C
+# At delta = 0: avgPower = avgT1E  =>  DOR = 1  =>  EUII = 1 for all designs.
 
+n_trial <- n_T + n_C
 
-
-
-
-
-# -------------------
-# Evalute classic T1E
-# -------------------
-theta_c <- seq(-80, 0)
-theta_t <- theta_c
-
-
-T1E_normal <- oc_normal(theta_t, theta_c)
-T1E_MAP <- oc_MAP(theta_t, theta_c)
-T1E_rob.2 <- oc_rob.2(theta_t, theta_c)
-T1E_rob.4 <- oc_rob.4(theta_t, theta_c)
-T1E_rob.6 <- oc_rob.6(theta_t, theta_c)
-T1E_rob.8 <- oc_rob.8(theta_t, theta_c)
-T1E_vague <- oc_vague(theta_t, theta_c)
-
-
-df_T1E <- data.frame(
-      theta = theta_c,
-      "Normal" = T1E_normal,
-      "MAP" = T1E_MAP, 
-      "Robust (w=0.2)" = T1E_rob.2, 
-      "Robust (w=0.4)" = T1E_rob.4,
-      "Robust (w=0.6)" = T1E_rob.6,
-      "Robust (w=0.8)" = T1E_rob.8,
-      "Vague" = T1E_vague,
-        check.names = FALSE # Prevents R from changing spaces to dots
+omega_map <- c(
+  "MAP"            = 0.0,
+  "Robust (w=0.2)" = 0.2,
+  "Robust (w=0.4)" = 0.4,
+  "Robust (w=0.6)" = 0.6,
+  "Robust (w=0.8)" = 0.8,
+  "Vague"          = 1.0
 )
 
-df_T1E.plot <- df_T1E  |> 
-    pivot_longer(
-        cols = -theta,
-        names_to = "Prior", 
-        values_to = "T1E"
-    )
+df_euii <- df_avg |>
+  mutate(
+    omega = omega_map[as.character(Analysis_Prior)],
+    DOR   = (avgPower / (1 - avgPower)) / (avgT1E / (1 - avgT1E)),
+    EUII  = DOR ^ (1 / n_trial)
+  )
 
-df_T1E.plot  |> 
-ggplot(aes(x = theta, y = T1E, color = Prior))  +
-geom_line(linewidth = 1) + 
-geom_hline (yintercept = 0.025, linetype = "dashed", color = "red") + 
-labs(
-    x = "Theta",
-y = "Type 1 Error",
-    color = "Metodo Prior"
-) + 
-theme_minimal()
+# --- Plot A: EUII vs omega at delta = 50 (one line per design prior) ---
+df_euii_50 <- filter(df_euii, delta == 50)
 
+euii_vague_50 <- df_euii_50 |>
+  filter(Analysis_Prior == "Vague") |>
+  pull(EUII) |>
+  unique()
 
-# COMMENTS:
-# For the vague prior (prior 7), the curve is sitting exactly at the nominal α, this is the frequentist reference
+p_EUII_omega <- ggplot(df_euii_50,
+                       aes(x = omega, y = EUII,
+                           color = Design_Prior, group = Design_Prior)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = euii_vague_50, linetype = "dotted",
+             color = "black", linewidth = 0.6) +
+  scale_x_continuous(breaks = seq(0, 1, 0.2)) +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression("Robustness weight (" * omega * ")"),
+       y = expression("EUII (" * delta * " = 50)")) +
+  my_theme
 
-# Historical data has a mean of around -49 (mean of the Normal prior one component, but very similar to the the MAP 3 components, since both come from 
-#the same data) 
-# For the MAP the curves gets further away from alfa with inflation of theta_c, so when there is conflict with historical data.
+print(p_EUII_omega)
 
-For the 1-component and 3-component MAP (priors 1-2), the curve departs substantially from α, with inflation where θ_c conflicts with the historical data
-For robust MAP priors 3-6, the departure is moderated by ω, with higher ω pulling the curve back toward the vague baseline
-The curves are not monotone in θ_c — there are regimes where borrowing helps (T1E below nominal) and regimes where it hurts (T1E above nominal)
+# --- Plot B: EUII vs delta (facet by design prior, color by analysis prior) ---
+p_EUII_delta <- ggplot(df_euii,
+                       aes(x = delta, y = EUII,
+                           color = Analysis_Prior,
+                           linetype = Analysis_Prior == "Vague")) +
+  geom_line(linewidth = 1.2) +
+  facet_wrap(~Design_Prior, nrow = 1) +
+  geom_hline(yintercept = 1, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression(delta),
+       y = "EUII") +
+  my_theme
 
+print(p_EUII_delta)
 
-
-
-
-
-
-# TRY TO PLOT POWER:
-# sHOW THE 3d SURFACE, or can fix a delta and plot against theta_c
-# Point is: neither T1E nor Power is a single number under Bayesian borrowing, so the compuations of classical EUII = DOR^(1/n) is not directly possible like the frequentist case.
-# This motivates the avgT1E framework of Best et al. and the subsequent definition of a Bayesian EUII.
-
-
-
-
-
-
-
-
-
-
-
-
-
-# So it is a mess to evaluate this blablabla 
-# then define avgT1E, which is the formula with integral, note that the classic T1E is just an avergae T1E with dirac at a true value. 
-# So now for ease of notation, we will always talk about avgT1E and avgPower (when delta fixed), since we don't want to put a prior on that since there is no knowdlede
-# If we say avgT1E using dirac at something, then it is just the conditional T1E
-
-# 
+saveRDS(list(df_euii = df_euii), file = "Output/FIXED_euii.RDS")
+cat("EUII results saved to Output/FIXED_euii.RDS\n")
