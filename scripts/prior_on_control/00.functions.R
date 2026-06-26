@@ -44,11 +44,9 @@ avgoc2S.normMix <- function(
     
     return(res)
   }
-  
+
   return(design_fun)
 }
-
-
 
 
 
@@ -427,92 +425,34 @@ avgoc2S_seq.normMix <- function(
   return(design_fun)
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 # =============================================================================
-# ORIGINAL (broken) avgoc2S_seq2.normMix — kept for reference.
-# Bug: references res$Overall$Power, res$Per_Stage$P_Succ etc., but
-# oc2S_seq.dual.normMix returns a flat data.frame with no $Overall/$Per_Stage.
-# =============================================================================
-# avgoc2S_seq2.normMix_BROKEN <- function(
-#   prior1, prior2, n1, n2, decisions, delta, design_prior2, eps = 1e-6, ...
-# ) {
-#   oc_fun <- oc2S_seq.dual.normMix(prior1, prior2, n1, n2, decisions, eps = eps, ...)
-#   design_eval_fun <- function(delta_new = delta, design_prior2_new = design_prior2) {
-#     lower_bnd <- RBesT::qmix(design_prior2_new, eps / 2)
-#     upper_bnd <- RBesT::qmix(design_prior2_new, 1 - eps / 2)
-#     calc_expectation <- function(metric_extractor) {
-#       integrand <- function(x_vec) {
-#         sapply(x_vec, function(xi) {
-#           cond_res <- oc_fun(xi + delta_new, xi)
-#           metric_val <- metric_extractor(cond_res)   # <-- NULL: $Overall doesn't exist
-#           prior_dens <- RBesT::dmix(design_prior2_new, xi)
-#           return(metric_val * prior_dens)
-#         })
-#       }
-#       stats::integrate(integrand, lower = lower_bnd, upper = upper_bnd,
-#                        rel.tol = .Machine$double.eps^0.25)$value
-#     }
-#     avg_Power     <- calc_expectation(function(res) res$Overall$Power)       # NULL
-#     avg_Prob_Fut  <- calc_expectation(function(res) res$Overall$Prob_Fut_seq) # NULL
-#     avg_EN_t      <- calc_expectation(function(res) res$Overall$EN_t)         # NULL
-#     avg_EN_c      <- calc_expectation(function(res) res$Overall$EN_c)         # NULL
-#     avg_EN_t_Succ <- calc_expectation(function(res) res$Overall$EN_t_Succ)    # NULL
-#     avg_EN_c_Succ <- calc_expectation(function(res) res$Overall$EN_c_Succ)    # NULL
-#     avg_EN_t_Fail <- calc_expectation(function(res) res$Overall$EN_t_Fail)    # NULL
-#     avg_EN_c_Fail <- calc_expectation(function(res) res$Overall$EN_c_Fail)    # NULL
-#     overall_res <- data.frame(
-#       Power = avg_Power, Prob_Fut_seq = avg_Prob_Fut,
-#       EN_t = avg_EN_t, EN_c = avg_EN_c,
-#       EN_t_Succ = avg_EN_t_Succ, EN_c_Succ = avg_EN_c_Succ,
-#       EN_t_Fail = avg_EN_t_Fail, EN_c_Fail = avg_EN_c_Fail
-#     )
-#     prior_mean <- RBesT::summary(design_prior2_new)["mean"]
-#     base_res   <- oc_fun(prior_mean + delta_new, prior_mean)
-#     n_stages   <- nrow(base_res$Per_Stage)                 # <-- NULL: $Per_Stage doesn't exist
-#     per_stage_list <- lapply(1:n_stages, function(k) {
-#       avg_P_Succ <- calc_expectation(function(res) res$Per_Stage$P_Succ[k]) # NULL
-#       avg_P_Fut  <- calc_expectation(function(res) res$Per_Stage$P_Fut[k])  # NULL
-#       data.frame(Stage = k,
-#                  N_Trt  = base_res$Per_Stage$N_Trt[k],
-#                  N_Ctrl = base_res$Per_Stage$N_Ctrl[k],
-#                  P_Succ = avg_P_Succ, P_Fut = avg_P_Fut)
-#     })
-#     per_stage_res <- do.call(rbind, per_stage_list)
-#     per_stage_res$Cum_P_Succ <- cumsum(per_stage_res$P_Succ)
-#     per_stage_res$Cum_P_Fut  <- cumsum(per_stage_res$P_Fut)
-#     return(list(Overall = overall_res, Per_Stage = per_stage_res))
-#   }
-#   return(design_eval_fun)
-# }
-# =============================================================================
-
-
-# Averages the conditional OC over the design prior and returns all quantities
-# needed for the sequential EUII: avgPower, avgT1E, E_D[N^+|H_i], E_D[N^-|H_i],
-# E_D[1/N^+|H_i], and E_D[1/N^-|H_i].
+# avgoc2S_seq2.normMix
 #
-# oc2S_seq.dual.normMix returns a flat data.frame with columns:
-#   Total_Power, P_Stop_Eff_Stg1, P_Stop_Fut_Stg1, P_Continue_Stg1, P_Success_Stg2,
-#   EN_Trt, EN_Pbo, EN_Trt_Rej, EN_Pbo_Rej, EN_Trt_NoRej, EN_Pbo_NoRej
-# The "Rej" columns are E[arm N | success], "NoRej" are E[arm N | no success].
+# Averages the conditional sequential OC over the design prior and returns all
+# quantities needed for the sequential EUII (Held et al. 2025, eq. 15).
+#
+# KEY: E_D[1/N^+ | H_i] = E[1/N | success] averaged over the design prior.
+#   Correct formula: E[1/N^+ | theta_C] = (P_eff1/n_stg1 + P_suc2/n_stg2) / Power
+#   where n_stgk = n1[k] + n2[k] is the TOTAL sample size at stage k.
+#   This is NOT the same as 1/E[N^+ | theta_C] (Jensen: E[1/X] >= 1/E[X]).
+#   The 00.functions.MC.R approach (compute_euii) uses this correct formula;
+#   this function matches it via numerical integration.
+#
+# Returns a data.frame with:
+#   avg_Power, avg_Fut, avg_EN
+#   avg_EN_Succ, avg_EN_Fail        (E_D[N^+|H_i], E_D[N^-|H_i])
+#   avg_inv_EN_Succ, avg_inv_EN_Fail (E_D[1/N^+|H_i], E_D[1/N^-|H_i])
+# =============================================================================
 
 avgoc2S_seq2.normMix <- function(
   prior1, prior2, n1, n2, decisions, delta, design_prior2, eps = 1e-6, ...
 ) {
 
   oc_fun <- oc2S_seq.dual.normMix(prior1, prior2, n1, n2, decisions, eps = eps, ...)
+
+  # Total sample size at each stage
+  n_stg1 <- n1[1] + n2[1]
+  n_stg2 <- n1[2] + n2[2]
 
   design_eval_fun <- function(delta_new = delta, design_prior2_new = design_prior2) {
 
@@ -535,23 +475,20 @@ avgoc2S_seq2.normMix <- function(
     avg_Fut   <- avg(function(r) r$P_Stop_Fut_Stg1)
     avg_EN    <- avg(function(r) r$EN_Trt + r$EN_Pbo)
 
-    # Numerators for E_D[N^+ | H_i] and E_D[N^- | H_i]:
-    #   integral of E[N^+ | theta_C] * Power(theta_C) * pi_D  (then divide by avg_Power)
+    # E_D[N^+|H_i] numerator: integral of E[N^+|theta_C] * Power(theta_C) * pi_D
     num_EN_Succ <- avg(function(r) (r$EN_Trt_Rej   + r$EN_Pbo_Rej)   * r$Total_Power)
     num_EN_Fail <- avg(function(r) (r$EN_Trt_NoRej + r$EN_Pbo_NoRej) * (1 - r$Total_Power))
 
-    # Numerators for E_D[1/N^+ | H_i] and E_D[1/N^- | H_i] (EUII exponents):
-    #   integral of Power(theta_C) / E[N^+ | theta_C] * pi_D  (then divide by avg_Power)
+    # E_D[1/N^+|H_i] numerator: integral of E[1/N^+|theta_C] * Power(theta_C) * pi_D
+    #
+    # E[1/N^+|theta_C] * Power = P_eff1/n_stg1 + P_suc2/n_stg2
+    # E[1/N^-|theta_C] * (1-Power) = P_fut1/n_stg1 + P_fail2/n_stg2
     num_inv_EN_Succ <- avg(function(r) {
-      en <- r$EN_Trt_Rej + r$EN_Pbo_Rej
-      if (r$Total_Power < eps || en < 1) return(0)
-      r$Total_Power / en
+      r$P_Stop_Eff_Stg1 / n_stg1 + r$P_Success_Stg2 / n_stg2
     })
     num_inv_EN_Fail <- avg(function(r) {
-      en <- r$EN_Trt_NoRej + r$EN_Pbo_NoRej
-      pf <- 1 - r$Total_Power
-      if (pf < eps || en < 1) return(0)
-      pf / en
+      p_fail2 <- max(0, r$P_Continue_Stg1 - r$P_Success_Stg2)
+      r$P_Stop_Fut_Stg1 / n_stg1 + p_fail2 / n_stg2
     })
 
     data.frame(
@@ -567,26 +504,3 @@ avgoc2S_seq2.normMix <- function(
 
   return(design_eval_fun)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

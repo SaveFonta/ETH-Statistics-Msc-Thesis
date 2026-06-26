@@ -20,8 +20,8 @@ source("scripts/prior_on_control/00.functions.R")
 sigma      <- 88
 n_T        <- 40
 n_C        <- 20
-delta_MCID <- 50 #I chose to plot Powerusing this delta 
-mu_A       <- -49   # prior mean — reference vline
+delta_MCID <- 60 #I chose to plot Power using this delta
+mu_A       <- -50   # prior mean — reference vline
 
 
 # ---------------------------------------------------------------------------
@@ -35,10 +35,10 @@ p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
 
 analysis_priors <- list(
   "MAP"            = p_MAP,
-  "Robust (w=0.2)" = robustify(p_MAP, 0.2, mean = -49),
-  "Robust (w=0.4)" = robustify(p_MAP, 0.4, mean = -49),
-  "Robust (w=0.6)" = robustify(p_MAP, 0.6, mean = -49),
-  "Robust (w=0.8)" = robustify(p_MAP, 0.8, mean = -49),
+  "Robust (w=0.2)" = robustify(p_MAP, 0.2, mean = -50),
+  "Robust (w=0.4)" = robustify(p_MAP, 0.4, mean = -50),
+  "Robust (w=0.6)" = robustify(p_MAP, 0.6, mean = -50),
+  "Robust (w=0.8)" = robustify(p_MAP, 0.8, mean = -50),
   "Vague"          = p_vague
 )
 prior_names <- names(analysis_priors)
@@ -48,7 +48,7 @@ prior_names <- names(analysis_priors)
 # Design priors
 # ---------------------------------------------------------------------------
 design_priors <- list(
-  "Dirac (−49)"    = mixnorm(c(1, -49, 1e-16), sigma = sigma, param = "ms"),
+  "Dirac (−50)"    = mixnorm(c(1, -50, 1e-16), sigma = sigma, param = "ms"),
   "MAP"               = mixnorm(c(0.51, -51, 19.9), c(0.44, -46.8, 7.6), c(0.05, -54.1, 51.7),
                                 sigma = sigma, param = "ms"),
   "Skeptical (−90)" = mixnorm(c(1, -90, 25),  sigma = sigma, param = "ms"),
@@ -60,7 +60,7 @@ dprior_names <- names(design_priors)
 # ---------------------------------------------------------------------------
 # Decision criterion (Sign only)
 # ---------------------------------------------------------------------------
-sign.crit <- decision2S(pc = 0.975, qc = 0, lower.tail = TRUE)
+sign.crit <- decision2S(pc = 0.95, qc = 0, lower.tail = TRUE)
 
 
 # ---------------------------------------------------------------------------
@@ -95,7 +95,7 @@ p_cond_T1E <- ggplot(df_cond,
                      aes(x = theta_C, y = T1E,
                          color = Prior, linetype = Prior == "Vague")) +
   geom_line(linewidth = 1.2) +
-  geom_hline(yintercept = 0.025, linetype = "dashed",
+  geom_hline(yintercept = 0.05, linetype = "dashed",
              color = "black", linewidth = 0.6) +
   geom_vline(xintercept = mu_A, linetype = "dotted",
              color = "gray", linewidth = 0.8) +
@@ -106,7 +106,7 @@ p_cond_T1E <- ggplot(df_cond,
        y = "Conditional Type I Error") +
   my_theme
 
-# --- Right panel: Conditional Power at delta == 50 ---
+# --- Right panel: Conditional Power at delta == 60 ---
 p_cond_Power <- ggplot(df_cond,
                        aes(x = theta_C, y = Power,
                            color = Prior, linetype = Prior == "Vague")) +
@@ -117,7 +117,7 @@ p_cond_Power <- ggplot(df_cond,
                         guide = "none") +
   scale_color_viridis_d(option = "turbo", direction = -1) +
   labs(x = expression("True Control Mean (" * theta[C] * ")"),
-       y = bquote("Conditional Power (" * delta * " = 50)")) +
+       y = bquote("Conditional Power (" * delta * " = 60)")) +
   my_theme
 
 grid.arrange(p_cond_T1E, p_cond_Power, ncol = 2)
@@ -178,7 +178,7 @@ p_avg_T1E <- ggplot(df_avg,
                         linetype = Analysis_Prior == "Vague")) +
   geom_point(size = 2.5) +
   geom_line(linewidth = 1.0) +
-  geom_hline(yintercept = 0.025, linetype = "dashed",
+  geom_hline(yintercept = 0.05, linetype = "dashed",
              color = "black", linewidth = 0.6) +
   scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
                         guide = "none") +
@@ -198,7 +198,7 @@ p_avg_Power <- ggplot(df_avg,
                         guide = "none") +
   scale_color_viridis_d(option = "turbo", direction = -1) +
   labs(x = "Design Prior",
-       y = bquote("Average Power (" * delta * " = 50)")) +
+       y = bquote("Average Power (" * delta * " = 60)")) +
   my_theme
 
 grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
@@ -232,8 +232,8 @@ df_euii <- df_avg |>
     EUII  = DOR ^ (1 / n_trial)
   )
 
-# --- Plot A: EUII vs omega at delta = 50 (one line per design prior) ---
-df_euii_50 <- filter(df_euii, delta == 50)
+# --- Plot A: EUII vs omega at delta = 60 (one line per design prior) ---
+df_euii_50 <- filter(df_euii, delta == 60)
 
 euii_vague_50 <- df_euii_50 |>
   filter(Analysis_Prior == "Vague") |>
@@ -250,7 +250,7 @@ p_EUII_omega <- ggplot(df_euii_50,
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
   scale_color_viridis_d(option = "turbo", direction = -1) +
   labs(x = expression("Robustness weight (" * omega * ")"),
-       y = expression("EUII (" * delta * " = 50)")) +
+       y = expression("EUII (" * delta * " = 60)")) +
   my_theme
 
 print(p_EUII_omega)

@@ -29,6 +29,7 @@
 \usepackage{todonotes}
 \usepackage[round]{natbib}
 \usepackage{doi}
+\input{newCommands.tex}
 \newcommand{\note}[1]{\textcolor{red}{#1}}
 
 \newtheorem{remark}{Remark}
@@ -78,16 +79,16 @@ help the current study.
 
 Conversely, Bayesian statistical frameworks offer a mathematically rigorous solution to this challenge by incorporating external evidence 
 through informative prior distributions. Integrating background knowledge during the planning phase can lead to highly efficient designs, 
-accelerating trial execution, reducing operational waste, and limiting the number of concurrent patients required for the control arm 
-(\note{TODO, in Stallard et al. there are nice citations of papers that uses this}). 
+accelerating trial execution, reducing operational waste, and limiting the number of concurrent patients required for the control arm.
+
 This not only decreases the overall sample size but also makes the trial more attractive to potential participants, who face a lower 
 probability of being assigned to a placebo group. As noted by O'Hagan et al., \textit{"the design of a trial 
 is ultimately the sponsor’s decision and its outcome is the sponsor’s risk; therefore, the design should incorporate all available information to 
 maximize the probability of a satisfactory outcome"} \citep{ohagan_assurance_2005}.
 Recognizing these practical benefits, regulatory bodies are increasingly supportive of these methods, as 
-evidenced by recent guidance on the use of Bayesian methodology in clinical trials \citep{noauthor_use_nodate}.
+evidenced by recent guidance on the use of Bayesian methodology in clinical trials \citep{fda_bayesian_2026}.
 
-
+ 
 
 \subsection{Bayesian Designs and Operating Characteristics}
 The Bayesian framework formally incorporates uncertainty into the design through prior distributions, that can be placed either directly 
@@ -96,8 +97,7 @@ on the treatment effect or on one (or both) arms:
 \begin{itemize}
         \item \textbf{Borrowing on the Control Group:} when recruiting patients for a standard-of-care or placebo arm is ethically challenging or 
     operationally slow, historical data can be used to inform the control parameters. Designs that supplement a smaller concurrent control group 
-    with historical information are formally referred to in the literature as hybrid-control trials. \note{TODO, in Weru et a. there are examples of papers
-    that use hybrid control trials, cite them} 
+    with historical information are formally referred to in the literature as hybrid-control trials. (e.g. \cite{fu2023covariate}, \cite{kopp2024simulating}, \cite{li2022hybrid}) 
 
 
     \item \textbf{Borrowing on the Treatment Effect:} When the primary goal is to use existing efficacy data to support a new indication or 
@@ -110,7 +110,7 @@ on the treatment effect or on one (or both) arms:
 Evaluating the operating characteristics of Bayesian designs requires particular attention. Traditional frequentist designs rely on 
 conditional power, estimating the probability of success assuming a single, fixed treatment effect. The Bayesian framework shifts instead the focus 
 to unconditional power, or Assurance, which evaluates the expected power averaged over a prior distribution for the unknown treatment effect.
-Integrating over a prior provides a much more realistic assessment of the predictive probability of achieving a 
+Integrating over a prior provides a more realistic assessment of the predictive probability of achieving a 
 statistically significant result \citep{spiegelhalter1993bayesian, ohagan_assurance_2005}. Alternative names are probability of study success (Wang et al., 2013) 
 and Bayesian predictive power (Spiegelhalter, Freedman and Blackburn, 1986). 
 
@@ -120,31 +120,48 @@ of the current trial's data, it is mathematically impossible to strictly control
 \citep{viele_use_2014, psioda_bayesian_2019, kopp-schneider_power_2020}, and a consensus on alternative metrics has yet to be reached in the literature. 
 
 
-\subsection{Information Borrowing and Prior-Data Conflict \note{TO REFINE}}
+\subsection{Dynamic Borrowing and Prior-Data Conflict}
 \label{subsec:info-borrowing}
 
-While borrowing historical data presents clear advantages, it is not without risk. It is possible that historical data and current trial 
-data are heterogeneous due to shifts in demographics, standard of care, or measurement techniques \citep{evans_checking_2006}. If a model 
-forces the integration of historical and concurrent data when such a discrepancy exists, it can lead to severely biased estimates and inflated error rates. 
-Indeed, the naive use of historical data leads to unacceptable Type I Error inflation under prior-data 
-conflict.
+While borrowing historical data presents clear advantages, it is not without risk. Historical and current trial data may be heterogeneous
+due to shifts in demographics, standard of care, or measurement techniques \citep{evans_checking_2006}. If a model forces the combination
+of historical and concurrent data when such a discrepancy exists, it can lead to biased estimates and inflated error rates.
 
-\note{TO DO: Schmidli (2015) has a nice literature review about all possible borrowing methods, add it here. } 
-Recognizing these dangers, early frequentist guidelines emphasized strict criteria to ensure external data were 
-sufficiently comparable before any pooling \citep{pocock_combination_1976}. Modern Bayesian frameworks address the risk of prior-data conflict through dynamic 
-borrowing. Rather than blindly pooling or entirely discarding historical data, dynamic borrowing algorithms assess the congruency between the historical evidence and the accumulating new data.
- If the historical data aligns well with the current trial, the model "borrows" strength from it, increasing precision. Conversely, if there is a 
- true difference between the historical and current parameters, commonly referred to as "drift" (\note{TO DO: find citations of who called it "drift" first}), the model dynamically discounts the historical 
- information, relying more on the observed data.
+Recognizing these dangers, \citet{pocock_combination_1976} proposed the first formal criteria for combining historical and concurrent
+controls in a randomized design: the historical trial should be comparable in patient population, treatment regimen, and endpoint
+definition, and conducted under sufficiently similar conditions. Several Bayesian frameworks have since been developed to achieve a more
+principled form of discounting, in which historical information is downweighted in proportion to heterogeneity. Examples include
+Power Priors \citep{ibrahim_power_2000}, which discount historical data via a scalar power parameter $a_0 \in [0,1]$, and Commensurate
+Priors \citep{hobbs_2011}, which link historical and current parameters through a shared commensurability model. The common goal of all
+the dynamic borrowing method is to borrow strength when historical data align with the current trial
+while discounting when a true discrepancy, commonly called drift \citep{viele_use_2014}, is present.
 
-Several approaches have been proposed to achieve this dynamic behavior. Examples include Power Priors \citep{ibrahim_power_2000}, 
-Commensurate Priors \citep{hobbs_2011}, and Meta-Analytic-Predictive (MAP) priors \citep{noauthor_summarizing_nodate}. This thesis will focus
- primarily on the MAP framework, and specifically on its robust extension. Standard MAP summarizes historical information into a predictive prior, but it can sometimes be too slow to react to prior-data conflict, 
- Robust Mixture Priors have therefore been proposed \citep{schmidli_robust_2014}. By blending an informative MAP component with a diffuse robust component, 
- these priors provide safer results in presence of drift, ensuring robust inference even under prior misspecification (\citep{richeldi2022trial}, \citep{chen2024efficacy}). 
+Among these, the Meta-Analytic-Predictive (MAP) approach \citep{neuenschwander2010summarizing} derives the prior for the control arm
+from a hierarchical meta-analysis of historical trials, treating the trial-specific control parameters as exchangeable. The MAP prior is
+not available in closed form but can be approximated by a mixture of conjugate distributions by minimizing
+$\mathrm{KL}(\pi_{\text{MAP}} \| q)$, the KL divergence of the mixture $q$ from the true predictive $\pi_{\text{MAP}}$ obtained using MCMC. However, standard MAP can still react too slowly when historical and current data disagree;  
+therefore it is possible to augment the mixture with a weakly informative
+component whose weight $\omega$ encodes the prior probability that the new trial is not exchangeable with the historical controls.
+This Robust MAP prior responds more rapidly to prior-data conflict, shifting posterior weight toward the vague component as
+divergence between historical and current data grows. This thesis focuses primarily on the MAP framework and its robust extension,
+as recently illustrated in clinical practice (e.g. \cite{richeldi2022trial, chen2024efficacy}).
 
 
- 
+\subsection{Dual Criterion}
+\label{subsec:dual_criterion_intro}
+
+A limitation of standard trial designs is that success is defined by a single statistical threshold: a significant $p$-value or an equivalent posterior probability. While this guarantees sufficient evidence against the null hypothesis, 
+it says nothing about whether the effect is large enough to be clinically meaningful, since a statistically significant result can arise from a modest, practically unimportant treatment difference.
+
+\citet{roychoudhury_beyond_2018} address this through the dual-criterion design, in which trial success requires both a statistical criterion and a clinical criterion: the estimated effect must reach a pre-specified Decision Value (DV), 
+the minimum clinically meaningful improvement elicited from domain experts. Each trial then has four possible outcomes: GO, NO-GO, or two inconclusive cases when only one criterion is met, while power at the DV is approximately $50\%$ 
+by construction, meaning the sample size must be chosen to achieve adequate power for effects meaningfully above the DV. The Bayesian counterpart of this design appears in \citet{gsponer_practical_2014}, who require simultaneously a 
+high posterior probability that the treatment effect is positive and a posterior probability of at least $50\%$ that it exceeds the clinical threshold, noting that this double criterion directly addresses scenarios where a marginally 
+significant result is driven by chance rather than a genuinely large effect.
+
+
+
+
 \subsection{Sequential Clinical Trial Designs \note{TO DO}}
  
 Historically, the use of interim analyses has been mostly applied in the frequentist framework \citep{jennison_group_1999}, relying on error-spending functions to control the overall Type I Error rate.
@@ -173,9 +190,6 @@ Talk about Gsponer and some other examples
 
 Again talk about futility stopping ? 
 
-\subsection{Dual Criterion \note{TO DO}}
-Roychoudhury et al. \citep{roychoudhury_beyond_2018}, integration in gsponer for dual sequential bayesian. 
-In Gsponer there are interesting paragraph and citations about the need of extednding to clinical relevance, not only significance, I higlighted those in yellow. 
 
 
 \subsection{Thesis Objective \note{TO DO}}
@@ -197,32 +211,134 @@ $$
 where $q$ denotes the clinically meaningful threshold or non-inferiority margin.
 
 In the Bayesian framework, the trial design evaluates this hypothesis using a posterior decision rule.
-The trial is declared a success (i.e., $H_0$ is rejected) if the posterior probability of $\delta$ exceeding $q$ surpasses a pre-specified probability threshold $p$ (typically $p = 1 - \alpha$):
+Let $\mathcal{D} = (\bar{y}_T, \bar{y}_C)$ denote the observed trial data.
+The trial is declared a success (i.e., $H_0$ is rejected) if the posterior probability of $\delta$ exceeding $q$ surpasses a pre-specified threshold $p$ (typically $p = 1 - \alpha$):
 \begin{equation}
     \label{eq:an_prior}
-\mathbb{I}\left( \Pr(\delta > q \mid \mathcal{D}, \pi_A) \ge p \right) = 1
+    \Pr(\delta > q \mid \mathcal{D},\, \pi_A) \ge p
 \end{equation}
 
-where $\mathbb{I}(\cdot)$ is the indicator function and $\pi_A$ explicitly denotes the analysis prior used to derive the posterior distribution.
+where $\pi_A$ explicitly denotes the analysis prior used to derive the posterior distribution.
+
+\paragraph{Running example} 
+To fix ideas, throughout this section we illustrate all results with a two-arm trial: $n_T = 40$ treatment patients, $n_C = 20$ control patients, and known standard deviation $\sigma = 88$ (lower values are better). 
+The analysis prior on $\theta_C$ is a Normal with mean $\mu_{A,C} = -50$ and effective sample size $n_A = 20$ (so $\sigma_{A,C}^2 = 88^2/20$); the sampling variances are therefore $v_C = 88^2/20$ and $v_T = 88^2/40$. The decision rule is $\Pr(\delta > 0 \mid \mathcal{D},\,\pi_A) \ge 0.95$. These prior parameters are derived from a set of historical studies via the MAP approach; the historical data, the full trial design, and all operating characteristics are detailed in Section~\ref{sec:application1}. Throughout this section the prior is treated as a simple Normal; the full analysis using the MAP mixture and its robust extensions is carried out in Section~\ref{sec:application1}.
+
+\subsection{Formulating the MAP Prior}
+\label{subsec:formulating_priors}
+
+The Meta-Analytic-Predictive (MAP) prior is derived from a hierarchical model that uses the exchangeability assumption across
+historical trials \citep{schmidli_robust_2014}. Let $H$ denote the number of historical studies, with observed
+control mean $\bar{y}_{h}$ and known sampling variances $v_h = \sigma^2/n_h$ for $h = 1,\ldots,H$. The model is:
+\begin{align*}
+    \bar{y}_h \mid \theta_h &\sim \mathcal{N}(\theta_h,\, v_h) \\
+    \theta_h,\, \theta_C \mid \mu, \tau &\sim \mathcal{N}(\mu,\, \tau^2)
+\end{align*}
+with hyperpriors $p(\mu)$ and $p(\tau)$ placed on the population mean and between-study standard deviation. The heterogeneity
+parameter $\tau$ governs the degree of borrowing: $\tau \approx 0$ implies all studies share a common control mean (full pooling),
+while large $\tau$ signals large between-trial variation and justifies reduced borrowing.
+
+The MAP prior for the new trial's control parameter $\theta_C$ is the marginal posterior predictive distribution given the historical data:
+\begin{equation*} 
+p\!\left(\theta_C \mid \bar{y}_1,\ldots,\bar{y}_H\right)
+    \propto \int\!\int p\!\left(\theta_C \mid \mu,\tau^2\right)
+    \left[\prod_{h=1}^{H} \int p(\bar{y}_h \mid \theta_h)\, p(\theta_h \mid \mu,\tau^2)\, d\theta_h\right]
+    p(\mu)\,p(\tau^2)\; d\mu\; d\tau^2
+\end{equation*}
+This integral is not available in closed form and is evaluated via MCMC. The resulting posterior samples of $\theta_C$ are
+then used to fit a $K$-component mixture of Normal distributions,
+\begin{equation*}
+    \pi_{\mathrm{MAP}}(\theta_C) = \sum_{k=1}^{K} w_k\,\mathcal{N}(\theta_C;\,\mu_k,\,\sigma_k^2)
+\end{equation*}
+chosen by minimizing the KL divergence of the mixture from the true MAP predictive \citep{schmidli_robust_2014}. This conjugate mixture
+approximation enables closed-form Bayesian updating: given the current trial mean $\bar{y}_C \sim \mathcal{N}(\theta_C, v_C)$, each
+Normal component is updated independently via the standard Normal-Normal formula, and the posterior is again a Normal mixture with weights proportional
+to $w_k \cdot \mathcal{N}(\bar{y}_C;\, \mu_k,\, \sigma_k^2 + v_C)$ \citep{neuenschwander2010summarizing}. \note{CHECK THIS}
+
+The Robust MAP prior augments $\pi_{\mathrm{MAP}}$ with a weakly informative component to protect against prior-data conflict:
+\begin{equation*}
+    \pi_{\mathrm{Robust}}(\theta_C)
+    = (1 - \omega)\,\pi_{\mathrm{MAP}}(\theta_C) + \omega\,\mathcal{N}(\theta_C;\,m_R,\,\sigma_R^2),
+\end{equation*}
+where $\omega \in [0,1]$ is the prior probability that the new trial is not exchangeable with the historical controls, and $m_R$,
+$\sigma_R^2$ are the location and variance of the vague component. Under prior-data conflict the posterior weight on the vague component
+increases, limiting the influence of misleading historical information. The tuning of $\omega$, $m_R$ and $\sigma_R^2$ is not trivial:
+\citet{ratta2026interplay} show that Lindley's paradox (whereby a diffuse vague component places so little mass near the null that the Bayes factor paradoxically 
+favours $H_0$ even when the frequentist $p$-value is significant) and asymptotic Type I Error inflation can be avoided only when $\omega$ and $\sigma_R^2$
+are calibrated jointly rather than independently. \citet{weru_information_2026} further demonstrate that replacing the vague Normal
+component with a heavier-tailed form (e.g.\ a Student-$t$) or adopting a data-dependent location (Empirical Bayes) can more
+effectively cap Type I Error rates and estimation bias under severe drift. Regarding $\omega$ itself, \citet{neuenschwander_fixed_2023}
+argue that it need not be assigned a hyperprior: even a fixed weight is implicitly updated by the current data through the mixture
+posterior weights, so a Beta prior on $\omega$ adds little beyond additional specification complexity.
+Throughout this manuscript we set $m_R = -50$ (the historical mean) and $\sigma_R^2 = \sigma^2 = 88^2$, corresponding to a unit-information prior (UIP) with effective sample size of one, the standard default recommended by \citet{schmidli_robust_2014}.
+
+\paragraph{Running Example}
+To obtain the MAP prior, we rely on the R package \texttt{RBesT}\citep{weber_applying_2021}, following the worked examples at \url{https://opensource.nibr.com/RBesT/articles/introduction_normal.html}. 
+Particularly, we fit the hierarchical model via MCMC by assuming a weakly informative Normal on $\mu$ centred at zero with scale $\sigma$, and a
+HalfNormal on $\tau$ with scale $\sigma/2$, encoding the prior belief that between-trial heterogeneity is unlikely to exceed half
+the measurement scale. Then, the package exploits EM algorithm to select the number of components $K$ automatically by AIC that can then be robustified.
+
+Applying these steps to the six historical placebo arms from the running example yields the hierarchical model fit
+shown in Figure~\ref{fig:map_forest}. Figure~\ref{fig:map_robust_plot} then compares the 1-component Normal approximation (used in
+the running example for its closed-form tractability) to the 3 component mixture selected by AIC and its robustified version.
+
+<<map_setup, include=FALSE, cache=TRUE, message=FALSE, warning=FALSE>>=
+library(RBesT)
+library(ggplot2)
+crohn_sigma <- 88
+dat <- crohn
+dat$y.se <- crohn_sigma / sqrt(dat$n)
+set.seed(1)
+map_mcmc <- gMAP(cbind(y, y.se) ~ 1 | study,
+  weights = n, data = dat,
+  family = gaussian,
+  beta.prior = cbind(0, crohn_sigma),
+  tau.dist = "HalfNormal", tau.prior = cbind(0, crohn_sigma / 2)
+)
+map_fit_1 <- automixfit(map_mcmc, Nc = 1)   # single Normal
+map_fit_3 <- automixfit(map_mcmc)            # full mixture: selected by AIC
+ess_map_1 <- round(ess(map_fit_1))
+ess_map_3 <- round(ess(map_fit_3))
+@
+
+<<map_forest, echo=FALSE, cache=TRUE, message=FALSE, warning=FALSE, fig.height=4, fig.width=8, dev='cairo_pdf', fig.cap="Forest plot of the hierarchical meta-analysis fit. Each row shows a historical placebo arm $\\theta_h$ (posterior mean and 95\\% credible interval). The bottom row (\\textit{MAP}) represents the posterior predictive for the new trial's $\\theta_C$.">>=
+forest_plot(
+  map_mcmc,
+  prob       = 0.95,      # 95% credible intervals
+  est        = "MAP",    # show both Mean (posterior of mu) and MAP predictive rows
+  model      = "stratified",  # show only raw per-study estimates
+  point_est  = "median",  # posterior median as point estimate
+  size       = 1.25,
+  linewidth  = 1.25
+) + ylab(expression(theta[C])) #for some reason they made the plot inverted x and y axis 
+@
+
+<<map_robust_plot, echo=FALSE, cache=TRUE, message=FALSE, warning=FALSE, fig.height=4, fig.width=8, dev='cairo_pdf', fig.cap=paste0("MAP prior approximations and robust extension. The 1-component Normal (ESS $= ", ess_map_1, "$, used in the running example) and the ", ncol(map_fit_3), "-component mixture selected by AIC (ESS $= ", ess_map_3, "$) both approximate $\\pi_{\\mathrm{MAP}}$. Adding a weakly informative $\\mathcal{N}(-50,\\,88^2)$ component with weight $\\omega = 0.2$ yields the Robust MAP.")>>=
+theta_grid <- seq(-300, 180, length.out = 600)
+map_robust <- robustify(map_fit_3, weight = 0.2, mean = -50, sigma = crohn_sigma)
+labels <- c(
+  sprintf("1-component MAP (ESS = %d)", ess_map_1),
+  sprintf("%d-component MAP (ESS = %d)", ncol(map_fit_3), ess_map_3),
+  sprintf("Robust MAP (omega = 0.2)")
+)
+df_map <- rbind(
+  data.frame(theta = theta_grid, density = dmix(map_fit_1,  theta_grid), prior = labels[1]),
+  data.frame(theta = theta_grid, density = dmix(map_fit_3,  theta_grid), prior = labels[2]),
+  data.frame(theta = theta_grid, density = dmix(map_robust, theta_grid), prior = labels[3])
+)
+df_map$prior <- factor(df_map$prior, levels = labels)
+ggplot(df_map, aes(x = theta, y = density, colour = prior, linetype = prior)) +
+  geom_line(linewidth = 0.9) +
+  scale_colour_manual(values = c("#0072B2", "#D55E00", "#009E73")) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotdash")) +
+  labs(x = expression(theta[C]), y = "Density", colour = NULL, linetype = NULL) +
+  coord_cartesian(xlim = c(-150, 70)) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+@
 
 
-\subsection{Formulating the Priors \note{TO DO}}
-\note{TO DO: in this paragraph start from Schmidli (2015) and talk about how the MAP prior is mathematically obtained works, how the Robust MAP works and extend witht the work from Weru et al}
 
-
-\begin{itemize}
-    \item Talk abt the robust mixture prior's tuning parameters (form, mean, variance). Cite Weru et al. to highlight how the location of the robust component influences \citep{weru_information_2026} and that As Weru et al. ù
-    highlight, achieving true robustness 
-against prior-data conflict requires a prior distribution with "heavy tails" \citep{weru_information_2026}. While a true Student's $t$-distribution provides these 
-ideal heavy-tailed properties, applying it directly introduces computational challenges. Because the $t$-distribution is not conjugate to a 
-Normal data likelihood, we need approximation using MCMC. 
-
-To resolve this, the Robust Mixture Prior is constructed as a discrete mixture of Normal distributions, specifically, blending an informative MAP component with a diffuse, high-variance Normal component. 
-By using KL divergence with MCMC estimate. 
-
-    \item  \citep{neuenschwander_fixed_2023} suggest to use Fixed weights $w_i$: it is not necessary to give a prior on it (es a Beta), since also those w are updated.
-    \item Also interesting: Summarizing historical information on controls in clinical trials - Beat Neuenschwander, Gorana Capkun-Niggli, Michael Branson, David J Spiegelhalter, 2010
-\end{itemize}
 
 \subsection{Metrics to evaluate Bayesian Designs}
 Frequentist Type I Error and power are well-established metrics used to evaluate traditional trial designs. However, it is documented that when informative priors are incorporated into a 
@@ -241,7 +357,7 @@ m = \int \Pr\left(\text{Success} \mid \theta\right) \pi_D(\theta) \, d\theta
 It is crucial to differentiate between design and analysis prior \citep{ohagan_bayesian_2001}.  
 \begin{itemize}
   \item The analysis prior $\pi_A(\theta)$ is the distribution used during the actual analysis of the trial, to derive the posterior and evaluate the decision rule (see Equation~\eqref{eq:an_prior}). In this manuscript, 
-$\pi_A(\theta)$ incorporates historical data via a Meta-Analytic-Predictive (MAP) approach, but other methods can be employed (see \autoref{subsec:info-borrowing})
+$\pi_A(\theta)$ incorporates historical data via a Meta-Analytic-Predictive (MAP) prior, but other methods can be employed (see \autoref{subsec:info-borrowing})
   \item  The design prior $\pi_D(\theta)$, (see Equation~\eqref{eq:m_general}) is the assumed distribution of the underlying true parameter (data generating process) used exclusively in the planning stage to evaluate the design's 
 operating characteristics across various plausible true scenarios.
 \end{itemize}
@@ -259,7 +375,7 @@ using a prior on the control group $\theta_C$ (known in literature as "hybrid-co
 
 
 \subsubsection{Borrowing on control} \label{sec:pointwise}
-When historical borrowing is applied exclusively on the control arm, the operating characteristics depend jointly on the true parameters $\theta_C$ and $\theta_T$. The general metric from Equation~\ref{eq:m_general} expands
+When historical borrowing is applied exclusively on the control arm, the operating characteristics depend jointly on the true parameters $\theta_C$ and $\theta_T$. The general metric from Equation~\eqref{eq:m_general} expands
  to a double integral over the joint design prior $\pi_D(\theta_C, \theta_T)$:
 \begin{equation} \label{eq:m_joint}
 m = \int_{-\infty}^{\infty} \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_C, \theta_T\right) \pi_D(\theta_C, \theta_T) \, d\theta_T \, d\theta_C
@@ -272,7 +388,7 @@ contrast at a constant value $\delta$, such that $\theta_T = \theta_C - \delta$.
 $\pi_D(\theta_C)$, collapsing Equation~\ref{eq:m_joint} into a single integral, and by varying the assumed true effect size $\delta$, we can define two metrics for evaluating the trial design:
 
 \paragraph{Average Type I Error (avgT1E)}
-When the true treatment effect is null ($\delta = 0$), we obtain Average Type I Error \cite{best_beyond_2025}:  
+When the true treatment effect is null ($\delta = 0$), we obtain the Average Type I Error \citep{best_beyond_2025}:  
 \begin{equation}
   \label{eq:avg-type1-error}
   \text{avgT1E} = \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_C, \theta_T = \theta_C\right) \pi_D(\theta_C) \, d\theta_C
@@ -284,7 +400,7 @@ the conditional T1E is not a single constant, but varies pointwise as a function
 
 
 \paragraph{Average Power ($\text{avgPower}$)}
-When the true treatment effect is assumed to be a specific non-zero value ($\delta \neq 0$),  we obtain Average Power (at $\delta$):  
+When the true treatment effect is assumed to be a specific non-zero value ($\delta \neq 0$),  we obtain the Average Power (at $\delta$):  
 \begin{equation} \label{eq:avg-power}
   \text{avgPower}(\delta) = \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_C, \theta_T = \theta_C - \delta\right) \pi_D(\theta_C) \, d\theta_C
 \end{equation}
@@ -311,19 +427,18 @@ $\theta_C^*$ and the treatment effect $\delta$.
 Assuming Normal distributions for both the historical analysis prior ($\pi_A$) and the design prior ($\pi_D$), it is possible to derive closed-form solutions for Equation~\eqref{eq:avg-power} and ~\eqref{eq:avg-type1-error}. 
 Complete proofs are reported in Appendix~\ref{sec:appendix_normal_priors}. 
 
-Let the observed sample means for the control and treatment arms be normally distributed as $\bar{y}_C \mid \theta_C \sim \mathcal{N}(\theta_C, v_C)$ and $\bar{y}_T \mid \theta_T \sim \mathcal{N}(\theta_T, v_T)$, respectively. Where $v_{\bullet} = \frac{\sigma_{\bullet}^{2}}{n_{\bullet}}$. 
+Let the observed sample means for the control and treatment arms be normally distributed as $\bar{y}_C \mid \theta_C \sim \mathcal{N}(\theta_C, v_C)$ and $\bar{y}_T \mid \theta_T \sim \mathcal{N}(\theta_T, v_T)$, respectively, with $v_{\bullet} = \sigma_{\bullet}^{2}/n_{\bullet}$. 
 We incorporate an informative historical analysis prior for the control arm, $\pi_A(\theta_C) \sim \mathcal{N}(\mu_{A,C}, \sigma_{A,C}^2)$, where $\mu_{A,C}$ represents the historical mean of control group and $\sigma_{A,C}^2$ quantifies the prior uncertainty. We assume a non-informative analysis prior for the treatment arm.
-
 The Bayesian Trial is declared a success if $\Pr(\delta > q \mid \bar{y}_C, \bar{y}_T) > p$, consistent with Equation~\eqref{eq:an_prior}.
 
-Let $\hat{\delta}$ denote the posterior mean of the treatment contrast ($\delta$). By Normal-Normal conjugacy, the posterior mean of the control arm is a convex combination governed by the data weight $W = \sigma_{A,C}^2 / (\sigma_{A,C}^2 + v_C)$. Consequently, we can rewrite the condition of Success in the form: 
+Let $\hat{\delta}$ denote the posterior mean of the treatment contrast ($\delta$). By Normal-Normal conjugacy, the posterior mean of the control arm is a convex combination governed by $W = \sigma_{A,C}^2 / (\sigma_{A,C}^2 + v_C)$. Consequently, we can rewrite the condition of Success in the form: 
 
 \begin{equation} \label{eq:threshold_k}
     \hat{\delta} > k \qquad \text{with } k = q + z_p \sqrt{V_{\delta}}
 \end{equation}
 
 
-where $q$ is the target efficacy threshold, $z_p$ is the Normal quantile corresponding to the required posterior probability, and $V_{\delta} = \frac{\sigma_{A,C}^2 v_C}{\sigma_{A,C}^2 + v_C} + v_T$ is the posterior variance of $\delta$.
+where $q$ is the target efficacy threshold, $z_p$ is the Normal quantile corresponding to the required posterior probability, and $V_{\delta} = \sigma_{A,C}^2 v_C / (\sigma_{A,C}^2 + v_C) + v_T$ is the posterior variance of $\delta$.
 
 \paragraph{Conditional metrics}
 
@@ -342,7 +457,10 @@ The conditional Type I Error is simply the special case evaluated under the stri
 
 %% When the true reality perfectly aligns with the historical expectation ($\theta_C^* \approx \mu_{A,C}$), the bias term vanishes. The Bayesian threshold ($z_p \sqrt{V_{\delta}}$) is reduced, yielding an increase in Power.
 %% If the control arm performs worse than historically expected ($\theta_C^* > \mu_{A,C}$), the prior pulls the estimate down, creating a negative bias that decreases statistical power. Conversely, if the control arm performs better than expected ($\theta_C^* < \mu_{A,C}$), the positive bias inflates power, but at the cost Type I Error inflation.
-Note that as $W \to 1$ (a non-informative analysis prior, or an infinitely large control group), the bias term vanishes and the formulation collapses to standard frequentist two sample Z test. 
+Note that as $W \to 1$ (a non-informative analysis prior, or an infinitely large control group), the bias term vanishes and the formulation collapses to the classical two-sample $Z$-test power \citep{lachin1981introduction}:
+\begin{equation} \label{eq:ztest_power}
+    \text{Power}_Z(\delta) = 1 - \Phi\!\left( z_p - \frac{\delta - q}{\sigma\sqrt{\dfrac{1}{n_C} + \dfrac{1}{n_T}}} \right)
+\end{equation}
 
 \paragraph{Averaged Metrics}
  When using a design prior $\pi_D(\theta_C) \sim \mathcal{N}(\mu_{D,C}, \sigma_{D,C}^2)$, we apply the Laws of Total Expectation and Total Variance to marginalize out the unknown parameter $\theta_C$. 
@@ -361,41 +479,213 @@ Evaluating this distribution under the null hypothesis ($\delta = 0$) yields the
 \begin{itemize}
     \item  The denominator of the averaged metrics includes the term $(1 - W)^2 \sigma_{D,C}^2$. This accounts for the additional uncertainty of integrating over $\pi_D$. Because dividing by a larger variance
      shrinks a $Z$-score toward zero, the larger marginal variance forces average metrics closer to $50\%$ compared to conditional ones (evaluated at $\mu_{D,C}$).
-    \item  When the analysis prior and design prior coincide ($\mu_{A,C} = \mu_{D,C}$ and $\sigma_{A,C}^2 = \sigma_{D,C}^2$) \emph{and the null threshold is $q = 0$}, the avgT1E is controlled at exactly $1-p$, aligning with the literature \citep{best_beyond_2025}. For $q \neq 0$ (e.g., a non-inferiority margin), the result is $\text{avgT1E} = 1 - \Phi(q/\sqrt{V_{\delta}} + z_p) \neq 1-p$.
+    \item  When the analysis prior and design prior coincide ($\mu_{A,C} = \mu_{D,C}$ and $\sigma_{A,C}^2 = \sigma_{D,C}^2$) \emph{and the null threshold is $q = 0$}, the avgT1E is controlled at exactly $1-p$, aligning with the literature \citep{best_beyond_2025}. 
     \item When $W \to 1$, the formulation collapses to the frequentist two sample Z test.
-    \item \citet{best_beyond_2025} evaluates the case of using a completely vague design prior. We argue that it is pointless, since this leads the marginal variance in the denominator to diverge to infinity. Consequently, both the Average Power 
+    \item \citet{best_beyond_2025} evaluates the case of using a completely vague design prior. This leads the marginal variance in the denominator to diverge to infinity. Consequently, both the Average Power
     and the Average Type I Error converge to $\Phi(0) = 0.5$, no matter the choice of the Analysis Prior.
 \end{itemize}
 
+When the analysis and design priors coincide ($\mu_{A,C} = \mu_{D,C}$, $\sigma_{A,C} = \sigma_{D,C}$), the bias term vanishes and, as shown in Appendix~\ref{sec:appendix_normal_priors}, the marginal variance equals $V_\delta$. The Average Power then simplifies to:
+\begin{align*}
+     \text{avgPower}(\delta) &= 1 - \Phi\left( \frac{z_p \sqrt{V_{\delta}} - \delta}{\sqrt{V_{\delta}}} \right) \\
+     &= 1 - \Phi\left( z_p - \frac{\delta}{\sqrt{V_{\delta}}} \right)
+\end{align*}
 
 
+In the figures below, the analysis prior is held fixed ($\mu_{A,C} = -50$, $\sigma_{A,C}^2 = 88^2/20$) while the design prior parameters are varied to represent different assumptions about the true data-generating process.
 
-\paragraph{Reparameterization} \note{TO DO: decide if keep this, it is the only reparametrization I managed to get out even if it is messy}
+Figure~\ref{fig:plot_t1e} visualizes how Type I Error reacts to two types of conflict between analysis and design priors: location shift ($\mu_{A,C} \neq \mu_{D,C}$) and scale shift ($\sigma_{A,C} \neq \sigma_{D,C}$). The left panel shows that if the true placebo response is better than expected ($\mu_{D,C} < -50$), the Type I Error increases. The conditional T1E (conditioned on $\theta_C^* = \mu_{D,C}$) is always below the avgT1E. In the right panel, when design uncertainty $\sigma_{D,C}$ is zero we obtain the conditional T1E, while as $\sigma_{D,C} \to \infty$ the Average Type I Error converges to $0.5$, consistent with Equation~\eqref{eq:avgt1e_closed_form}
 
-Assuming a common underlying patient variance $\sigma^2$ across both arms, we can express the sampling variances as $v_C = \frac{\sigma^2}{n_C}$ and 
-$v_T = \frac{\sigma^2}{n_T}$. We denote $n_A$ and $n_D$ as the Effective Sample Sizes (ESS) of the Analysis and Design priors, respectively. By 
-definition of ESS, the prior variances are expressed as $\sigma_{A,C}^2 = \frac{\sigma^2}{n_A}$ and $\sigma_{D,C}^2 = \frac{\sigma^2}{n_D}$, and we can define 3 ratios:
+<<plot_t1e, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Left panel shows Type I Error under Location Shift (varying $\\mu_{D,C}$), assuming $\\sigma_{D,C} = \\sigma_{A,C}$. Conditional metric is evaluated at $\\theta_C^* = \\mu_{D,C}$. Right panel shows Average Type I Error under Scale Shift (varying $\\sigma_{D,C}$) while setting $\\mu_{D,C} = \\mu_{A,C}$. The vertical gray dotted lines indicate the points of prior alignment ($\\pi_D = \\pi_A$). The red dashed line represents the nominal value of $0.05$">>=
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(gridExtra)
+library(scales)
 
+# --- Trial Parameters & Functions  ---
+sigma <- 88; n_C <- 20; n_T <- 40; n_A <- 20; N_total <- n_C + n_T
+v_C <- sigma^2 / n_C; v_T <- sigma^2 / n_T; sigma_A2 <- sigma^2 / n_A; mu_A <- -50
+q <- 0; z_p <- qnorm(0.95)
+W <- sigma_A2 / (sigma_A2 + v_C)
+V_delta <- W * v_C + v_T
+V_samp <- W^2 * v_C + v_T
+
+condPower <- function(theta_C_star, delta) {
+  num <- q + z_p * sqrt(V_delta) - ((1 - W) * (mu_A - theta_C_star) + delta)
+  1 - pnorm(num / sqrt(V_samp))
+}
+avgPower <- function(mu_D, sigma_D2, delta) {
+  num <- q + z_p * sqrt(V_delta) - ((1 - W) * (mu_A - mu_D) + delta)
+  1 - pnorm(num / sqrt(V_samp + (1 - W)^2 * sigma_D2))
+}
+calc_EUII <- function(power, t1e, N) {
+  eps <- 1e-10
+  p <- pmax(pmin(power, 1 - eps), eps); t <- pmax(pmin(t1e, 1 - eps), eps)
+
+  log_dor <- qlogis(p) - qlogis(t)
+  return(exp(log_dor / N))
+}
+
+my_theme <- theme_minimal() + theme(legend.position = "bottom", legend.title = element_blank())
+my_x_scale <- scale_x_continuous(trans = "log1p", breaks = c(0, 10, 100, 1000, 10000), labels = c("0\n(Cond.)", "10", "100", "1K", "10K"))
+
+# --- T1E Data & Plots ---
+df_t1e_loc <- data.frame(mu_D = seq(-90, -10, length.out = 100)) %>%
+  mutate(
+    `Conditional T1E` = condPower(mu_D, 0),
+    `Average T1E` = avgPower(mu_D, sigma_A2, 0)
+  ) %>%
+  pivot_longer(cols = c(`Conditional T1E`, `Average T1E`), names_to = "Metric", values_to = "Value")
+
+sigmas <- c(0, 10^seq(0, 5, length.out = 99))
+df_t1e_scale <- data.frame(sigma_D = sigmas) %>%
+  mutate(Avg_T1E = avgPower(mu_A, sigma_D^2, 0))
+
+p1a <- ggplot(df_t1e_loc, aes(x = mu_D, y = Value, color = Metric, linetype = Metric)) +
+  geom_line(size = 1.2) +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", linewidth = 0.4) +
+  geom_vline(xintercept = mu_A, linetype = "dotted", color = "gray", linewidth = 0.8) +
+  scale_color_manual(values = c("Average T1E" = "#E69F00", "Conditional T1E" = "#56B4E9")) +
+  labs(x = expression("True Control Mean (" * mu["D,C"] * ")"),
+       y = "Type I Error") +
+  my_theme
+
+p1b <- ggplot(df_t1e_scale, aes(x = sigma_D, y = Avg_T1E)) +
+  geom_line(color = "#E69F00", size = 1.2) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "black", linewidth = 0.6) +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", linewidth = 0.4) +
+  geom_vline(xintercept = sqrt(sigma_A2), linetype = "dotted", color = "gray", linewidth = 0.8) +
+  my_x_scale +
+  coord_cartesian(ylim = c(0, 0.6)) +
+  labs(x = expression(sigma["D,C"]),
+       y = "avgT1E") +
+  my_theme
+
+grid.arrange(p1a, p1b, ncol = 2)
+@
+
+Figure~\ref{fig:plot_power} shows the behavior of statistical power assuming $\mu_{D,C} = \mu_{A,C} = -50$. In the left panel $\sigma_{D,C} = \sigma_{A,C}$ and we vary $\delta$. As already observed, Average Power is always closer to $50\%$ than Conditional Power. The right panel shows how avgPower at $\delta = 60$ changes as design uncertainty $\sigma_{D,C}$ increases: when $\sigma_{D,C} = 0$ we obtain the conditional power, while as $\sigma_{D,C} \to \infty$, avgPower reaches $50\%$.
+
+<<plot_power, echo=FALSE, warning=FALSE, message=FALSE, dev='cairo_pdf', fig.height=4, fig.width=10, fig.cap="Left panel shows Conditional and Average Statistical Power evaluated across true treatment effects ($\\delta$), assuming perfectly aligned priors ($\\mu_{A,C} = \\mu_{D,C}$ and $\\sigma_{A,C} = \\sigma_{D,C}$). Right panel shows Average Power evaluated at $\\delta = 60$ as design uncertainty ($\\sigma_{D,C}$) increases, holding $\\mu_{D,C} = \\mu_{A,C}$. The vertical gray dotted lines indicate the points of prior alignment ($\\pi_D = \\pi_A$).">>=
+# --- Power Data & Plots ---
+df_pow_loc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
+  mutate(
+    `Conditional Power` = condPower(mu_A, delta),
+    `Average Power` = avgPower(mu_A, sigma_A2, delta)
+  ) %>%
+  pivot_longer(cols = c(`Conditional Power`, `Average Power`), names_to = "Metric", values_to = "Value")
+
+df_pow_scale <- data.frame(sigma_D = sigmas) %>%
+  mutate(Avg_Power = avgPower(mu_A, sigma_D^2, 60))
+
+p2a <- ggplot(df_pow_loc, aes(x = delta, y = Value, color = Metric, linetype = Metric)) +
+  geom_line(size = 1) +
+  scale_color_manual(values = c("Average Power" = "#E69F00", "Conditional Power" = "#56B4E9")) +
+  labs(x = expression("True Effect (" * delta * ")"),
+       y = "Power") +
+  my_theme
+
+p2b <- ggplot(df_pow_scale, aes(x = sigma_D, y = Avg_Power)) +
+  geom_line(color = "#E69F00", size = 1.2) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color="black", linewidth = 0.6) +
+  geom_vline(xintercept = sqrt(sigma_A2), linetype = "dotted", color = "gray", linewidth = 0.8) +
+  my_x_scale +
+  coord_cartesian(ylim = c(0.4, 1.0)) +
+  labs(x = expression(sigma["D,C"]),
+       y = "avgPower") +
+  my_theme
+
+grid.arrange(p2a, p2b, ncol = 2)
+@
+
+\paragraph{Sample size computation}
+
+For sample size computation, certain assumptions allow us to reparametrize Equation~\eqref{eq:avgpower_closed_form} into a compact form. 
+First, it is reasonable to perform sample size computations using a correctly specified Analysis prior ($\mu_{A,C} = \mu_{D,C}$ and $\sigma_{A,C} = \sigma_{D,C}$). Then we can assume a common patient variance $\sigma^2$ across both arms, such that $v_C = \sigma^2/n_C$ and $v_T = \sigma^2/n_T$.
+We can also define the effective sample size (ESS) for the Analysis prior $n_A$ (note that $n_A = n_D$), and write $\sigma_{A,C}^2 = \sigma^2/n_A$.
+
+Under these assumptions, the weight becomes $W = n_C/(n_C+n_A)$ and the bias term $(1-W)(\mu_{A,C}-\mu_{D,C})$ vanishes entirely. We further define two design ratios:
 \begin{itemize}
-    \item \textbf{Analysis Prior Ratio ($r_A$):} $r_A = \frac{n_A}{n_C}$, representing the proportion of historical control data to actual control data.
-    \item \textbf{Allocation Ratio ($r_T$):} $r_T = \frac{n_T}{n_C}$, where $r_T = 1$ for 1:1 randomization.
-    \item \textbf{Design Prior Ratio ($r_D$):} $r_D = \frac{n_D}{n_C}$.
+    \item $r_A = n_A/n_C$: the historical-to-control ESS ratio (implying $W = 1/(1+r_A)$).
+    \item $r_T = n_T/n_C$: the allocation ratio.
 \end{itemize}
 
-Using these ratios, we can write $W = \frac{1}{1 + r_A}$.
 
-By isolating $v_C = \frac{\sigma^2}{n_C}$, we can find a reparameterized closed-form solution for Average Power:
+Substituting the ESS parameterization into Equation~\eqref{eq:avgpower_closed_form} and simplifying yields:
 \begin{equation} \label{eq:avgpower_ess}
-    \text{avgPower}(\delta) = 1 - \Phi \left( \frac{q + z_p \frac{\sigma}{\sqrt{n_C}} \sqrt{\frac{1}{1+r_A} + \frac{1}{r_T}} - \left[ \left(\frac{r_A}{1+r_A}\right)(\mu_{A,C} - \mu_{D,C}) + \delta \right] }{\frac{\sigma}{\sqrt{n_C}} \sqrt{ \frac{1}{(1+r_A)^2} + \frac{1}{r_T} + \frac{r_A^2}{r_D(1+r_A)^2} }} \right)
+    \text{avgPower}(\delta) = 1 - \Phi \left( z_p - \frac{\delta - q}{\sigma \sqrt{\dfrac{1}{n_C + n_A} + \dfrac{1}{n_T}}} \right)
+\end{equation}
+  
+\textit{Remark}
+Equation~\eqref{eq:avgpower_ess} is identical to Equation~\eqref{eq:ztest_power} evaluated with $n_C^* = n_C + n_A$ effective control patients.
+This gives the ESS of the analysis prior a precise meaning: under a correctly specified prior, the $n_A$ historical pseudo-observations are worth exactly $n_A$ additional control patients in terms of average power.
+This equivalence holds only under a correctly specified prior; misspecification reintroduces the bias term and can invalidate avgT1E and avgPower results.
+
+Setting Equation~\eqref{eq:avgpower_ess} equal to the target power $1-\beta$ and fixing the allocation ratio $r_T$ (so $n_T = r_T n_C$) yields:
+$$ \frac{1}{n_C + n_A} + \frac{1}{r_T\, n_C} = \frac{(\delta - q)^2}{\sigma^2(z_p + z_{1-\beta})^2} =: \frac{1}{K} $$
+This results in a quadratic equation in terms of $n_C$:
+$$ r_T\, n_C^2 + \bigl[r_T n_A - K(r_T + 1)\bigr]\, n_C - K n_A = 0 $$
+The positive root provides the closed-form solution for the required control sample size:
+\begin{equation} \label{eq:n_c_formula}
+    n_C = \frac{K(r_T+1) - r_T n_A + \sqrt{\bigl[K(r_T+1) - r_T n_A\bigr]^2 + 4\, r_T\, K\, n_A}}{2\, r_T}, \quad K = \frac{\sigma^2(z_p + z_{1 -\beta})^2}{(\delta - q)^2}
 \end{equation}
 
-A clear application of Equation~\eqref{eq:avgpower_ess} is that it facilitates sample size calculations. 
-By fixing the variables for our specific trial and deciding the allocation ratio $r_T$, it can be equated to the target Average Power ($1 - \beta$) and solved for $n_C$. 
+As $n_A \to 0$ (the scenario with no historical borrowing), Equation~\eqref{eq:n_c_formula} converges to $n_C \to K(1 + 1/r_T)$, which is exactly the classical frequentist two-sample $Z$-test formula with unequal group sizes. 
 
 
+Thus, Average power appears to be a more natural metric for sample size planning in this Bayesian framework.
+Infact, solving $\text{condPower}(\mu_{A,C},\delta) = 1-\beta$ for $n_C$ requires $z_p\sqrt{V_\delta} + z_{1-\beta}\sqrt{V_\text{samp}} = \delta - q$, and since $V_\delta$ and $V_\text{samp}$ depend both on $n_C$, no closed-form sample size formula exists and numerical inversion is needed.
+Average power avoids this: under the alignment assumptions $V_\text{marg} = V_\delta$, the formula reduces to a single square-root term, and the inversion yields the closed-form quadratic in Equation~\eqref{eq:n_c_formula}.
+This simplification also gives $n_A$ an additive role: in Equation~\eqref{eq:avgpower_ess}, $n_A$ enters only through $n_C + n_A$, so each historical pseudo-observation reduces the required control sample size by exactly one.
+By contrast, in the conditional power formula $n_A$ appears both through $V_\delta$ and $V_\text{samp}$, which depend on $n_A$ in different ways, so no such additive interpretation holds.
 
+\textit{Running example.} Using the parameters from the running example ($\sigma = 88$, $n_A = n_D = 20$, $r_T = 2$, $\delta = 60$, $q = 0$), we obtain:
+$$ K = \frac{88^2 \times (1.645 + 0.842)^2}{60^2} \approx 13.31 $$
+Substituting into Equation~\eqref{eq:n_c_formula} gives $n_C \approx 11.5 \to 12$, so $n_C = 12$ control patients ($n_T = 24$, $n_{\text{trial}} = 36$) achieves just above $80\%$ average power. The actual design ($n_C = 20$) yields $\text{avgPower}(60) \approx 92\%$, consistent with Figure~\ref{fig:plot_power} and with Equation~\eqref{eq:ztest_power} evaluated at $n_C^* = 40$.
 
+Figure~\ref{fig:plot_avgpower_nc} shows how average power varies with $n_C$ for several values of $n_A$: borrowing more historical data shifts the power curve left, reducing the required $n_C$. The $n_A = 0$ curve coincides with the classical $Z$-test power (Equation~\eqref{eq:ztest_power}) while the $n_A = 20$ curve corresponds to the running example.
 
+<<plot_avgpower_nc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=3.5, fig.width=6, dev='cairo_pdf', fig.cap="Average power vs.\ control sample size $n_C$ ($\\delta = 60$, $\\sigma = 88$, $r_T = 2$, $q = 0$) for varying ESS $n_A$. The horizontal dashed line represents 80\\% power target; while the two dotted verticals the minimum required $n_C$ (Eq.~\\ref{eq:n_c_formula} with $n_A=20$) and actual design value $n_C = 20$.">>=
+avgPower_ess <- function(delta, n_C, n_A, r_T, sigma, z_p, q = 0) {
+  n_T <- r_T * n_C
+  1 - pnorm(z_p - (delta - q) / (sigma * sqrt(1 / (n_C + n_A) + 1 / n_T)))
+}
+
+n_C_seq <- seq(4, 40, by = 0.5)
+n_A_vals <- c(0, 10, 20, 30)
+df_ss <- do.call(rbind, lapply(n_A_vals, function(na) {
+  data.frame(
+    n_C   = n_C_seq,
+    power = avgPower_ess(delta = 60, n_C = n_C_seq, n_A = na,
+                         r_T = 2, sigma = 88, z_p = qnorm(0.95)),
+    n_A   = factor(paste0("n_A = ", na))
+  )
+}))
+
+K_req   <- 88^2 * (qnorm(0.95) + qnorm(0.80))^2 / 60^2
+b_req   <- K_req * (2 + 1) - 2 * 20
+n_C_req <- (b_req + sqrt(b_req^2 + 4 * 2 * K_req * 20)) / (2 * 2)  # Bayesian (n_A=20)
+
+legend_labels <- c("n_A = 0 (Z-test)", "n_A = 10", "n_A = 20", "n_A = 30")
+
+ggplot(df_ss, aes(x = n_C, y = power, colour = n_A, linetype = n_A)) +
+  geom_line(linewidth = 0.8) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", colour = "grey50") +
+  geom_vline(xintercept = n_C_req, linetype = "dotted", colour = "grey40") +
+  geom_vline(xintercept = 20,      linetype = "dotted", colour = "grey40") +
+  annotate("text", x = n_C_req - 0.6, y = 0.15, label = paste0("n_C=", ceiling(n_C_req)),
+           hjust = 1, size = 3, colour = "grey30") +
+  annotate("text", x = 20 + 0.6, y = 0.15, label = "n_C=20",
+           hjust = 0, size = 3, colour = "grey30") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
+  scale_colour_brewer(palette = "Set1", labels = legend_labels) +
+  scale_linetype_discrete(labels = legend_labels) +
+  labs(x = expression(n[C]), y = "Average Power",
+       colour = NULL, linetype = NULL) +
+  my_theme +
+  theme(legend.position = "right")
+@
 
 
 \paragraph{Computational Framework \note{TO DO: decide wheter to keep or not: it is just how the metric is computed in R}}
@@ -555,7 +845,39 @@ We therefore use throughout:
 \end{equation}
 where $n_{\text{trial}}$ is the number of patients enrolled in the current trial, which is the decision variable of the trial design.
 
+\paragraph{Running example: EUII under Normal priors}
+In Figure~\ref{fig:plot_euii}, EUII is plotted for the running example. The left panel shows that Average EUII provides a more conservative estimate of per-patient information than Conditional EUII. The right panel shows that a completely vague design prior ($\sigma_{D,C} \to \infty$) drives the EUII to $1.0$, reflecting zero discriminatory gain per patient when the design prior is uninformative.
+
+<<plot_euii, echo=FALSE, warning=FALSE, message=FALSE, dev='cairo_pdf', fig.height=4, fig.width=10, fig.cap="Left panel shows Conditional and Average Experimental Unit Information Index (EUII) evaluated across true treatment effects ($\\delta$), assuming perfectly aligned priors ($\\mu_{A,C} = \\mu_{D,C}$ and $\\sigma_{A,C} = \\sigma_{D,C}$). Right panel shows Average EUII evaluated at $\\delta = 60$ as design uncertainty ($\\sigma_{D,C}$) increases, holding $\\mu_{A,C} = \\mu_{D,C}$. The vertical gray dotted lines indicate the points of prior alignment ($\\pi_D = \\pi_A$).">>=
+# --- EUII Data & Plots ---
+df_euii_loc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
+  mutate(
+    Cond_EUII = calc_EUII(condPower(mu_A, delta), condPower(mu_A, 0), N_total),
+    Avg_EUII  = calc_EUII(avgPower(mu_A, sigma_A2, delta), avgPower(mu_A, sigma_A2, 0), N_total)
+  ) %>% pivot_longer(cols = c(Cond_EUII, Avg_EUII), names_to = "Metric", values_to = "Value")
+
+df_euii_scale <- data.frame(sigma_D = sigmas) %>%
+  mutate(Avg_EUII = calc_EUII(avgPower(mu_A, sigma_D^2, 60), avgPower(mu_A, sigma_D^2, 0), N_total))
+
+p3a <- ggplot(df_euii_loc, aes(x = delta, y = Value, color = Metric, linetype = Metric)) +
+  geom_line(size = 1) + scale_color_manual(values = c("Avg_EUII" = "#009E73", "Cond_EUII" = "#CC79A7")) +
+  labs(x = expression("True Effect (" * delta * ")"), y = "EUII") + my_theme
+
+p3b <- ggplot(df_euii_scale, aes(x = sigma_D, y = Avg_EUII)) +
+  geom_line(color = "#009E73", size = 1.2) +
+  geom_hline(yintercept = 1.0, linetype = "dashed", color="black", linewidth = 0.6) +
+  geom_vline(xintercept = sqrt(sigma_A2), linetype = "dotted", color = "gray", linewidth = 0.8) +
+  my_x_scale +
+  labs(x = expression(sigma["D,C"]), y = expression(EUII[avg])) + my_theme
+
+grid.arrange(p3a, p3b, ncol = 2)
+@
+
 \subsubsection{Borrowing on treatment \note{TO DO}}
+
+
+
+\subsection{Dual Criterion}
 
 
 
@@ -622,9 +944,9 @@ The overall conditional Power and Type I Error are then:
 
 The conditional expected sample sizes, overall and conditional on the trial outcome, are:
 \begin{align}
-  E[N \mid \theta_C^*, \delta]   &= n_1\!\cdot\!(P_{\text{eff},1} + P_{\text{fut},1}) + n_2\!\cdot\! P_{\text{cont}}, \label{eq:seq_en} \\
-  E[N^+ \mid \theta_C^*, \delta] &= \frac{n_1 \cdot P_{\text{eff},1} + n_2 \cdot P_{\text{suc},2}}{\text{Power}(\theta_C^*, \delta)}, \label{eq:seq_en_plus} \\
-  E[N^- \mid \theta_C^*, \delta] &= \frac{n_1 \cdot P_{\text{fut},1} + n_2 \cdot (P_{\text{cont}} - P_{\text{suc},2})}{1 - \text{Power}(\theta_C^*, \delta)}, \label{eq:seq_en_minus}
+  \E[N \mid \theta_C^*, \delta]   &= n_1\!\cdot\!(P_{\text{eff},1} + P_{\text{fut},1}) + n_2\!\cdot\! P_{\text{cont}}, \label{eq:seq_en} \\
+  \E[N^+ \mid \theta_C^*, \delta] &= \frac{n_1 \cdot P_{\text{eff},1} + n_2 \cdot P_{\text{suc},2}}{\text{Power}(\theta_C^*, \delta)}, \label{eq:seq_en_plus} \\
+  \E[N^- \mid \theta_C^*, \delta] &= \frac{n_1 \cdot P_{\text{fut},1} + n_2 \cdot (P_{\text{cont}} - P_{\text{suc},2})}{1 - \text{Power}(\theta_C^*, \delta)}, \label{eq:seq_en_minus}
 \end{align}
 where $n_k = n_{T,k} + n_{C,k}$ is the total sample size at stage $k$, and $N^+$ (resp.\ $N^-$) denotes the number of patients enrolled in a trial that is declared successful (resp.\ unsuccessful).
 
@@ -639,8 +961,8 @@ Following the averaging argument of Section~\ref{sec:pointwise}, we integrate th
 
 The average expected sample sizes, conditional on trial outcome and hypothesis $H_i$ (with $\delta_i = 0$ under $H_0$ and $\delta_i = \delta_{\text{MCID}}$ under $H_1$), are weighted averages of the conditional expected sample sizes:
 \begin{align}
-  E_D[N^+ \mid H_i] &= \frac{\displaystyle\int E[N^+ \mid \theta_C, \delta_i]\cdot \text{Power}(\theta_C, \delta_i)\, \pi_D(\theta_C)\, d\theta_C}{\text{avgPower}(\delta_i)}, \label{eq:seq_avg_enp} \\[6pt]
-  E_D[N^- \mid H_i] &= \frac{\displaystyle\int E[N^- \mid \theta_C, \delta_i]\cdot (1-\text{Power}(\theta_C, \delta_i))\, \pi_D(\theta_C)\, d\theta_C}{1-\text{avgPower}(\delta_i)}. \label{eq:seq_avg_enm}
+  E_D[N^+ \mid H_i] &= \frac{\displaystyle\int \E[N^+ \mid \theta_C, \delta_i]\cdot \text{Power}(\theta_C, \delta_i)\, \pi_D(\theta_C)\, d\theta_C}{\text{avgPower}(\delta_i)}, \label{eq:seq_avg_enp} \\[6pt]
+  E_D[N^- \mid H_i] &= \frac{\displaystyle\int \E[N^- \mid \theta_C, \delta_i]\cdot (1-\text{Power}(\theta_C, \delta_i))\, \pi_D(\theta_C)\, d\theta_C}{1-\text{avgPower}(\delta_i)}. \label{eq:seq_avg_enm}
 \end{align}
 
 Because the data-adaptive Bayesian boundary precludes closed-form evaluation, the integrals in Equations~\eqref{eq:seq_avgpower}--\eqref{eq:seq_avg_enm} are computed numerically.
@@ -650,24 +972,30 @@ Because the data-adaptive Bayesian boundary precludes closed-form evaluation, th
 
 In a sequential design, the sample size $N$ is random. A trial that stops early at stage 1 enrolls fewer patients than one that runs to the final analysis. \citet{held2025balancing} generalise the EUII to accommodate this by replacing the fixed exponent $1/n_{\text{trial}}$ in Equation~\eqref{eq:classical_euii} with outcome-specific effective information per patient:
 \begin{equation} \label{eq:seq_euii}
-  \text{EUII}_{\text{seq}} = \frac{(\text{LR}^+)^{E(1/N^+)}}{(\text{LR}^-)^{E(1/N^-)}},
+  \text{EUII}_{\text{seq}} = \frac{(\text{LR}^+)^{\E(1/N^+)}}{(\text{LR}^-)^{\E(1/N^-)}},
 \end{equation}
 where $\text{LR}^+ = \text{avgPower}/\text{avgT1E}$ and $\text{LR}^- = (1-\text{avgPower})/(1-\text{avgT1E})$ are the likelihood ratios of a positive and a negative outcome respectively, computed using the average metrics of Equations~\eqref{eq:seq_avgpower}--\eqref{eq:seq_avgt1e}.
 
-The exponents $E(1/N^+)$ and $E(1/N^-)$ are the expected inverse sample sizes, mixing across hypotheses according to their posterior probability given the trial outcome \citep{held2025balancing}:
+The exponents $\E(1/N^+)$ and $\E(1/N^-)$ are the expected inverse sample sizes, mixing across hypotheses according to their posterior probability given the trial outcome \citep{held2025balancing}:
 \begin{align}
-  E(1/N^+) &= E_D[1/N^+ \mid H_0]\cdot\Pr(H_0 \mid \text{success}) + E_D[1/N^+ \mid H_1]\cdot\Pr(H_1 \mid \text{success}), \label{eq:seq_einvnp} \\
-  E(1/N^-) &= E_D[1/N^- \mid H_0]\cdot\Pr(H_0 \mid \text{no success}) + E_D[1/N^- \mid H_1]\cdot\Pr(H_1 \mid \text{no success}). \label{eq:seq_einvnm}
+  \E(1/N^+) &= E_D[1/N^+ \mid H_0]\cdot\Pr(H_0 \mid \text{success}) + E_D[1/N^+ \mid H_1]\cdot\Pr(H_1 \mid \text{success}), \label{eq:seq_einvnp} \\
+  \E(1/N^-) &= E_D[1/N^- \mid H_0]\cdot\Pr(H_0 \mid \text{no success}) + E_D[1/N^- \mid H_1]\cdot\Pr(H_1 \mid \text{no success}). \label{eq:seq_einvnm}
 \end{align}
 
-The hypothesis-specific expected inverse sample sizes are obtained by weighting the outcome-conditional inverse sample sizes by the probability of each outcome under $H_i$ and then normalising:
+The hypothesis-specific expected inverse sample sizes are obtained by averaging $\E[1/N^\pm \mid \theta_C, \delta_i]\cdot\Pr(\text{outcome}\mid\theta_C, \delta_i)$ over the design prior and then normalising:
 \begin{align}
-  E_D[1/N^+ \mid H_i] &= \frac{\displaystyle\int \frac{\text{Power}(\theta_C, \delta_i)}{E[N^+\mid\theta_C, \delta_i]}\, \pi_D(\theta_C)\, d\theta_C}{\text{avgPower}(\delta_i)}, \label{eq:seq_inv_enp} \\[6pt]
-  E_D[1/N^- \mid H_i] &= \frac{\displaystyle\int \frac{1-\text{Power}(\theta_C, \delta_i)}{E[N^-\mid\theta_C, \delta_i]}\, \pi_D(\theta_C)\, d\theta_C}{1-\text{avgPower}(\delta_i)}. \label{eq:seq_inv_enm}
+  E_D[1/N^+ \mid H_i] &= \frac{\displaystyle\int \E[1/N^+\mid\theta_C, \delta_i]\cdot\text{Power}(\theta_C, \delta_i)\, \pi_D(\theta_C)\, d\theta_C}{\text{avgPower}(\delta_i)}, \label{eq:seq_inv_enp} \\[6pt]
+  E_D[1/N^- \mid H_i] &= \frac{\displaystyle\int \E[1/N^-\mid\theta_C, \delta_i]\cdot(1-\text{Power}(\theta_C, \delta_i))\, \pi_D(\theta_C)\, d\theta_C}{1-\text{avgPower}(\delta_i)}. \label{eq:seq_inv_enm}
 \end{align}
+Note that $\E[1/N^+\mid\theta_C, \delta_i]\neq 1/\E[N^+\mid\theta_C, \delta_i]$ in general (Jensen's inequality). For a two-stage design with cumulative sample sizes $n_1$ and $n_2$, the integrand in~\eqref{eq:seq_inv_enp} decomposes across stages as
+\begin{equation}
+  \E[1/N^+\mid\theta_C, \delta_i]\cdot\text{Power}(\theta_C, \delta_i)
+  = \frac{P_{\text{eff},1}(\theta_C, \delta_i)}{n_1} + \frac{P_{\text{suc},2}(\theta_C, \delta_i)}{n_2},
+\end{equation}
+and analogously for the failure arm, where $P_{\text{eff},1}$ is the stage-1 efficacy-stopping probability and $P_{\text{suc},2}$ is the probability of reaching and succeeding at the final analysis.
 The posterior probabilities $\Pr(H_0 \mid \cdot)$ and $\Pr(H_1 \mid \cdot)$ in Equations~\eqref{eq:seq_einvnp}--\eqref{eq:seq_einvnm} are determined by the prior probability $\Pr(H_1)$ and the DOR via Bayes' theorem.
 
-When the design never stops early, $E[N^+ \mid \theta_C, \delta] = E[N^- \mid \theta_C, \delta] = n_{\text{trial}}$ for all $\theta_C$, so $E(1/N^+) = E(1/N^-) = 1/n_{\text{trial}}$ and Equation~\eqref{eq:seq_euii} reduces exactly to the fixed-design formula~\eqref{eq:euii_avg}. Under an effective sequential design, efficacy stopping at stage 1 concentrates $N^+$ at $n_1 < n_{\text{trial}}$, so $E(1/N^+) > 1/n_{\text{trial}}$; symmetrically, futility stopping raises $E(1/N^-)$ above $1/n_{\text{trial}}$. Both effects increase $\text{EUII}_{\text{seq}}$ relative to the fixed design, making sequential monitoring attractive not only for its patient-saving properties but also for the per-patient evidentiary yield it achieves.
+When the design never stops early, $\E[N^+ \mid \theta_C, \delta] = \E[N^- \mid \theta_C, \delta] = n_{\text{trial}}$ for all $\theta_C$, so $\E(1/N^+) = \E(1/N^-) = 1/n_{\text{trial}}$ and Equation~\eqref{eq:seq_euii} reduces exactly to the fixed-design formula~\eqref{eq:euii_avg}. Under an effective sequential design, efficacy stopping at stage 1 concentrates $N^+$ at $n_1 < n_{\text{trial}}$, so $\E(1/N^+) > 1/n_{\text{trial}}$; symmetrically, futility stopping raises $\E(1/N^-)$ above $1/n_{\text{trial}}$. Both effects increase $\text{EUII}_{\text{seq}}$ relative to the fixed design, making sequential monitoring attractive not only for its patient-saving properties but also for the per-patient evidentiary yield it achieves.
 
 
 \section{Applications}
@@ -684,6 +1012,7 @@ library(ggplot2)
 @ 
 
 \subsection{Application 1: Borrowing on the Control Arm}
+\label{sec:application1}
 
 We evaluate the design of a Proof-of-Concept (PoC) study in Crohn’s disease, an inflammatory bowel disease. The primary endpoint is the change from baseline to week 6 in the Crohn’s Disease Activity Index (CDAI), a 
 continuous measure where lower scores indicate clinical improvement.
@@ -744,24 +1073,23 @@ effects $\delta$.
 \paragraph{Analysis Priors ($\pi_A$)}
 The analysis prior $\pi_A(\theta_C)$ determines the degree of historical information incorporated into the final posterior decision:
 \begin{enumerate}
-  \item \textbf{Normal MAP:} A single-component Normal prior obtained using the MAP approach on historical data to evaluate closed form results: $\pi_{\text{Normal}}(\theta_C) \sim \mathcal{N}(-49,\,\frac{88^2}{20})$: 
+  \item \textbf{Normal MAP:} A single-component Normal prior obtained using the MAP approach on historical data to evaluate closed form results: $\pi_{\text{Normal}}(\theta_C) \sim \mathcal{N}(-50,\, 88^2/20)$: 
   \item \textbf{3-Component MAP:} A mixture of three Normals obtained using the MAP approach: 
   $\pi_{\text{MAP}}(\theta_C) = 0.51\,\mathcal{N}(-51,\,19.9^2) + 0.44\,\mathcal{N}(-46.8,\,7.6^2) + 0.05\,\mathcal{N}(-54.1,\,51.7^2)$
   \item \textbf{Robust MAP ($\omega \in \{0.2, 0.4, 0.6, 0.8\}$):} Four robust mixture priors constructed by assigning a weight $\omega$ to a non-informative component and $(1-\omega)$ to the MAP 3-component prior. 
-  The mean of the vague component is set to -49 to be consistent with the historical data, and its standard deviation is set to $\sigma = 88$, to be approximately equivalent to one subject's 
+  The mean of the vague component is set to $-50$ to be consistent with the historical data, and its standard deviation is set to $\sigma = 88$, to be approximately equivalent to one subject's 
   worth of information. The value of $\omega$ reflects our prior belief about the possibility of non-exchangeability between the placebo effect from the historical studies and the 
   placebo effect in the new study.
-  \item \textbf{Vague:} A non-informative prior representing a design with no historical borrowing, serving as the frequentist baseline: $\pi_{\text{vague}}(\theta_C) = \mathcal{N}(-49,\,8800^2)$
+  \item \textbf{Vague:} A non-informative prior representing a design with no historical borrowing, serving as the frequentist baseline: $\pi_{\text{vague}}(\theta_C) = \mathcal{N}(-50,\,8800^2)$
 \end{enumerate}
 
+ 
+Importantly, we follow the traditional approach of using a unit-information prior (UIP) for the robust component, although alternative solutions have recently been proposed (see Section~\ref{subsec:formulating_priors})
 
-
-
-%% I am not using the advices of Weru since it is difficult to implement
 \paragraph{Design Priors ($\pi_D$)}
 The design prior $\pi_D(\theta_C)$ represents the assumed true data-generating process for the control arm ($\theta_C$):
 \begin{enumerate}
-  \item \textbf{Dirac:} A Dirac measure at $\theta_C^* = -49$, it recovers the classical conditional Type I Error and Power.
+  \item \textbf{Dirac:} A Dirac measure at $\theta_C^* = -50$, it recovers the classical conditional Type I Error and Power.
   \item \textbf{3-Component MAP:} A design prior exactly matching the corresponding 3-Component MAP analysis prior.
   \item \textbf{Skeptical:} Following the terminology of \citet{best_beyond_2025}, this prior corresponds to the posterior distribution of a stand-alone analysis of the historical study with the “most extreme” placebo effect: $\pi_{\text{skep}}(\theta_C) = \mathcal{N}(-90,\,25^2)$. Because the placebo is exceptionally effective, this scenario is highly "skeptical" of the experimental treatment's ability to demonstrate superiority.
   \item \textbf{Misspecified:} A hypothetical prior-data conflict scenario where the true control arm performs much worse than historically predicted: $\pi_{\text{miss}}(\theta_C) = \mathcal{N}(-10,\,25^2)$.
@@ -771,189 +1099,24 @@ The design prior $\pi_D(\theta_C)$ represents the assumed true data-generating p
 
 
 \subsubsection{Fixed Design}
-Following \citep{best_beyond_2025}, we fix the sample size at $n_C = 20$ and $n_T = 40$ and analyze the single posterior decision rule $\Pr(\delta > 0 \mid \mathcal{D}, \pi_A) \ge 0.975$.
+\label{sec:fixed_design}
+Following \citep{best_beyond_2025}, we fix the sample size at $n_C = 20$ and $n_T = 40$ and analyze the single posterior decision rule $\Pr(\delta > 0 \mid \mathcal{D}, \pi_A) \ge 0.95$.\footnote{\citet{best_beyond_2025} originally used a threshold of $0.975$; we adopt $0.95$ throughout for consistency with the first component of the dual criterion introduced in Section~\ref{sec:dual_criterion}.}
 
 \paragraph{Normal priors case}
-Using the MAP approach to obtain a Normal prior, the result is a prior mean of $\mu_{A,C} = -49$ and estimated prior effective sample size of $n_A = 20$, assuming a known patient-level standard deviation of $\sigma = 88$.
-The prior variance is thus given by $\sigma_{A,C}^2 = \frac{88^2}{20}$.
+The closed-form results under Normal priors were developed as a running example throughout Section~\ref{sec:pointwise} and Section~\ref{subsec:euii}; see Figures~\ref{fig:plot_t1e}--\ref{fig:plot_euii}.
+While the strictly Normal formulation yields tractable closed-form solutions, it can be fragile under prior misspecification.
+To achieve robustness required for actual clinical application, we now turn to robust mixture priors.
 
-Similarly, the sampling variances for the fixed design are $v_C = \frac{88^2}{20}$ and $v_T = \frac{88^2}{40}$. 
-We can finally plug these values in the expression of avgPower derived in Equation~\eqref{eq:avgpower_closed_form}. 
-
-
-Note that in the case analysis and design priors coincides, the Average Power simplifies to: 
-\begin{align}
-     \text{avgPower}(\delta) &= 1 - \Phi\left( \frac{0 + 1.96 \sqrt{V_{\delta}} - \big[0 + \delta\big]}{\sqrt{V_{\delta}}} \right) \nonumber \\
-     &= 1 - \Phi\left( 1.96 - \frac{\delta}{\sqrt{V_{\delta}}} \right)
- \end{align}
-Since, as proven in Appendix \ref{sec:appendix_normal_priors}, the bias term $(1 - W)(\mu_{A,C} - \mu_{D,C})$ vanishes entirely and the marginal variance in the denominator simplifies to exactly match the posterior variance $V_{\delta} = \frac{\sigma_{A,C}^2 v_C}{\sigma_{A,C}^2 + v_C} + v_T$. 
-
-As already observed, when setting $\delta = 0$, the Average Type I Error with $\pi_A = \pi_D$ achieves the nominal $0.025$ level.
-
-In Figures \ref{fig:plot_t1e}, \ref{fig:plot_power}, \ref{fig:plot_euii}, the analysis prior is held strictly constant ($\mu_{A,C} = -49, \sigma_{A,C}^2 = 88^2/20$) to represent a pre-specified trial design. We then inspect this design by varying the parameters of the design prior ($\pi_D$), representing the true, unknown data-generating process.
-
-
-Figure \ref{fig:plot_t1e} visualizes how Type I Error reacts to two types of conflicts between analysis and design priors: location shift ($\mu_{A,C} \neq \mu_{D,C}$) and scale shift ($\sigma_{A,C} \neq \sigma_{D,C}$). The left panel shows that if the true placebo response is better than expected ($\mu_{D,C} < -49$), the Type I Error increases. Moreover, as expected, the conditional T1E (conditioned on $\theta_C^* = \mu_{D,C}$), is always below the avgT1E. 
-In the right panel, when design uncertainty $\sigma_{D,C}$ is zero, we obtain the conditional T1E, while as it approaches infinity (vague design prior), the Average Type I Error converges to $0.5$ (as observed analytically in Equation~\eqref{eq:avgt1e_closed_form}).
-
-<<plot_t1e, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Left panel shows Type I Error under Location Shift (varying $\\mu_{D,C}$), assuming $\\sigma_{D,C} = \\sigma_{A,C}$. Conditional metric is evaluated at $\\theta_C^* = \\mu_{D,C}$. Right panel shows Average Type I Error under Scale Shift (varying $\\sigma_{D,C}$) while setting $\\mu_{D,C} = \\mu_{A,C}$. The vertical gray dotted lines indicate the points of prior alignment ($\\pi_D = \\pi_A$).">>=
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-library(gridExtra)
-library(scales)
-
-# --- Trial Parameters & Functions  ---
-sigma <- 88; n_C <- 20; n_T <- 40; n_A <- 20; N_total <- n_C + n_T
-v_C <- sigma^2 / n_C; v_T <- sigma^2 / n_T; sigma_A2 <- sigma^2 / n_A; mu_A <- -49
-q <- 0; z_p <- qnorm(0.975) 
-W <- sigma_A2 / (sigma_A2 + v_C)
-V_delta <- W * v_C + v_T
-V_samp <- W^2 * v_C + v_T
-
-condPower <- function(theta_C_star, delta) {
-  num <- q + z_p * sqrt(V_delta) - ((1 - W) * (mu_A - theta_C_star) + delta)
-  1 - pnorm(num / sqrt(V_samp))
-}
-avgPower <- function(mu_D, sigma_D2, delta) {
-  num <- q + z_p * sqrt(V_delta) - ((1 - W) * (mu_A - mu_D) + delta)
-  1 - pnorm(num / sqrt(V_samp + (1 - W)^2 * sigma_D2))
-}
-calc_EUII <- function(power, t1e, N) {
-  eps <- 1e-10 
-  p <- pmax(pmin(power, 1 - eps), eps); t <- pmax(pmin(t1e, 1 - eps), eps)
-
-  log_dor <- qlogis(p) - qlogis(t) 
-  return(exp(log_dor / N))
-}
-
-my_theme <- theme_minimal() + theme(legend.position = "bottom", legend.title = element_blank())
-my_x_scale <- scale_x_continuous(trans = "log1p", breaks = c(0, 10, 100, 1000, 10000), labels = c("0\n(Cond.)", "10", "100", "1K", "10K"))
-
-# --- T1E Data & Plots ---
-df_t1e_loc <- data.frame(mu_D = seq(-90, -10, length.out = 100)) %>%
-  mutate(
-    `Conditional T1E` = condPower(mu_D, 0), 
-    `Average T1E` = avgPower(mu_D, sigma_A2, 0)
-  ) %>%
-  pivot_longer(cols = c(`Conditional T1E`, `Average T1E`), names_to = "Metric", values_to = "Value")
-
-sigmas <- c(0, 10^seq(0, 5, length.out = 99))
-df_t1e_scale <- data.frame(sigma_D = sigmas) %>%
-  mutate(Avg_T1E = avgPower(mu_A, sigma_D^2, 0))
-
-p1a <- ggplot(df_t1e_loc, aes(x = mu_D, y = Value, color = Metric, linetype = Metric)) +
-  geom_line(size = 1.2) + 
-  geom_hline(yintercept = 0.025, linetype = "dashed", color = "black", linewidth = 0.6) +
-  geom_vline(xintercept = mu_A, linetype = "dotted", color = "gray", linewidth = 0.8) +
-  scale_color_manual(values = c("Average T1E" = "#E69F00", "Conditional T1E" = "#56B4E9")) +
-  labs(x = expression("True Control Mean (" * mu["D,C"] * ")"),
-       y = "Type I Error") + 
-  my_theme
-
-p1b <- ggplot(df_t1e_scale, aes(x = sigma_D, y = Avg_T1E)) +
-  geom_line(color = "#E69F00", size = 1.2) + 
-  geom_hline(yintercept = 0.5, linetype = "dashed", color = "black", linewidth = 0.6) +
-  geom_vline(xintercept = sqrt(sigma_A2), linetype = "dotted", color = "gray", linewidth = 0.8) +
-  my_x_scale + 
-  coord_cartesian(ylim = c(0, 0.6)) +
-  labs(x = expression(sigma["D,C"]), 
-       y = "avgT1E") + 
-  my_theme
-
-grid.arrange(p1a, p1b, ncol = 2)
-@
-
-Figure \ref{fig:plot_power} shows the behavior of statistical power, assuming $\mu_{D,C} = \mu_{A,C} = -49$. In the left panel $\sigma_{D,C} = \sigma_{A,C}$ and we vary $\delta$. As already mentioned in \ref{sec:pointwise}, Average Power 
-is always closer to $50\%$ compared to Conditional Power. 
-The right panel shows how the avgPower at $\delta = 50$ changes as we increase the design uncertainty $\sigma_{D,C}$. When $\sigma_{D,C} = 0$, we obtain the conditional Power, while as $\sigma_{D,C} \to \infty$, avgPower reaches 50\% (as observed analytically in Equation~\eqref{eq:avgt1e_closed_form}).
-
-<<plot_power, echo=FALSE, warning=FALSE, message=FALSE, dev='cairo_pdf', fig.height=4, fig.width=10, fig.cap="Left panel shows Conditional and Average Statistical Power evaluated across true treatment effects ($\\delta$), assuming perfectly aligned priors ($\\mu_{A,C} = \\mu_{D,C}$ and $\\sigma_{A,C} = \\sigma_{D,C}$). Right panel shows Average Power evaluated at $\\delta = 50$ as design uncertainty ($\\sigma_{D,C}$) increases, holding $\\mu_{D,C} = \\mu_{A,C}$. The vertical gray dotted lines indicate the points of prior alignment ($\\pi_D = \\pi_A$).">>=
-# --- Power Data & Plots ---
-df_pow_loc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
-  mutate(
-    `Conditional Power` = condPower(mu_A, delta), 
-    `Average Power` = avgPower(mu_A, sigma_A2, delta)
-  ) %>%
-  pivot_longer(cols = c(`Conditional Power`, `Average Power`), names_to = "Metric", values_to = "Value")
-
-df_pow_scale <- data.frame(sigma_D = sigmas) %>%
-  mutate(Avg_Power = avgPower(mu_A, sigma_D^2, 50))
-
-p2a <- ggplot(df_pow_loc, aes(x = delta, y = Value, color = Metric, linetype = Metric)) +
-  geom_line(size = 1) + 
-  scale_color_manual(values = c("Average Power" = "#E69F00", "Conditional Power" = "#56B4E9")) +
-  labs(x = expression("True Effect (" * delta * ")"), 
-       y = "Power") + 
-  my_theme
-
-p2b <- ggplot(df_pow_scale, aes(x = sigma_D, y = Avg_Power)) +
-  geom_line(color = "#56B4E9", size = 1.2) + 
-  geom_hline(yintercept = 0.5, linetype = "dashed", color="black", linewidth = 0.6) +
-    geom_vline(xintercept = sqrt(sigma_A2), linetype = "dotted", color = "gray", linewidth = 0.8) +
-  my_x_scale + 
-  coord_cartesian(ylim = c(0.4, 1.0)) +
-  labs(x = expression(sigma["D,C"]), 
-       y = "avgPower") + 
-  my_theme
-
-grid.arrange(p2a, p2b, ncol = 2)
-@
-
-
-In Figure \ref{fig:plot_euii}, EUII is plotted. The left panel shows that Average EUII provides a more conservative estimate of per-patient information than the Conditional EUII, 
-the right panel shows that a completely vague design prior ($\sigma_{D,C} \to \infty$) drives the EUII to $1.0$.
-
-<<plot_euii, echo=FALSE, warning=FALSE, message=FALSE, dev='cairo_pdf', fig.height=4, fig.width=10, fig.cap="Left panel shows Conditional and Average Experimental Unit Information Index (EUII) evaluated across true treatment effects ($\\delta$), assuming perfectly aligned priors ($\\mu_{A,C} = \\mu_{D,C}$ and $\\sigma_{A,C} = \\sigma_{D,C}$). Right panel shows Average EUII evaluated at the clinical relevance threshold ($\\delta = 50$) as design uncertainty ($\\sigma_{D,C}$) increases, holding $\\mu_{A,C} = \\mu_{D,C}$. The vertical gray dotted lines indicate the points of prior alignment ($\\pi_D = \\pi_A$).">>=
-# --- EUII Data & Plots ---
-df_euii_loc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
-  mutate(
-    Cond_EUII = calc_EUII(condPower(mu_A, delta), condPower(mu_A, 0), N_total),
-    Avg_EUII  = calc_EUII(avgPower(mu_A, sigma_A2, delta), avgPower(mu_A, sigma_A2, 0), N_total)
-  ) %>% pivot_longer(cols = c(Cond_EUII, Avg_EUII), names_to = "Metric", values_to = "Value")
-
-df_euii_scale <- data.frame(sigma_D = sigmas) %>%
-  mutate(Avg_EUII = calc_EUII(avgPower(mu_A, sigma_D^2, 50), avgPower(mu_A, sigma_D^2, 0), N_total))
-
-p3a <- ggplot(df_euii_loc, aes(x = delta, y = Value, color = Metric, linetype = Metric)) +
-  geom_line(size = 1) + scale_color_manual(values = c("Avg_EUII" = "#009E73", "Cond_EUII" = "#CC79A7")) +
-  labs(x = expression("True Effect (" * delta * ")"), y = "EUII") + my_theme
-
-p3b <- ggplot(df_euii_scale, aes(x = sigma_D, y = Avg_EUII)) +
-  geom_line(color = "#009E73", size = 1.2) + 
-  geom_hline(yintercept = 1.0, linetype = "dashed", color="black", linewidth = 0.6) +
-    geom_vline(xintercept = sqrt(sigma_A2), linetype = "dotted", color = "gray", linewidth = 0.8) +
-  my_x_scale +
-  labs(x = expression(sigma["D,C"]), y = expression(EUII[avg])) + my_theme
-
-grid.arrange(p3a, p3b, ncol = 2)
-@
-
-
-
-In summary, while the strictly Normal formulation yields closed-form solutions, it can be fragile in practice under prior misspecification.
- To achieve robustness, required for actual clinical application, we should transition to robust mixture priors.
-
-
-
-
-
-
-
-
-
-
-
-\paragraph{Mixture priors} 
+\paragraph{Mixture priors}
 
 The Normal-prior closed-form results above serve as a tractable baseline, but MAP priors are usually mixtures of Normals, and robust extensions further add a vague component. Because no closed form exists for these cases, operating characteristics are computed numerically using \texttt{RBesT::oc2S} and a numerical integration routine for the averaged metrics.
 
 \textbf{Conditional Operating Characteristics.}
-Figure~\ref{fig:plot_mix_cond} shows the conditional Type I Error ($\delta = 0$, left) and conditional Power at $\delta = 50$ (right) as functions of the fixed true control mean $\theta_C^*$.
-The vague prior yields the flat frequentist baseline: Type I Error is exactly $0.025$ everywhere and power is determined solely by the sample size. As historical borrowing increases (decreasing $\omega$), Type I Error inflates with increasing severity when $\theta_C^* \ll -49$ (skeptical scenario) and is increasingly suppressed well below $\alpha$ when $\theta_C^* \gg -49$ (misspecified scenario). The dotted vertical line marks the prior mean $\mu_{A,C} = -49$. Robust MAP priors exhibit a monotone moderation: 
+Figure~\ref{fig:plot_mix_cond} shows the conditional Type I Error ($\delta = 0$, left) and conditional Power at $\delta = 60$ (right) as functions of the fixed true control mean $\theta_C^*$.
+The vague prior yields the flat frequentist baseline: Type I Error is exactly $0.05$ everywhere and power is determined solely by the sample size. As historical borrowing increases (decreasing $\omega$), Type I Error inflates with increasing severity when $\theta_C^* \ll -50$ (skeptical scenario) and is increasingly suppressed well below $\alpha$ when $\theta_C^* \gg -50$ (misspecified scenario). The dotted vertical line marks the prior mean $\mu_{A,C} = -50$. Robust MAP priors exhibit a monotone moderation: 
 as $\omega$ increases, the curve is pulled toward the flat vague baseline, capping the T1E at the cost of reduced Power. 
 
-<<plot_mix_cond, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Conditional metrics for all six analysis priors as a function of the fixed true control mean $\\theta_C^*$. Left: conditional Type I Error ($\\delta = 0$). Right: conditional Power at $\\delta = 50$. The Vague prior (dashed) provides the frequentist reference. The dotted vertical line marks the prior mean $\\mu_{A,C} = -49$.">>=
+<<plot_mix_cond, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Conditional metrics for all six analysis priors as a function of the fixed true control mean $\\theta_C^*$. Left: conditional Type I Error ($\\delta = 0$). Right: conditional Power at $\\delta = 60$. The Vague prior (dashed) provides the frequentist reference. The dotted vertical line marks the prior mean $\\mu_{A,C} = -50$.">>=
 library(ggplot2)
 library(dplyr)
 library(gridExtra)
@@ -963,7 +1126,7 @@ df_cond    <- res_cond$df_cond
 prior_names <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
                  "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
 df_cond$Prior <- factor(df_cond$Prior, levels = prior_names)
-mu_A <- -49
+mu_A <- -50
 
 my_theme <- theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_blank())
@@ -971,7 +1134,7 @@ my_theme <- theme_minimal() +
 p_cond_T1E <- ggplot(df_cond,
     aes(x = theta_C, y = T1E, color = Prior, linetype = Prior == "Vague")) +
   geom_line(linewidth = 1.2) +
-  geom_hline(yintercept = 0.025, linetype = "dashed",
+  geom_hline(yintercept = 0.05, linetype = "dashed",
              color = "black", linewidth = 0.6) +
   geom_vline(xintercept = mu_A, linetype = "dotted",
              color = "gray", linewidth = 0.8) +
@@ -991,7 +1154,7 @@ p_cond_Power <- ggplot(df_cond,
                         guide = "none") +
   scale_color_viridis_d(option = "turbo", direction = -1) +
   labs(x = expression("True Control Mean (" * theta[C]^"*" * ")"),
-       y = bquote("Conditional Power (" * delta * " = 50)")) +
+       y = bquote("Conditional Power (" * delta * " = 60)")) +
   my_theme
 
 grid.arrange(p_cond_T1E, p_cond_Power, ncol = 2)
@@ -1001,11 +1164,11 @@ grid.arrange(p_cond_T1E, p_cond_Power, ncol = 2)
 \textbf{Average Metrics.}
 By marginalizing the conditional curves over a design prior $\pi_D(\theta_C)$, we obtain the Average Type I Error (avgT1E) and Average Power for each of the 24 analysis$\times$design prior combinations.
 Figure~\ref{fig:plot_mix_avg} displays on the $x$-axis the design prior (representing different assumptions about the true data-generating process) and each line as a given analysis prior.
-When the analysis and design prior are aligned (MAP analysis, MAP design), avgT1E is at the nominal $0.025$, consistent with the theoretical property. Under the skeptical design prior ($\mu_{D,C} = -90$), more informative analysis priors incur into larger avgT1E inflation. The misspecified prior ($\mu_{D,C} = -10$) drives the opposite effect: more informative prior overcorrects the control mean downward, suppressing both avgT1E and Average Power simultaneously, making the trial conservative but underpowered.
-Note that the Dirac design prior ($\pi_D = \delta_{\{-49\}}$) concentrates all mass at the prior mean, so the averaged metrics reduce exactly to the conditional counterparts evaluated at $\theta_C^* = -49$; it serves as the best-case reference where the truth is deterministic.
+When the analysis and design prior are aligned (MAP analysis, MAP design), avgT1E is at the nominal $0.05$, consistent with the theoretical property. Under the skeptical design prior ($\mu_{D,C} = -90$), more informative analysis priors incur into larger avgT1E inflation. The misspecified prior ($\mu_{D,C} = -10$) drives the opposite effect: more informative prior overcorrects the control mean downward, suppressing both avgT1E and Average Power simultaneously, making the trial conservative but underpowered.
+Note that the Dirac design prior ($\pi_D = \delta_{\{-50\}}$) concentrates all mass at the prior mean, so the averaged metrics reduce exactly to the conditional counterparts evaluated at $\theta_C^* = -50$; it serves as the best-case reference where the truth is deterministic.
 
 
-<<plot_mix_avg, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Average Type I Error (left) and Average Power at $\\delta = 50$ (right) for all combinations of analysis prior and design prior. Each line connects values for a single analysis prior across the four design prior scenarios. The dashed horizontal line marks the nominal $\\alpha = 0.025$.">>=
+<<plot_mix_avg, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Average Type I Error (left) and Average Power at $\\delta = 60$ (right) for all combinations of analysis prior and design prior. Each line connects values for a single analysis prior across the four design prior scenarios. The dashed horizontal line marks the nominal $\\alpha = 0.05$.">>=
 library(ggplot2)
 library(dplyr)
 library(gridExtra)
@@ -1013,9 +1176,9 @@ library(gridExtra)
 res_avg      <- readRDS("../Output/FIXED_euii.RDS")
 prior_names  <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
                   "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
-dprior_names <- c("Dirac (−49)", "MAP", "Skeptical (−90)", "Misspecified (−10)")
+dprior_names <- c("Dirac (−50)", "MAP", "Skeptical (−90)", "Misspecified (−10)")
 df_avg <- res_avg$df_euii |>
-  dplyr::filter(delta == 50) |>
+  dplyr::filter(delta == 60) |>
   dplyr::mutate(
     Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
     Design_Prior   = factor(Design_Prior,   levels = dprior_names)
@@ -1030,7 +1193,7 @@ p_avg_T1E <- ggplot(df_avg,
         linetype = Analysis_Prior == "Vague")) +
   geom_point(size = 2.5) +
   geom_line(linewidth = 1.0) +
-  geom_hline(yintercept = 0.025, linetype = "dashed",
+  geom_hline(yintercept = 0.05, linetype = "dashed",
              color = "black", linewidth = 0.6) +
   scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
                         guide = "none") +
@@ -1048,7 +1211,7 @@ p_avg_Power <- ggplot(df_avg,
                         guide = "none") +
   scale_color_viridis_d(option = "turbo", direction = -1) +
   labs(x = "Design Prior",
-       y = bquote("Average Power (" * delta * " = 50)")) +
+       y = bquote("Average Power (" * delta * " = 60)")) +
   my_theme
 
 grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
@@ -1056,24 +1219,24 @@ grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
 
 
 \textbf{EUII.}
-Figure~\ref{fig:plot_mix_euii} plots the EUII at $\delta = 50$ against the robustness weight $\omega$, with one curve per design prior. The dotted horizontal line marks the vague prior baseline ($\omega = 1$). Reading the four curves together can constitute a sensitivity analysis over the data-generating process: for any proposed $\omega$, the investigator can read off the expected per-patient efficiency under each scenario simultaneously. Under the aligned design prior (MAP), EUII is strictly decreasing in $\omega$ and always above the baseline, since more borrowing is better when the prior is correct. Under the skeptical design prior, all informative analysis priors fall below the vague baseline and $\omega = 1$ (no borrowing) is optimal. 
-Under the misspecified design prior, EUII also lies above the baseline for all $\omega$, but this is misleading: the prior suppresses avgT1E so aggressively that the DOR is inflated despite average Power dropping to around $36\%$ at $\delta = 50$. In this context, EUII should always be read alongside average Power. The choice of $\omega$ thus reflects the investigator's belief about which design prior is most plausible: the more confident one is in prior alignment, the smaller the $\omega$ that can be justified; the more one fears prior-data conflict, the larger $\omega$ must be.
+Figure~\ref{fig:plot_mix_euii} plots the EUII at $\delta = 60$ against the robustness weight $\omega$, with one curve per design prior. The dotted horizontal line marks the vague prior baseline ($\omega = 1$). Reading the four curves together can constitute a sensitivity analysis over the data-generating process: for any proposed $\omega$, the investigator can read off the expected per-patient efficiency under each scenario simultaneously. Under the aligned design prior (MAP), EUII is strictly decreasing in $\omega$ and always above the baseline, since more borrowing is better when the prior is correct. Under the skeptical design prior, all informative analysis priors fall below the vague baseline and $\omega = 1$ (no borrowing) is optimal. 
+Under the misspecified design prior, EUII also lies above the baseline for all $\omega$, but this is misleading: the prior suppresses avgT1E so aggressively that the DOR is inflated despite average Power dropping to around $36\%$ at $\delta = 60$. In this context, EUII should always be read alongside average Power. The choice of $\omega$ thus reflects the investigator's belief about which design prior is most plausible: the more confident one is in prior alignment, the smaller the $\omega$ that can be justified; the more one fears prior-data conflict, the larger $\omega$ must be.
 
-<<plot_mix_euii, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=8, dev='cairo_pdf', fig.cap="EUII at $\\delta = 50$ as a function of the robustness weight $\\omega$ for each design prior. The dotted horizontal line marks the vague-prior baseline ($\\omega = 1$). Under aligned priors, EUII is maximized at full borrowing ($\\omega = 0$); under the skeptical design prior it collapses below the baseline for informative analysis priors.">>=
+<<plot_mix_euii, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=8, dev='cairo_pdf', fig.cap="EUII at $\\delta = 60$ as a function of the robustness weight $\\omega$ for each design prior. The dotted horizontal line marks the vague-prior baseline ($\\omega = 1$). Under aligned priors, EUII is maximized at full borrowing ($\\omega = 0$); under the skeptical design prior it collapses below the baseline for informative analysis priors.">>=
 library(ggplot2)
 library(dplyr)
 
 res_euii     <- readRDS("../Output/FIXED_euii.RDS")
 prior_names  <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
                   "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
-dprior_names <- c("Dirac (−49)", "MAP", "Skeptical (−90)", "Misspecified (−10)")
+dprior_names <- c("Dirac (−50)", "MAP", "Skeptical (−90)", "Misspecified (−10)")
 df_euii <- res_euii$df_euii |>
   dplyr::mutate(
     Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
     Design_Prior   = factor(Design_Prior,   levels = dprior_names)
   )
 
-df_euii_50 <- dplyr::filter(df_euii, delta == 50)
+df_euii_50 <- dplyr::filter(df_euii, delta == 60)
 euii_vague <- dplyr::filter(df_euii_50, Analysis_Prior == "Vague") |>
   dplyr::pull(EUII) |> unique()
 
@@ -1090,7 +1253,7 @@ ggplot(df_euii_50,
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
   scale_color_viridis_d(option = "turbo", direction = -1) +
   labs(x = expression("Robustness weight (" * omega * ")"),
-       y = expression("EUII (" * delta * " = 50)")) +
+       y = expression("EUII (" * delta * " = 60)")) +
   my_theme
 @
 
@@ -1105,7 +1268,7 @@ library(dplyr)
 res_euii     <- readRDS("../Output/FIXED_euii.RDS")
 prior_names  <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
                   "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
-dprior_names <- c("Dirac (−49)", "MAP", "Skeptical (−90)", "Misspecified (−10)")
+dprior_names <- c("Dirac (−50)", "MAP", "Skeptical (−90)", "Misspecified (−10)")
 df_euii <- res_euii$df_euii |>
   dplyr::mutate(
     Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
@@ -1131,8 +1294,218 @@ ggplot(df_euii,
 @
 
 
-\paragraph{Dual Criterion \note{TO DO}}
-Will probably see similar results, just more conservative
+\phantomsection\label{sec:dual_criterion}
+\paragraph{Dual Criterion}
+
+We now replace the single efficacy rule with the dual criterion of \citet{gsponer_practical_2014}: a trial is declared successful if and only if
+\[
+  \Pr(\delta > 0 \mid \mathcal{D},\pi_A) \ge 0.95 \quad \text{and} \quad \Pr(\delta > 50 \mid \mathcal{D},\pi_A) \ge 0.50.
+\]
+The first condition is unchanged from the single-criterion design; the second adds a minimum-effect requirement at the MCID ($\delta_{\text{MCID}} = 50$), ensuring that declaring success is not driven purely by a marginally positive effect. Because both conditions must hold simultaneously, the dual criterion is strictly more conservative than the single-criterion rule for all parameter values.
+
+\textbf{Conditional Operating Characteristics.}
+Figure~\ref{fig:plot_dual_cond} shows the conditional Type I Error and conditional Power at $\delta = 60$ as functions of $\theta_C^*$.
+Compared to Figure~\ref{fig:plot_mix_cond}, the overall pattern is qualitatively similar but shifted downward.
+The Type I Error is uniformly lower: requiring $\Pr(\delta > 50 \mid \mathcal{D}, \pi_A) \ge 0.50$ on top of $\Pr(\delta > 0 \mid \mathcal{D}, \pi_A) \ge 0.95$ makes it harder to declare success under the null.
+As already mentioned in Section~\ref{sec:dual_criterion}, power at the DV (which is $\delta = 50$ in this case), is approximately 50\% since there is an equal chance that posterior median lies on either side of the DV. The right plot 
+exhibit this ehavior in the frequentist case (Vague prior), but also when the True Control Mean approximately equals the mean of the MAP prior (for all degrees of uninformativness). 
+
+
+
+<<plot_dual_cond, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Dual-criterion fixed design: conditional Type I Error ($\\delta = 0$, left) and conditional Power at $\\delta = 60$ (right) as functions of the fixed true control mean $\\theta_C^*$, for all six analysis priors. The dashed horizontal line marks $\\alpha = 0.05$. The Vague prior (dashed line) is the frequentist reference. The dotted vertical line marks the prior mean $\\mu_{A,C} = -50$.">>=
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+
+res_dual_cond <- readRDS("../Output/DUAL_cond.RDS")
+df_dual_cond  <- res_dual_cond$df_cond
+prior_names   <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
+                   "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
+df_dual_cond$Prior <- factor(df_dual_cond$Prior, levels = prior_names)
+mu_A <- -50
+
+my_theme <- theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_blank())
+
+p_d_cond_T1E <- ggplot(df_dual_cond,
+    aes(x = theta_C, y = T1E, color = Prior, linetype = Prior == "Vague")) +
+  geom_line(linewidth = 1.2) +
+  geom_hline(yintercept = 0.05, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  geom_vline(xintercept = mu_A, linetype = "dotted",
+             color = "gray", linewidth = 0.8) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression("True Control Mean (" * theta[C]^"*" * ")"),
+       y = "Conditional Type I Error") +
+  my_theme
+
+p_d_cond_Power <- ggplot(df_dual_cond,
+    aes(x = theta_C, y = Power, color = Prior, linetype = Prior == "Vague")) +
+  geom_line(linewidth = 1.2) +
+  geom_vline(xintercept = mu_A, linetype = "dotted",
+             color = "gray", linewidth = 0.8) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression("True Control Mean (" * theta[C]^"*" * ")"),
+       y = bquote("Conditional Power (" * delta * " = 60)")) +
+  my_theme
+
+grid.arrange(p_d_cond_T1E, p_d_cond_Power, ncol = 2)
+@
+
+\textbf{Average Metrics.}
+Figure~\ref{fig:plot_dual_avg} shows the average Type I Error and average Power at $\delta = 60$ across analysis- and design-prior combinations.
+The qualitative structure mirrors the single-criterion results: avgT1E inflates under skeptical design priors and is suppressed under misspecified ones, while  the MAP analysis prior aligned with the MAP design prior recovers a smaller T1E than nominal.
+The dual criterion achieves substantially lower average Type I Error across all combinations, at the cost of moderate reductions in average Power.
+This trade-off provides stronger protection against false positives without requiring a reduction in sample size, by instead raising the evidential bar.
+
+<<plot_dual_avg, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Dual-criterion fixed design: average Type I Error (left) and average Power at $\\delta = 60$ (right) for all 24 analysis$\\times$design prior combinations. The dashed horizontal line marks $\\alpha = 0.05$.">>=
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+
+res_dual_avg  <- readRDS("../Output/DUAL_avg.RDS")
+prior_names   <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
+                   "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
+dprior_names  <- c("Dirac (-50)", "MAP", "Skeptical (-90)", "Misspecified (-10)")
+df_dual_avg   <- res_dual_avg$df_avg |>
+  dplyr::mutate(
+    Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+    Design_Prior   = factor(Design_Prior,   levels = dprior_names)
+  )
+
+my_theme <- theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_blank())
+
+p_d_avg_T1E <- ggplot(dplyr::filter(df_dual_avg, delta == 0),
+    aes(x = Design_Prior, y = avgT1E,
+        color = Analysis_Prior, group = Analysis_Prior,
+        linetype = Analysis_Prior == "Vague")) +
+  geom_point(size = 2.5) +
+  geom_line(linewidth = 1.0) +
+  geom_hline(yintercept = 0.05, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = "Design Prior", y = "Average Type I Error") +
+  my_theme
+
+p_d_avg_Power <- ggplot(dplyr::filter(df_dual_avg, delta == 60),
+    aes(x = Design_Prior, y = avgPower,
+        color = Analysis_Prior, group = Analysis_Prior,
+        linetype = Analysis_Prior == "Vague")) +
+  geom_point(size = 2.5) +
+  geom_line(linewidth = 1.0) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = "Design Prior",
+       y = bquote("Average Power (" * delta * " = 60)")) +
+  my_theme
+
+grid.arrange(p_d_avg_T1E, p_d_avg_Power, ncol = 2)
+@
+
+\textbf{Average Power across $\delta$.}
+Figure~\ref{fig:plot_dual_power_delta} shows how the average Power varies as $\delta$ increases. At the threshold $\delta = 50$ (the MCID), power is approximately $50\%$ because the second condition $\Pr(\delta > 50 \mid \mathcal{D}) \ge 0.50$ is satisfied only half the time when the true effect sits exactly at the boundary. We therefore evaluate power at $\delta = 60$, comfortably above the MCID, where the relevance condition is more easily satisfied and power rises substantially.
+For $\delta < 50$, power is negligible by construction, since it will always be below 50\%.
+
+<<plot_dual_power_delta, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="Dual-criterion fixed design: average Power as a function of the true treatment effect $\\delta$, faceted by design prior and coloured by analysis prior. The vertical dashed line marks the MCID ($\\delta = 50$), below which success declarations are almost impossible under the dual criterion. Power rises steeply beyond $\\delta = 50$ as the minimum-effect condition becomes easily satisfied.">>=
+library(ggplot2)
+library(dplyr)
+
+res_dual_avg  <- readRDS("../Output/DUAL_avg.RDS")
+prior_names   <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
+                   "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
+dprior_names  <- c("Dirac (-50)", "MAP", "Skeptical (-90)", "Misspecified (-10)")
+df_dual_avg   <- res_dual_avg$df_avg |>
+  dplyr::mutate(
+    Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+    Design_Prior   = factor(Design_Prior,   levels = dprior_names)
+  )
+
+my_theme <- theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_blank())
+
+ggplot(df_dual_avg,
+       aes(x = delta, y = avgPower,
+           color = Analysis_Prior,
+           linetype = Analysis_Prior == "Vague")) +
+  geom_line(linewidth = 1.2) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", linewidth = 0.4) +
+  facet_wrap(~Design_Prior, nrow = 1) +
+  geom_vline(xintercept = 50, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression("True Treatment Effect (" * delta * ")"),
+       y = "Average Power") +
+  my_theme
+@
+
+\textbf{EUII and Comparison with Single Criterion.}
+To assess whether the additional evidential requirement of the dual criterion translates into greater per-patient efficiency, Figure~\ref{fig:plot_dual_euii} plots the ratio of the EUII obtained using only significance threshold $\text{EUII}_{\text{Dual}}$ vs using the Dual Criterion $\text{EUII}_{\text{Sign}}$ 
+at $\delta = 60$ as a function of $\omega$ (left) and across all $\delta$ values (right).
+A ratio above $1$ indicates that the dual criterion extracts more information per patient enrolled; below $1$ indicates a net loss.
+
+Under the aligned and Dirac design priors, scenarios where the prior correctly describes the truth, the ratio is close to $1$ or slightly above for informative analysis priors, meaning that the additional condition does not materially hurt per-patient efficiency.
+Under the skeptical design prior, where the prior over-estimates the treatment effect, the ratio tends to fall below $1$: both criteria are harder to satisfy and power drops considerably, so the DOR shrinks.
+Under the misspecified design prior, the ratio can exceed $1$ because the dual criterion's minimum-effect clause prevents inflated DOR driven by a suppressed T1E from masking poor power.
+Overall, the dual criterion represents a principled stricter decision rule: it does not improve efficiency in the best case, but it limits the scope for spurious efficiency gains in adverse scenarios.
+
+<<plot_dual_euii, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="Ratio $\\text{EUII}_{\\text{Dual}} / \\text{EUII}_{\\text{Sign}}$ comparing the dual-criterion and single-criterion fixed designs. Left: ratio at $\\delta = 60$ as a function of the robustness weight $\\omega$, one line per design prior. Right: ratio as a function of $\\delta$, faceted by design prior. The dashed horizontal line marks a ratio of $1$ (no difference between criteria).">>=
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+
+res_ratio    <- readRDS("../Output/DUAL_vs_FIXED_euii.RDS")
+prior_names  <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
+                  "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
+dprior_names <- c("Dirac (-50)", "MAP", "Skeptical (-90)", "Misspecified (-10)")
+df_ratio     <- res_ratio$df_ratio |>
+  dplyr::mutate(
+    Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+    Design_Prior   = factor(Design_Prior,   levels = dprior_names)
+  )
+
+my_theme <- theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_blank())
+
+p_ratio_omega <- ggplot(dplyr::filter(df_ratio, delta == 60),
+    aes(x = omega, y = EUII_ratio,
+        color = Design_Prior, group = Design_Prior)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = 1, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  scale_x_continuous(breaks = seq(0, 1, 0.2)) +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression("Robustness weight (" * omega * ")"),
+       y = bquote("EUII"["Dual"] / "EUII"["Sign"] ~ "(" * delta * " = 60)")) +
+  my_theme
+
+p_ratio_delta <- ggplot(df_ratio,
+    aes(x = delta, y = EUII_ratio,
+        color = Analysis_Prior,
+        linetype = Analysis_Prior == "Vague")) +
+  geom_line(linewidth = 1.2) +
+  facet_wrap(~Design_Prior, nrow = 1) +
+  geom_hline(yintercept = 1, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression(delta),
+       y = bquote("EUII"["Dual"] / "EUII"["Sign"])) +
+  my_theme
+
+grid.arrange(p_ratio_omega, p_ratio_delta, ncol = 2)
+@
 
 
 \subsubsection{One interim analysis \note{TO DO}}

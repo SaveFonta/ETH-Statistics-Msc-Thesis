@@ -97,15 +97,23 @@ if (weight.track) {
 
  
     # extract decisions
+    # d_succ may be a single decision2S object or a list of them (dual/multi criterion)
     d_succ <- decisions_list[[k]]$success
     d_fut  <- decisions_list[[k]]$futility
- 
+
     # Evaluate Efficacy Boundary (if defined for this stage)
     if (!is.null(d_succ)) {
-      bnd_eff_fun  <- suppressMessages(RBesT::decision2S_boundary(prior_1, prior_2, n1_seq[k], n2_seq[k], d_succ))
+      d_succ_list  <- if (inherits(d_succ, "decision2S")) list(d_succ) else d_succ
+      is_lower_eff <- attr(d_succ_list[[1]], "lower.tail")
 
-      crit_val_eff <- bnd_eff_fun(y_2_curr[active_idx])
-      is_lower_eff <- attr(d_succ, "lower.tail")
+      # For dual/multi criterion: combine boundaries — AND means take most restrictive
+      # lower.tail=TRUE (lower is better): most restrictive = minimum boundary
+      # lower.tail=FALSE (higher is better): most restrictive = maximum boundary
+      combine_bnd <- if (is_lower_eff) pmin else pmax
+      crit_val_eff <- Reduce(combine_bnd, lapply(d_succ_list, function(d) {
+        suppressMessages(RBesT::decision2S_boundary(prior_1, prior_2, n1_seq[k], n2_seq[k], d))(y_2_curr[active_idx])
+      }))
+
       is_succ <- if (is_lower_eff) y_1_curr[active_idx] <= crit_val_eff else y_1_curr[active_idx] > crit_val_eff
     } else {
       is_succ <- rep(FALSE, n_active)
@@ -210,9 +218,11 @@ avgoc2_seq_mc.normMix <- function(prior_1, prior_2,
  
   set.seed(seed)  
 
-  # take the first decision value and see if the decision is lower tail or not
-  # the sanity check on the list of decision values will be done by oc2_seq_mc.normMix
-  is_lower_tail <- attr(decisions_list[[1]][["success"]], "lower.tail")
+  # Determine tail direction from the first (or only) success decision.
+  # success may be a single decision2S or a list of them (dual criterion).
+  d_succ_1 <- decisions_list[[1]][["success"]]
+  if (!inherits(d_succ_1, "decision2S")) d_succ_1 <- d_succ_1[[1]]
+  is_lower_tail <- attr(d_succ_1, "lower.tail")
   
   
   theta_c_draws <- RBesT::rmix(design_prior_c, n_sim)
