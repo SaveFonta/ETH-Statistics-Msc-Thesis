@@ -1,4 +1,4 @@
-.PHONY: all clean help reports final manuscript
+.PHONY: all clean help reports final manuscript appendix
 
 # Default target
 all: reports final
@@ -19,12 +19,17 @@ reports/How.RBesT.works.inside.pdf: reports/How.RBesT.works.inside.Rnw
 reports/Bayesian_group.pdf: reports/Bayesian_group.Rnw
 	cd reports && Rscript -e "knitr::knit2pdf('Bayesian_group.Rnw')" && cd ..
 
-# Manuscript target
-Final/manuscript.pdf: Final/manuscript.Rnw
+# Manuscript target (incremental: rebuilds when the Rnw or any \input'd file changes)
+Final/manuscript.pdf: Final/manuscript.Rnw Final/newCommands.tex Final/appendix.tex Final/Thesis.lit.rev.bib
 	cd Final && Rscript -e "knitr::knit2pdf('manuscript.Rnw')" && cd ..
 
-# Alias for manuscript
-manuscript: Final/manuscript.pdf
+# Force a full recompile, even when make thinks nothing is out of date
+manuscript:
+	$(MAKE) -B Final/manuscript.pdf
+
+# Compile only the appendix (fast, standalone; no knitr, no main manuscript)
+appendix:
+	cd Final && Rscript -e "tinytex::latexmk('appendix_only.tex')"
 
 # Clean build artifacts (but keep PDFs for reference)
 clean:
@@ -42,7 +47,8 @@ help:
 	@echo "  make all              - Build all reports and manuscript (default)"
 	@echo "  make reports          - Build all reports in reports/"
 	@echo "  make final            - Build manuscript in Final/"
-	@echo "  make manuscript       - Alias for 'make final'"
+	@echo "  make manuscript       - Force a full recompile of the manuscript"
+	@echo "  make appendix         - Compile only the appendix (standalone, fast)"
 	@echo "  make clean            - Remove build artifacts (keeps PDFs)"
 	@echo "  make clean-all        - Remove all build artifacts including PDFs"
 	@echo "  make help             - Show this help message"

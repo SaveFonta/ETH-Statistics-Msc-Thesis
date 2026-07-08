@@ -1,9 +1,22 @@
 # =============================================================================
-# Fixed Design — Conditional and Average Operating Characteristics
+# Fixed Design with Dual Criterion — Conditional and Average OC + EUII
 # =============================================================================
-# Part 1 – Conditional T1E and Power 
-# Part 2 – Average T1E and Power (all analysis prior × design prior combinations)
-## =============================================================================
+#
+# Mirrors 2.1_FIXED.R exactly (same priors, sample sizes, plots, structure)
+# but uses the dual efficacy criterion from Gsponer et al. (2014):
+#   Pr(delta > 0  | data) > 0.95  AND  Pr(delta > 50 | data) > 0.50
+# instead of the single criterion Pr(delta > 0 | data) > 0.95.
+#
+# decision2S accepts vector pc/qc for multi-criterion AND logic, and this
+# works directly with oc2S and avgoc2S.normMix — no custom functions needed.
+#
+# Part 1 - Conditional T1E and Power  (oc2S)
+# Part 2 - Average T1E and Power      (avgoc2S.normMix)
+# Part 3 - EUII                       (DOR^{1/n_trial}, same as fixed)
+#
+# Results saved to Output/DUAL_cond.RDS, Output/DUAL_avg.RDS,
+#                  Output/DUAL_euii.RDS
+# =============================================================================
 
 library(RBesT)
 library(dplyr)
@@ -14,17 +27,17 @@ source("scripts/prior_on_control/00.functions.R")
 
 
 # ---------------------------------------------------------------------------
-# Design parameters
+# Design parameters  (identical to 2.1_FIXED.R)
 # ---------------------------------------------------------------------------
 sigma      <- 88
 n_T        <- 40
 n_C        <- 20
-delta_MCID <- 60 #I chose to plot Power using this delta
-mu_A       <- -50   # prior mean — reference vline
+delta_MCID <- 60
+mu_A       <- -50
 
 
 # ---------------------------------------------------------------------------
-# Analysis priors
+# Analysis priors  (identical to 2.1_FIXED.R)
 # ---------------------------------------------------------------------------
 p_MAP <- mixnorm(
   c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
@@ -44,22 +57,25 @@ prior_names <- names(analysis_priors)
 
 
 # ---------------------------------------------------------------------------
-# Design priors
+# Design priors  (identical to 2.1_FIXED.R)
 # ---------------------------------------------------------------------------
 design_priors <- list(
-  "Dirac (-50)"    = mixnorm(c(1, -50, 1e-16), sigma = sigma, param = "ms"),
-  "MAP"               = mixnorm(c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
-                                sigma = sigma, param = "ms"),
-  "Skeptical (-90)" = mixnorm(c(1, -90, 17.6),  sigma = sigma, param = "ms"),
-  "Misspecified (-10)"  = mixnorm(c(1, -10, 25),   sigma = sigma, param = "ms")
+  "Dirac (-50)"        = mixnorm(c(1, -50, 1e-16), sigma = sigma, param = "ms"),
+  "MAP"                = mixnorm(c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
+                                 sigma = sigma, param = "ms"),
+  "Skeptical (-90)"    = mixnorm(c(1, -90, 17.6),  sigma = sigma, param = "ms"),
+  "Misspecified (-10)" = mixnorm(c(1, -10, 25),  sigma = sigma, param = "ms")
 )
 dprior_names <- names(design_priors)
 
 
 # ---------------------------------------------------------------------------
-# Decision criterion (Sign only)
+# Decision criterion — dual (Gsponer et al. 2014)
+# qc is on the scale of theta_T - theta_C = -delta, so delta-thresholds
+# flip sign: delta > 0 -> qc = 0, delta > 50 -> qc = -50.
+# decision2S with vector pc/qc applies both conditions simultaneously (AND).
 # ---------------------------------------------------------------------------
-sign.crit <- decision2S(pc = 0.95, qc = 0, lower.tail = TRUE)
+sign.crit <- decision2S(pc = c(0.95, 0.50), qc = c(0, -50), lower.tail = TRUE)
 
 
 # ---------------------------------------------------------------------------
@@ -74,6 +90,8 @@ my_theme <- theme_minimal() +
 # =============================================================================
 theta_c <- seq(-110, 10, by = 2)
 
+cat("Building conditional OC functions...\n")
+
 oc_funs <- lapply(analysis_priors, function(prior_C) {
   oc2S(prior1 = p_vague, prior2 = prior_C,
        n1 = n_T, n2 = n_C, decision = sign.crit)
@@ -84,12 +102,11 @@ df_cond <- bind_rows(lapply(prior_names, function(pname) {
   data.frame(
     Prior   = pname,
     theta_C = theta_c,
-    T1E     = f(theta_c, theta_c),
+    T1E     = f(theta_c,              theta_c),
     Power   = f(theta_c - delta_MCID, theta_c)
   )
 })) |> mutate(Prior = factor(Prior, levels = prior_names))
 
-# --- Left panel: Conditional T1E ---
 p_cond_T1E <- ggplot(df_cond,
                      aes(x = theta_C, y = T1E,
                          color = Prior, linetype = Prior == "Vague")) +
@@ -105,7 +122,6 @@ p_cond_T1E <- ggplot(df_cond,
        y = "Conditional Type I Error") +
   my_theme
 
-# --- Right panel: Conditional Power at delta == 60 ---
 p_cond_Power <- ggplot(df_cond,
                        aes(x = theta_C, y = Power,
                            color = Prior, linetype = Prior == "Vague")) +
@@ -121,18 +137,16 @@ p_cond_Power <- ggplot(df_cond,
 
 grid.arrange(p_cond_T1E, p_cond_Power, ncol = 2)
 
-saveRDS(list(df_cond = df_cond), file = "Output/FIXED_cond.RDS")
-cat("Conditional results saved to Output/FIXED_cond.RDS\n")
+saveRDS(list(df_cond = df_cond), file = "Output/DUAL_cond.RDS")
+cat("Conditional results saved to Output/DUAL_cond.RDS\n")
 
 
 # =============================================================================
-# PART 2 — Average T1E and Power (all analysis prior x design prior x delta)
+# PART 2 — Average T1E and Power
 # =============================================================================
-# avgoc2S.normMix returns design_fun(delta_new, design_prior2_new).
-# theta_T = theta_C + delta_new, so delta_new = -delta (lower is better).
-# avgT1E is delta-independent (evaluated at delta_new = 0 only once per pair).
-
 delta_values <- seq(0, 100, by = 10)
+
+cat("Computing average OC...\n")
 
 rows_avg <- lapply(prior_names, function(aname) {
   avg_fun <- avgoc2S.normMix(
@@ -145,8 +159,8 @@ rows_avg <- lapply(prior_names, function(aname) {
     design_prior2 = design_priors[[1]]
   )
   lapply(dprior_names, function(dname) {
-    dp         <- design_priors[[dname]]
-    t1e_val    <- avg_fun(delta_new = 0, design_prior2_new = dp)
+    dp      <- design_priors[[dname]]
+    t1e_val <- avg_fun(delta_new = 0, design_prior2_new = dp)
     bind_rows(lapply(delta_values, function(dv) {
       data.frame(
         Analysis_Prior = aname,
@@ -159,21 +173,15 @@ rows_avg <- lapply(prior_names, function(aname) {
   })
 })
 
-# rows_avg is a list of list of dataframes. SO rows_avg[[1]][[2]] recovers the df with analysis prior 1 (MAP)
-# and design priro 2 (MAP)
-rows_avg[[1]][[2]]
-
-df_avg <- bind_rows(unlist(rows_avg, recursive = FALSE)) |> # use recursive so it unlist only one layer
+df_avg <- bind_rows(unlist(rows_avg, recursive = FALSE)) |>
   mutate(
     Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
     Design_Prior   = factor(Design_Prior,   levels = dprior_names)
   )
 
-# --- Left panel: Average T1E ---
 p_avg_T1E <- ggplot(df_avg,
                     aes(x = Design_Prior, y = avgT1E,
-                        color = Analysis_Prior,
-                        group = Analysis_Prior,
+                        color = Analysis_Prior, group = Analysis_Prior,
                         linetype = Analysis_Prior == "Vague")) +
   geom_point(size = 2.5) +
   geom_line(linewidth = 1.0) +
@@ -185,11 +193,9 @@ p_avg_T1E <- ggplot(df_avg,
   labs(x = "Design Prior", y = "Average Type I Error") +
   my_theme
 
-# --- Right panel: Average Power ---
-p_avg_Power <- ggplot(df_avg,
+p_avg_Power <- ggplot(filter(df_avg, delta == delta_MCID),
                       aes(x = Design_Prior, y = avgPower,
-                          color = Analysis_Prior,
-                          group = Analysis_Prior,
+                          color = Analysis_Prior, group = Analysis_Prior,
                           linetype = Analysis_Prior == "Vague")) +
   geom_point(size = 2.5) +
   geom_line(linewidth = 1.0) +
@@ -202,17 +208,13 @@ p_avg_Power <- ggplot(df_avg,
 
 grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
 
-saveRDS(list(df_avg = df_avg), file = "Output/FIXED_avg.RDS")
-cat("Average results saved to Output/FIXED_avg.RDS\n")
+saveRDS(list(df_avg = df_avg), file = "Output/DUAL_avg.RDS")
+cat("Average results saved to Output/DUAL_avg.RDS\n")
 
 
 # =============================================================================
-# PART 3 — EUII 
+# PART 3 — EUII
 # =============================================================================
-# DOR  = (avgPower / (1-avgPower)) / (avgT1E / (1-avgT1E))
-# EUII = DOR ^ (1 / n_trial)   where n_trial = n_T + n_C
-# At delta = 0: avgPower = avgT1E  =>  DOR = 1  =>  EUII = 1 for all designs.
-
 n_trial <- n_T + n_C
 
 omega_map <- c(
@@ -228,26 +230,25 @@ df_euii <- df_avg |>
   mutate(
     omega    = omega_map[as.character(Analysis_Prior)],
     # log space: qlogis(p) = logit(p) = log(p / (1 - p)), so
-    # log_DOR = logit(avgPower) - logit(avgT1E)
+    # log_DOR = logit(avgPower) - logit(avgT1E) avoids DOR overflowing to Inf
     log_DOR  = qlogis(avgPower) - qlogis(avgT1E),
     log_EUII = log_DOR / n_trial,
     EUII     = exp(log_EUII)
   )
 
-# --- Plot A: EUII vs omega at delta = 60 (one line per design prior) ---
-df_euii_50 <- filter(df_euii, delta == 60)
+df_euii_60 <- filter(df_euii, delta == 60)
 
-euii_vague_60 <- df_euii_50 |>
+euii_vague_60 <- df_euii_60 |>
   filter(Analysis_Prior == "Vague") |>
   pull(EUII) |>
   unique()
 
-p_EUII_omega <- ggplot(df_euii_50,
+p_EUII_omega <- ggplot(df_euii_60,
                        aes(x = omega, y = EUII,
                            color = Design_Prior, group = Design_Prior)) +
   geom_line(linewidth = 1.2) +
   geom_point(size = 2.5) +
-  geom_hline(yintercept = euii_vague_60, linetype = "dashed",
+  geom_hline(yintercept = euii_vague_60, linetype = "dotted",
              color = "black", linewidth = 0.6) +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
   scale_color_viridis_d(option = "turbo", direction = -1) +
@@ -257,7 +258,6 @@ p_EUII_omega <- ggplot(df_euii_50,
 
 print(p_EUII_omega)
 
-# --- Plot B: EUII vs delta (facet by design prior, color by analysis prior) ---
 p_EUII_delta <- ggplot(df_euii,
                        aes(x = delta, y = EUII,
                            color = Analysis_Prior,
@@ -269,11 +269,85 @@ p_EUII_delta <- ggplot(df_euii,
   scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
                         guide = "none") +
   scale_color_viridis_d(option = "turbo", direction = -1) +
-  labs(x = expression(delta),
-       y = "EUII") +
+  labs(x = expression(delta), y = "EUII") +
   my_theme
 
 print(p_EUII_delta)
 
-saveRDS(list(df_euii = df_euii), file = "Output/FIXED_euii.RDS")
-cat("EUII results saved to Output/FIXED_euii.RDS\n")
+saveRDS(list(df_euii = df_euii), file = "Output/DUAL_euii.RDS")
+cat("EUII results saved to Output/DUAL_euii.RDS\n")
+
+
+# =============================================================================
+# PART 4 — EUII Ratio: Dual / Single-criterion
+# =============================================================================
+# Loads FIXED_euii.RDS produced by 2.1_FIXED.R. Both files now share the same
+# ASCII label scheme, so we join directly on the (character) key.
+
+fixed_data    <- readRDS("Output/FIXED_euii.RDS")
+df_euii_fixed <- fixed_data$df_euii |>
+  mutate(
+    Analysis_Prior = as.character(Analysis_Prior),
+    Design_Prior   = as.character(Design_Prior)
+  ) |>
+  select(Analysis_Prior, Design_Prior, delta, EUII_fixed = EUII)
+
+df_ratio <- df_euii |>
+  mutate(
+    Analysis_Prior = as.character(Analysis_Prior),
+    Design_Prior   = as.character(Design_Prior)
+  ) |>
+  select(Analysis_Prior, Design_Prior, delta, omega, EUII_dual = EUII) |>
+  left_join(df_euii_fixed, by = c("Analysis_Prior", "Design_Prior", "delta")) |>
+  mutate(EUII_ratio = EUII_dual / EUII_fixed)
+
+# Safety check: a mismatched join key would silently propagate NA into the ratio.
+if (any(is.na(df_ratio$EUII_ratio))) {
+  stop("EUII ratio join produced NA - check that Analysis/Design prior labels match between DUAL and FIXED outputs.")
+}
+
+# Restore factor ordering for plotting
+df_ratio <- df_ratio |>
+  mutate(
+    Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+    Design_Prior   = factor(Design_Prior,   levels = dprior_names)
+  )
+
+# --- Plot A: ratio vs omega at delta = 60 (one line per design prior) ---
+df_ratio_60 <- filter(df_ratio, delta == delta_MCID)
+
+p_ratio_omega <- ggplot(df_ratio_60,
+                        aes(x = omega, y = EUII_ratio,
+                            color = Design_Prior, group = Design_Prior)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = 1, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  scale_x_continuous(breaks = seq(0, 1, 0.2)) +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression("Robustness weight (" * omega * ")"),
+       y = bquote("EUII"["Dual"] / "EUII"["Sign"] ~ "(" * delta * " = 60)")) +
+  my_theme
+
+print(p_ratio_omega)
+
+# --- Plot B: ratio vs delta (facet by design prior, color by analysis prior) ---
+p_ratio_delta <- ggplot(df_ratio,
+                        aes(x = delta, y = EUII_ratio,
+                            color = Analysis_Prior,
+                            linetype = Analysis_Prior == "Vague")) +
+  geom_line(linewidth = 1.2) +
+  facet_wrap(~Design_Prior, nrow = 1) +
+  geom_hline(yintercept = 1, linetype = "dashed",
+             color = "black", linewidth = 0.6) +
+  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
+                        guide = "none") +
+  scale_color_viridis_d(option = "turbo", direction = -1) +
+  labs(x = expression(delta),
+       y = bquote("EUII"["Dual"] / "EUII"["Sign"])) +
+  my_theme
+
+print(p_ratio_delta)
+
+saveRDS(list(df_ratio = df_ratio), file = "Output/DUAL_vs_FIXED_euii.RDS")
+cat("EUII ratio saved to Output/DUAL_vs_FIXED_euii.RDS\n")
