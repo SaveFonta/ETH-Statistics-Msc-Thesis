@@ -281,8 +281,7 @@ cat("EUII results saved to Output/DUAL_euii.RDS\n")
 # =============================================================================
 # PART 4 — EUII Ratio: Dual / Single-criterion
 # =============================================================================
-# Loads FIXED_euii.RDS produced by 2.1_FIXED.R. Both files now share the same
-# ASCII label scheme, so we join directly on the (character) key.
+
 
 fixed_data    <- readRDS("Output/FIXED_euii.RDS")
 df_euii_fixed <- fixed_data$df_euii |>

@@ -6,6 +6,8 @@ library(checkmate)
 library(assertthat) 
 
 
+# TOOO many function. Need to make some order at some point 
+
 
 # -----------------------------------------------
 # EXACT METHODS
@@ -391,116 +393,4 @@ oc2S_seq.dual.normMix <- function(
 
 
 
-# This works, but only gives the avgT1E, NO sample sizes 
 
-
-avgoc2S_seq.normMix <- function(
-  prior1, prior2, n1, n2, decisions, delta, design_prior2, eps = 1e-6, Ngrid = 10, ...
-) {
-  
-  # Creates OC
-  oc_fun <- oc2S_seq.dual.normMix(prior1, prior2, n1, n2, decisions, eps = eps, ...)
-
-  # output function
-  design_fun <- function(delta_new = delta, design_prior2_new = design_prior2) {
-
-    res <- RBesT:::integrate_density_log(
-      log_integrand = function(x) {
-        # Force scalar evaluation over the vector of grid points 'x'
-        sapply(x, function(xi) {
-          # Evaluate OC for the scalar xi
-          res_df <- oc_fun(xi + delta_new, xi)
-          # Extract the total power probability and take the log
-          log(res_df$Total_Power)
-        })
-      },
-      mix = design_prior2_new,
-      Lplower = RBesT::logit(eps / 2),
-      Lpupper = RBesT::logit(1 - eps / 2)
-    )
-    
-    return(res)
-  }
-  
-  return(design_fun)
-}
-
-# =============================================================================
-# avgoc2S_seq2.normMix
-#
-# Averages the conditional sequential OC over the design prior and returns all
-# quantities needed for the sequential EUII (Held et al. 2025, eq. 15).
-#
-# KEY: E_D[1/N^+ | H_i] = E[1/N | success] averaged over the design prior.
-#   Correct formula: E[1/N^+ | theta_C] = (P_eff1/n_stg1 + P_suc2/n_stg2) / Power
-#   where n_stgk = n1[k] + n2[k] is the TOTAL sample size at stage k.
-#   This is NOT the same as 1/E[N^+ | theta_C] (Jensen: E[1/X] >= 1/E[X]).
-#   The 00.functions.MC.R approach (compute_euii) uses this correct formula;
-#   this function matches it via numerical integration.
-#
-# Returns a data.frame with:
-#   avg_Power, avg_Fut, avg_EN
-#   avg_EN_Succ, avg_EN_Fail        (E_D[N^+|H_i], E_D[N^-|H_i])
-#   avg_inv_EN_Succ, avg_inv_EN_Fail (E_D[1/N^+|H_i], E_D[1/N^-|H_i])
-# =============================================================================
-
-avgoc2S_seq2.normMix <- function(
-  prior1, prior2, n1, n2, decisions, delta, design_prior2, eps = 1e-6, ...
-) {
-
-  oc_fun <- oc2S_seq.dual.normMix(prior1, prior2, n1, n2, decisions, eps = eps, ...)
-
-  # Total sample size at each stage
-  n_stg1 <- n1[1] + n2[1]
-  n_stg2 <- n1[2] + n2[2]
-
-  design_eval_fun <- function(delta_new = delta, design_prior2_new = design_prior2) {
-
-    lower_bnd <- RBesT::qmix(design_prior2_new, eps / 2)
-    upper_bnd <- RBesT::qmix(design_prior2_new, 1 - eps / 2)
-
-    # Integrate f(theta_C) * pi_D(theta_C) over the design prior support
-    avg <- function(f) {
-      stats::integrate(
-        function(x) sapply(x, function(xi) {
-          r <- oc_fun(xi + delta_new, xi)
-          f(r) * RBesT::dmix(design_prior2_new, xi)
-        }),
-        lower = lower_bnd, upper = upper_bnd,
-        rel.tol = .Machine$double.eps^0.25
-      )$value
-    }
-
-    avg_Power <- avg(function(r) r$Total_Power)
-    avg_Fut   <- avg(function(r) r$P_Stop_Fut_Stg1)
-    avg_EN    <- avg(function(r) r$EN_Trt + r$EN_Pbo)
-
-    # E_D[N^+|H_i] numerator: integral of E[N^+|theta_C] * Power(theta_C) * pi_D
-    num_EN_Succ <- avg(function(r) (r$EN_Trt_Rej   + r$EN_Pbo_Rej)   * r$Total_Power)
-    num_EN_Fail <- avg(function(r) (r$EN_Trt_NoRej + r$EN_Pbo_NoRej) * (1 - r$Total_Power))
-
-    # E_D[1/N^+|H_i] numerator: integral of E[1/N^+|theta_C] * Power(theta_C) * pi_D
-    #
-    # E[1/N^+|theta_C] * Power = P_eff1/n_stg1 + P_suc2/n_stg2
-    # E[1/N^-|theta_C] * (1-Power) = P_fut1/n_stg1 + P_fail2/n_stg2
-    num_inv_EN_Succ <- avg(function(r) {
-      r$P_Stop_Eff_Stg1 / n_stg1 + r$P_Success_Stg2 / n_stg2
-    })
-    num_inv_EN_Fail <- avg(function(r) {
-      p_fail2 <- max(0, r$P_Continue_Stg1 - r$P_Success_Stg2)
-      r$P_Stop_Fut_Stg1 / n_stg1 + p_fail2 / n_stg2
-    })
-
-    data.frame(
-      avg_Power       = avg_Power,
-      avg_Fut         = avg_Fut,
-      avg_EN          = avg_EN,
-      avg_EN_Succ     = if (avg_Power   > eps) num_EN_Succ     / avg_Power       else NA_real_,
-      avg_EN_Fail     = if (1-avg_Power > eps) num_EN_Fail     / (1 - avg_Power) else NA_real_,
-      avg_inv_EN_Succ = if (avg_Power   > eps) num_inv_EN_Succ / avg_Power       else NA_real_,
-      avg_inv_EN_Fail = if (1-avg_Power > eps) num_inv_EN_Fail / (1 - avg_Power) else NA_real_
-    )
-  }
-
-  return(design_eval_fun)
-}

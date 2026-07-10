@@ -350,10 +350,9 @@ df_map <- rbind(
   data.frame(theta = theta_grid, density = dmix(map_robust, theta_grid), prior = labels[3])
 )
 df_map$prior <- factor(df_map$prior, levels = labels)
-ggplot(df_map, aes(x = theta, y = density, colour = prior, linetype = prior)) +
+ggplot(df_map, aes(x = theta, y = density, colour = prior)) +
   geom_line(linewidth = 0.9) +
   scale_colour_manual(values = c("#0072B2", "#D55E00", "#009E73"), labels = legend_labels) +
-  scale_linetype_manual(values = c("solid", "dashed", "dotdash"), labels = legend_labels) +
   labs(x = expression(theta[C]), y = "Density", colour = NULL, linetype = NULL) +
   coord_cartesian(xlim = c(-150, 70)) +
   theme_minimal(base_size = 12) +
@@ -544,7 +543,7 @@ sigmas <- c(0, 10^seq(0, 5, length.out = 99))
 df_t1e_scale <- data.frame(sigma_D = sigmas) %>%
   mutate(Avg_T1E = avgPower(mu_A, sigma_D^2, 0, k_SC))
 
-p1a <- ggplot(df_t1e_loc, aes(x = mu_D, y = Value, color = Metric, linetype = Metric)) +
+p1a <- ggplot(df_t1e_loc, aes(x = mu_D, y = Value, color = Metric)) +
   geom_line(size = 1.2) +
   geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", linewidth = 0.4) +
   geom_vline(xintercept = mu_A, linetype = "dotted", color = "gray", linewidth = 0.8) +
@@ -581,7 +580,7 @@ df_pow_loc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
 df_pow_scale <- data.frame(sigma_D = sigmas) %>%
   mutate(Avg_Power = avgPower(mu_A, sigma_D^2, 60, k_SC))
 
-p2a <- ggplot(df_pow_loc, aes(x = delta, y = Value, color = Metric, linetype = Metric)) +
+p2a <- ggplot(df_pow_loc, aes(x = delta, y = Value, color = Metric)) +
   geom_line(size = 1) +
   scale_color_manual(values = c("Average Power" = "#E69F00", "Conditional Power" = "#56B4E9")) +
   labs(x = expression("True Effect (" * delta * ")"),
@@ -641,7 +640,7 @@ Substituting into Equation~\eqref{eq:n_c_formula} gives $n_C \approx 11.5 \to 12
 
 Figure~\ref{fig:plot_avgpower_nc} shows how average power varies with $n_C$ for several values of $n_A$: borrowing more historical data shifts the power curve upwards, reducing the required $n_C$. 
 
-<<plot_avgpower_nc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=3.5, fig.width=6, dev='cairo_pdf', fig.cap="Average power vs.\ control sample size $n_C$ at $\\delta = 60$ for varying $n_A$. The horizontal dashed line represents 80\\% power, while the two dotted verticals the minimum required $n_C$ (Eq.~\\ref{eq:n_c_formula} with $n_A=20$) and actual design value $n_C = 20$.">>=
+<<plot_avgpower_nc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=3.5, fig.width=6, dev='cairo_pdf', fig.cap="Average power varying control sample size $n_C$ at $\\delta = 60$ for varying $n_A$. The horizontal dashed line represents 80\\% power, while the two dotted verticals the minimum required $n_C$ (Eq.~\\ref{eq:n_c_formula} with $n_A=20$) and actual design value $n_C = 20$.">>=
 avgPower_ess <- function(delta, n_C, n_A, r_T, sigma, z_p, q = 0) {
   n_T <- r_T * n_C
   1 - pnorm(z_p - (delta - q) / (sigma * sqrt(1 / (n_C + n_A) + 1 / n_T)))
@@ -665,7 +664,7 @@ n_C_req <- (b_req + sqrt(b_req^2 + 4 * 2 * K_req * 20)) / (2 * 2)  # 11.5
 
 legend_labels <- c("n_A = 0", "n_A = 10", "n_A = 20", "n_A = 30")
 
-ggplot(df_ss, aes(x = n_C, y = power, colour = n_A, linetype = n_A)) +
+ggplot(df_ss, aes(x = n_C, y = power, colour = n_A)) +
   geom_line(linewidth = 0.8) +
   geom_hline(yintercept = 0.8, linetype = "dashed", colour = "grey50") +
   geom_vline(xintercept = n_C_req, linetype = "dotted", colour = "grey40") +
@@ -676,7 +675,6 @@ ggplot(df_ss, aes(x = n_C, y = power, colour = n_A, linetype = n_A)) +
            hjust = 0, size = 3, colour = "grey30") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
   scale_colour_brewer(palette = "Set1", labels = legend_labels) +
-  scale_linetype_discrete(labels = legend_labels) +
   labs(x = expression(n[C]), y = "Average Power",
        colour = NULL, linetype = NULL) +
   my_theme +
@@ -795,8 +793,11 @@ We therefore use throughout:
 where $n_{\text{trial}}$ is the number of patients enrolled in the current trial, which is the decision variable of the trial design.
 
 \textbf{Running example.}
-In Figure~\ref{fig:plot_euii}, EUII is plotted for the running example. The left panel shows that Average EUII provides a more conservative value than Conditional EUII. The right panel shows the Average EUII as a function of $\sigma_{D,C}$.
-  
+In Figure~\ref{fig:plot_euii}, EUII is plotted for the running example. The left panel shows that Average EUII provides a more conservative value than Conditional EUII.
+The right panel shows the Average EUII as a function of $\sigma_{D,C}$.
+
+\Remark For ease of notation, from now on the EUII refers to the average EUII; the conditional EUII is the particular case obtained with a Dirac design prior.
+
 <<plot_euii, echo=FALSE, warning=FALSE, message=FALSE, dev='cairo_pdf', fig.height=4, fig.width=10, fig.cap="EUII for the running example. Left: Conditional and Average EUII across $\\delta$ under aligned priors. Right: Average EUII at $\\delta = 60$ versus design uncertainty $\\sigma_{D,C}$; the dotted line marks alignment ($\\pi_D = \\pi_A$).">>=
 # --- EUII Data & Plots ---
 df_euii_loc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
@@ -808,7 +809,7 @@ df_euii_loc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
 df_euii_scale <- data.frame(sigma_D = sigmas) %>%
   mutate(Avg_EUII = calc_EUII(avgPower(mu_A, sigma_D^2, 60, k_SC), avgPower(mu_A, sigma_D^2, 0, k_SC), N_total))
 
-p3a <- ggplot(df_euii_loc, aes(x = delta, y = Value, color = Metric, linetype = Metric)) +
+p3a <- ggplot(df_euii_loc, aes(x = delta, y = Value, color = Metric, linetype)) +
   geom_line(size = 1) + scale_color_manual(values = c("Avg_EUII" = "#009E73", "Cond_EUII" = "#CC79A7")) +
   labs(x = expression("True Effect (" * delta * ")"), y = "EUII") + my_theme
 
@@ -822,10 +823,10 @@ p3b <- ggplot(df_euii_scale, aes(x = sigma_D, y = Avg_EUII)) +
 grid.arrange(p3a, p3b, ncol = 2)
 @
 
-\paragraph{Asymptotic value} \note{TODO: change the plot. It's either linetype or color!! }
-Under the closed-form (single Normal) model, the average EUII of the SC design converges to a finite asymptotic value: holding the allocation ratio $r_T = n_T/n_C$ fixed and letting $n_C \to \infty$,
+\paragraph{Asymptotic value} 
+Under the closed-form (single Normal) model, the EUII of the SC design converges to a finite asymptotic value: holding the allocation ratio $r_T = n_T/n_C$ fixed and letting $n_C \to \infty$,
 \begin{equation}\label{eq:euii_asymptotic}
-  \lim_{n_C \to \infty} \EUII_{avg}(\delta)
+  \lim_{n_C \to \infty} \EUII(\delta)
   = \exp\!\left[\frac{r_T\big[(\delta - q)^2 + q^2\big]}{2\sigma^2 (1 + r_T)^2}\right],
 \end{equation}
 Explicit derivations are provided in Appendix~\ref{sec:app_asymptotic}. 
@@ -956,7 +957,7 @@ df_t1e_abs <- data.frame(mu_D = seq(-90, -10, length.out = 100)) %>%
   ) %>%
   pivot_longer(cols = c(DC, SC), names_to = "Criterion", values_to = "avgT1E")
 
-pr1a <- ggplot(df_rt1e_loc, aes(mu_D, Ratio, color = Metric, linetype = Metric)) +
+pr1a <- ggplot(df_rt1e_loc, aes(mu_D, Ratio, color = Metric)) +
   geom_line(size = 1.2) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
   geom_vline(xintercept = mu_A, linetype = "dotted", color = "gray", linewidth = 0.8) +
@@ -991,7 +992,7 @@ df_pow_abs <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
   ) %>%
   pivot_longer(cols = c(DC, SC), names_to = "Criterion", values_to = "avgPower")
 
-pr2a <- ggplot(df_pow_dc, aes(delta, Value, color = Metric, linetype = Metric)) +
+pr2a <- ggplot(df_pow_dc, aes(delta, Value, color = Metric)) +
   geom_line(size = 1) +
   geom_vline(xintercept = DV, linetype = "dotted", color = "gray", linewidth = 0.8) +
   scale_color_manual(values = c("Average Power" = "#E69F00", "Conditional Power" = "#56B4E9")) +
@@ -1006,7 +1007,7 @@ pr2b <- ggplot(df_pow_abs, aes(delta, avgPower, color = Criterion)) +
 grid.arrange(pr2a, pr2b, ncol = 2)
 @
 
-<<plot_euii_ratio, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Left panel shows the ratio of the DC to the SC EUII, for the Conditional and Average metric, evaluated across true treatment effects (aligned priors $\\mu_{A,C} = \\mu_{D,C}$ and $\\sigma_{A,C} = \\sigma_{D,C}$). Right panel shows the corresponding average EUII of the two designs.">>=
+<<plot_euii_ratio, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Left panel shows the ratio of the DC to the SC EUII, for the Conditional and Average metric, evaluated across true treatment effects (aligned priors $\\mu_{A,C} = \\mu_{D,C}$ and $\\sigma_{A,C} = \\sigma_{D,C}$). Right panel shows the corresponding EUII of the two designs.">>=
 df_reuii_loc <- data.frame(delta = seq(50, 100, length.out = 100)) %>%
   mutate(
     Conditional = calc_EUII(condPower(mu_A, delta, k_DC), condPower(mu_A, 0, k_DC), N_total) /
@@ -1023,7 +1024,7 @@ df_euii_abs <- data.frame(delta = seq(50, 100, length.out = 100)) %>%
   ) %>%
   pivot_longer(cols = c(DC, SC), names_to = "Criterion", values_to = "avgEUII")
 
-pr3a <- ggplot(df_reuii_loc, aes(delta, Ratio, color = Metric, linetype = Metric)) +
+pr3a <- ggplot(df_reuii_loc, aes(delta, Ratio, color = Metric)) +
   geom_line(size = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
   scale_color_manual(values = c("Average" = "#009E73", "Conditional" = "#CC79A7")) +
@@ -1033,29 +1034,29 @@ pr3b <- ggplot(df_euii_abs, aes(delta, avgEUII, color = Criterion)) +
   geom_line(size = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
   scale_color_manual(values = c("DC" = "#D55E00", "SC" = "#0072B2")) +
-  labs(x = expression("True Effect (" * delta * ")"), y = "Average EUII") + my_theme
+  labs(x = expression("True Effect (" * delta * ")"), y = "EUII") + my_theme
 
 grid.arrange(pr3a, pr3b, ncol = 2)
 @
 
 \paragraph{Asymptotic value}
-Under the closed-form (single Normal) model, we can derive the asymptotic Average EUII (see Appendix~\ref{sec:app_asymptotic} for details).  
+Under the closed-form (single Normal) model, we can derive the asymptotic EUII (see Appendix~\ref{sec:app_asymptotic} for details).
 \begin{equation}\label{eq:euii_asymptotic_dc}
-  \lim_{n_C \to \infty} \EUII_{avg}^{\DC}(\delta)
+  \lim_{n_C \to \infty} \EUII^{\DC}(\delta)
   = \exp\!\left[\frac{r_T\big[(\delta - \DV)^2 + \DV^2\big]}{2\sigma^2 (1 + r_T)^2}\right],
 \end{equation}
 \Remark This is the SC asymptotic value~\eqref{eq:euii_asymptotic} with $q$ replaced by DV: asymptotically the DC behaves like a superiority test against the clinical margin DV. 
 Because $(\delta - \DV)^2 + \DV^2 < \delta^2$ whenever $0 < \DV < \delta$, the DC asymptotic value is strictly below the SC one, as can be seen in Figure~\ref{fig:plot_euii_asymptotic}, 
 where the asymptotic values are plotted for the running example. 
 
-<<plot_euii_asymptotic, echo=FALSE, warning=FALSE, message=FALSE, dev='cairo_pdf', fig.height=4, fig.width=12, fig.cap="SC versus DC average EUII for the running example. Left: asymptotic ($n_C \\to \\infty$) values as a function of $\\delta$. The DC asymptotic value is shown only for $\\delta > \\DV$. Right: EUII at $\\delta = 60$ as a function of the control size $n_C$ (log scale), with the corresponding asymptotic values as dashed lines.">>=
+<<plot_euii_asymptotic, echo=FALSE, warning=FALSE, message=FALSE, dev='cairo_pdf', fig.height=4, fig.width=12, fig.cap="SC versus DC EUII for the running example. Left: asymptotic ($n_C \\to \\infty$) values as a function of $\\delta$. The DC asymptotic value is shown only for $\\delta > \\DV$. Right: EUII at $\\delta = 60$ as a function of the control size $n_C$ (log scale), with the corresponding asymptotic values as dashed lines.">>=
 library(gridExtra)
-sig_a <- 88; rT_a <- 2; DV_a <- 50; n_A_a <- 20; z_p_a <- qnorm(0.95)
+sigma <- 88; rT_a <- 2; DV_a <- 50; n_A_a <- 20; z_p_a <- qnorm(0.95)
 cols_euii <- c("DC" = "#D55E00", "SC" = "#0072B2")
 
 ## asymptotic value with limiting threshold kappa (q for SC, DV for DC)
 euii_asymptotic <- function(delta, kappa)
-  exp(rT_a * ((delta - kappa)^2 + kappa^2) / (2 * sig_a^2 * (1 + rT_a)^2))
+  exp(rT_a * ((delta - kappa)^2 + kappa^2) / (2 * sigma^2 * (1 + rT_a)^2))
 
 ## --- Left panel: asymptotic values as a function of delta ---
 dd <- seq(0, 100, length.out = 200)
@@ -1068,22 +1069,26 @@ p_left <- ggplot(df_asym, aes(delta, EUII, color = Criterion)) +
   geom_vline(xintercept = DV_a, linetype = "dotted", color = "gray", linewidth = 0.8) +
   scale_color_manual(values = cols_euii) +
   labs(x = expression("True Effect (" * delta * ")"),
-       y = expression("Asymptotic " * EUII[avg])) + my_theme
+       y = "Asymptotic EUII" ) + my_theme
 
 ## --- Right panel: finite-n EUII vs n_C at delta = 60, with asymptotes ---
-Lstable <- function(x) pnorm(x, log.p = TRUE) - pnorm(x, lower.tail = FALSE, log.p = TRUE)  # logit Phi
+Lstable <- function(x) pnorm(x, log.p = TRUE) - pnorm(x, lower.tail = FALSE, log.p = TRUE)  # logit Phi in log space
+
 euii_finite <- function(n_C, criterion, delta = 60) {
-  Vd <- sig_a^2 / (n_C + n_A_a) + sig_a^2 / (rT_a * n_C)   # aligned: V_marg = V_delta
-  s  <- sqrt(Vd)
+  s <- sigma * sqrt(1 / (n_C + n_A_a) + 1 / (rT_a * n_C))   # see Formula (12). avgPower for aligned priors
+
   k  <- z_p_a * s                                          # SC threshold (q = 0)
   if (criterion == "DC") k <- max(k, DV_a)                 # DC threshold = max(k_SC, DV)
   exp((Lstable((delta - k) / s) - Lstable(-k / s)) / (n_C * (1 + rT_a)))
 }
-nc <- exp(seq(log(5), log(1e5), length.out = 200))
+
+nc <- exp(seq(log(20), log(1e5), length.out = 200))
+
 df_nc <- rbind(
   data.frame(n_C = nc, Criterion = "SC", EUII = sapply(nc, euii_finite, criterion = "SC")),
   data.frame(n_C = nc, Criterion = "DC", EUII = sapply(nc, euii_finite, criterion = "DC"))
 )
+
 asy <- data.frame(Criterion = c("SC", "DC"),
                   asy_value = c(euii_asymptotic(60, 0), euii_asymptotic(60, DV_a)))
 
@@ -1094,10 +1099,17 @@ p_right <- ggplot(df_nc, aes(n_C, EUII, color = Criterion)) +
   scale_x_log10() +
   scale_color_manual(values = cols_euii) +
   labs(x = expression("Control sample size " * n[C] * " (log scale)"),
-       y = expression(EUII[avg] * " (" * delta * " = 60)")) + my_theme
+       y = expression(EUII * " (" * delta * " = 60)")) + my_theme
 
 grid.arrange(p_left, p_right, ncol = 2)
+
+## I tried to get this asymptotic results using RBest, but the EUII converges to 1 even in the 1 Normal case prior 
+## (Analysis prior == Design prior ). Maybe it is numerical stabiity ? 
 @
+
+Note that since the asymptotic value does not depend on the analysis prior, it is reasonable to expect the MAP mixture 
+and its robustified versions to reach the same asymptotic value. However, we cannot confirm this numerically, because evaluating 
+a mixture of Normals relies on numerical intergration that becomes instable as $n_C \to \infty$.
 
 \subsection{Group Sequential Design} \note{TO DO}
 \label{subsec:sequential}\begin{comment}
@@ -1325,7 +1337,7 @@ Figure~\ref{fig:plot_mix_cond} shows the conditional T1E ($\delta = 0$, left) an
 The vague prior yields the flat frequentist baseline: T1E is $0.05$ everywhere and power is determined solely by the sample size. As historical borrowing increases (decreasing $\omega$), T1E inflates with increasing severity when $\theta_C^* \ll -50$ (skeptical scenario) and is increasingly suppressed well below $\alpha$ when $\theta_C^* \gg -50$ (misspecified scenario). Robust MAP priors exhibit a monotone moderation: 
 as $\omega$ increases, the curve is pulled toward the flat vague baseline, decreasing the T1E at the cost of reduced Power. 
 
-<<plot_mix_cond, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Conditional metrics for all six analysis priors as a function of the fixed true control mean $\\theta_C^*$. Left: conditional T1E ($\\delta = 0$). Right: conditional Power at $\\delta = 60$. The Vague prior (dashed) provides the frequentist reference. The dotted vertical line marks the prior mean $\\mu_{A,C} = -50$.">>=
+<<plot_mix_cond, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Conditional metrics for all six analysis priors as a function of the fixed true control mean $\\theta_C^*$. Left: conditional T1E ($\\delta = 0$). Right: conditional Power at $\\delta = 60$. The Vague prior (dashed) provides the no borrowing reference. The dotted vertical line marks the prior mean $\\mu_{A,C} = -50$.">>=
 library(ggplot2)
 library(dplyr)
 library(gridExtra)
@@ -1423,14 +1435,14 @@ grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
 
 
 \textbf{EUII: }
-Figure~\ref{fig:plot_mix_euii} plots the average EUII at $\delta = 60$ against the robustness weight $\omega$, one curve per design prior. Under the aligned design prior (MAP), EUII is strictly decreasing in $\omega$ and stays above the vague baseline: when the prior is correct, borrowing genuinely improves per patient information and the metric behaves as intended.
+As already noted in Section~\ref{subsec:euii}, from here on we write EUII for the average EUII ($\EUII_{avg}$). Figure~\ref{fig:plot_mix_euii} plots the EUII at $\delta = 60$ against the robustness weight $\omega$, one curve per design prior. Under the aligned design prior (MAP), EUII is strictly decreasing in $\omega$ and stays above the vague baseline: when the prior is correct, borrowing genuinely improves per patient information and the metric behaves as intended.
 
 The case of prior conflict requires carefulness. For example, the misspecified prior attains almost the same EUII as the correct one, this happens cause it suppresses the avgT1E to about $1\%$, which inflates the diagnostic odds ratio, while its average Power collapses to about $65\%$ (against $93\%$ for the aligned prior and $80\%$ for the vague one).
 The skeptical prior shows the opposite distortion, and its curve is not monotone in $\omega$. At full borrowing ($\omega = 0$) its avgT1E is inflated to about $21\%$, but its avgPower is the highest of all ($97\%$), and the resulting large power odds keep the EUII above the vague baseline. Already at $\omega = 0.2$, the power decreases while the avgT1E is still inflated (about $15\%$), so the EUII drops to its minimum, below the vague baseline. 
 
 The EUII is thus a measure that can be used as sensitivity analysis by stakeholders, but is intended to be read alongside avgPower and avgT1E, not replace them.
 
-<<plot_mix_euii, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=8, dev='cairo_pdf', fig.cap="Average EUII at $\\delta = 60$ as a function of the robustness weight $\\omega$, one line per design prior. The dashed line marks the vague (no-borrowing) baseline, reached by all design priors at $\\omega = 1$.">>=
+<<plot_mix_euii, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=8, dev='cairo_pdf', fig.cap="EUII at $\\delta = 60$ as a function of the robustness weight $\\omega$, one line per design prior. The dashed line marks the Vague (no borrowing) baseline, reached by all design priors at $\\omega = 1$.">>=
 library(ggplot2)
 library(dplyr)
 
@@ -1465,11 +1477,11 @@ ggplot(df_euii_60,
   my_theme
 @
 
-Figure~\ref{fig:plot_mix_euii_delta} shows the average EUII as a function of $\delta$ for all 24 analysis prior/design prior combinations. When priors are aligned 
+Figure~\ref{fig:plot_mix_euii_delta} shows the EUII as a function of $\delta$ for all 24 analysis prior/design prior combinations. When priors are aligned 
 (both MAP), EUII rises monotonically and the ordering is strict: more borrowing (smaller $\omega$) always dominates, confirming that historical information strictly increases EUII when the prior is correctly specified. 
 The Dirac design prior, which fixes the truth at the prior mean, acts as the upper bound.
 
-<<plot_mix_euii_delta, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="Average EUII as a function of the treatment effect $\\delta$, faceted by design prior. Color encodes the analysis prior (Vague shown dashed). The dashed horizontal line marks $\\EUII = 1$, the no-information baseline.">>=
+<<plot_mix_euii_delta, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="EUII as a function of the treatment effect $\\delta$, faceted by design prior. Color encodes the analysis prior (Vague shown dashed).">>=
 library(ggplot2)
 library(dplyr)
 
@@ -1511,7 +1523,7 @@ As noted in Section~\ref{subsec:dual_criterion_methods}, power equals about $50\
 
 
 
-<<plot_dual_cond, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="DC design: conditional T1E ($\\delta = 0$, left) and conditional Power at $\\delta = 60$ (right) as functions of the fixed true control mean $\\theta_C^*$, for all six analysis priors. The dashed horizontal line marks $\\alpha = 0.05$. The Vague prior (dashed line) is the frequentist reference. The dotted vertical line marks the prior mean $\\mu_{A,C} = -50$.">>=
+<<plot_dual_cond, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="DC design: Conditional T1E (left) and conditional Power at $\\delta = 60$ (right) as functions of the fixed true control mean $\\theta_C^*$, for all six analysis priors. The dashed red horizontal line marks $\\alpha = 0.05$. The Vague prior (dashed line) is the no borrowing reference. The dotted vertical line marks the prior mean $\\mu_{A,C} = -50$.">>=
 library(ggplot2)
 library(dplyr)
 library(gridExtra)
@@ -1530,7 +1542,7 @@ p_d_cond_T1E <- ggplot(df_dual_cond,
     aes(x = theta_C, y = T1E, color = Prior, linetype = Prior == "Vague")) +
   geom_line(linewidth = 1.2) +
   geom_hline(yintercept = 0.05, linetype = "dashed",
-             color = "black", linewidth = 0.6) +
+             color = "red", linewidth = 0.6) +
   geom_vline(xintercept = mu_A, linetype = "dotted",
              color = "gray", linewidth = 0.8) +
   scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
@@ -1555,12 +1567,15 @@ p_d_cond_Power <- ggplot(df_dual_cond,
 grid.arrange(p_d_cond_T1E, p_d_cond_Power, ncol = 2)
 @
 
-\paragraph{Average Metrics}
+\textbf{Average Metrics:}
 Figure~\ref{fig:plot_dual_avg} shows the average T1E and average Power at $\delta = 60$ across analysis and design prior combinations.
-The structure mirrors the SC results: avgT1E inflates under skeptical design priors and is suppressed under misspecified ones, while  the MAP analysis prior aligned with the MAP design prior recovers a smaller T1E than nominal.
-The DC keeps the average T1E far below the nominal $0.05$ in almost every scenario: below $0.02$ under the aligned, Dirac, and misspecified design priors, and even under the skeptical prior it reaches only about $0.06$ at worst. The average Power at $\delta = 60$, mirrors the average T1E structure: it is high under the skeptical prior (about $0.92$), moderate under the aligned and Dirac priors (about $0.70$--$0.75$), and low under the misspecified prior (about $0.35$). 
+The structure mirrors the SC results: avgT1E inflates under skeptical design priors and is suppressed under misspecified ones, while 
+the MAP analysis prior aligned with the MAP design prior recovers a smaller T1E than nominal.
+The DC keeps the average T1E far below the nominal $0.05$ in almost every scenario. This supports its use in PoC phase II trials, where the cost of a false positive is particularly high. 
+The average Power at $\delta = 60$, mirrors the average T1E structure: it is high under the skeptical prior, moderate under the aligned and Dirac priors, and low under the misspecified prior, getting progressively 
+closer to the Vague baseline as $\omega \to 1$. 
 
-<<plot_dual_avg, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="DC design: average T1E (left) and average Power at $\\delta = 60$ (right) for all 24 analysis$\\times$design prior combinations. The dashed horizontal line marks $\\alpha = 0.05$.">>=
+<<plot_dual_avg, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="DC design: average T1E (left) and average Power at $\\delta = 60$ (right) for all 24 analysis$\\times$design prior combinations. The dashed red horizontal line marks $\\alpha = 0.05$. The Vague prior (dashed line) is the no borrowing reference">>=
 library(ggplot2)
 library(dplyr)
 library(gridExtra)
@@ -1585,7 +1600,7 @@ p_d_avg_T1E <- ggplot(dplyr::filter(df_dual_avg, delta == 0),
   geom_point(size = 2.5) +
   geom_line(linewidth = 1.0) +
   geom_hline(yintercept = 0.05, linetype = "dashed",
-             color = "black", linewidth = 0.6) +
+             color = "red", linewidth = 0.6) +
   scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
                         guide = "none") +
   scale_color_viridis_d(option = "turbo", direction = -1) +
@@ -1609,9 +1624,9 @@ grid.arrange(p_d_avg_T1E, p_d_avg_Power, ncol = 2)
 @
 
 Figure~\ref{fig:plot_dual_power_delta} shows how the average Power varies with $\delta$ above DV. 
-At the boundary itself the Power is close to $50\%$ only when the analysis prior is well specified (aligned and Dirac design priors), while prior-data conflict shifts it up under the skeptical prior and down under the misspecified prior.
+At $\delta = DV$ the Power is close to $50\%$ only when the analysis prior is well specified (MAP and Dirac design priors), while prior-data conflict shifts it up under the skeptical prior and down under the misspecified prior.
 
-<<plot_dual_power_delta, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="DC design: average Power as a function of the true treatment effect $\\delta$, shown for $\\delta \\geq \\text{DV} = 50$ and faceted by design prior (coloured by analysis prior). The horizontal dashed line marks $50\\%$ Power.">>=
+<<plot_dual_power_delta, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="DC design: average Power as a function of the true treatment effect $\\delta$, shown for $\\delta \\geq \\text{DV} = 50$ and faceted by design prior (coloured by analysis prior). The red horizontal line marks $50\\%$ power. The Vague prior (dashed line) is the no borrowing reference.">>=
 library(ggplot2)
 library(dplyr)
 
@@ -1633,7 +1648,7 @@ ggplot(dplyr::filter(df_dual_avg, delta >= 50),
            color = Analysis_Prior,
            linetype = Analysis_Prior == "Vague")) +
   geom_line(linewidth = 1.2) +
-  geom_hline(yintercept = 0.5, linetype = "dashed", linewidth = 0.4) +
+  geom_hline(yintercept = 0.5, color = "red", linewidth = 0.5) +
   facet_wrap(~Design_Prior, nrow = 1) +
   scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
                         guide = "none") +
@@ -1641,12 +1656,26 @@ ggplot(dplyr::filter(df_dual_avg, delta >= 50),
   labs(x = expression("True Treatment Effect (" * delta * ")"),
        y = "Average Power") +
   my_theme
-@
+@ 
 
-\paragraph{EUII}
-Figure~\ref{fig:plot_dual_euii} shows the average EUII ($\EUII_{avg}$) of the DC design as a function of $\delta$ for all 24 analysis prior/design prior combinations, faceted by design prior.
+\textbf{EUII:}
+Figure~\ref{fig:plot_dual_euii} shows the EUII of the DC design as a function of $\delta$ for all 24 analysis prior/design prior combinations, faceted by design prior.
+Under the two aligned design priors (Dirac and MAP), the more the prior borrows, the higher the EUII. 
+The Skeptical and Misspecified design prior behave differently, and the reason is that the EUII is essentially a ratio of odds. A design prior that disagrees with the analysis prior biases the avgPower and the avgT1E in the same direction, 
+so their odds ratio stays approximately constant. Infact, the Skeptical prior inflates both quantities while the Misspecified prior does the opposite. In both cases the EUII results in a similar value,
+even though one design is badly optimistic and the other badly underpowered. 
 
-<<plot_dual_euii, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="Average EUII ($\\EUII_{avg}$) of the Dual Criterion design as a function of the treatment effect $\\delta$, faceted by design prior. Color encodes the analysis prior (Vague shown dashed). The dashed horizontal line marks $\\EUII = 1$, the no-information baseline. Shown for $\\delta \\ge \\DV = 50$, since below the decision value the DC is powerless by construction.">>=
+\note{I think from here there are two ways to develop the discussion on EUII:} 
+\begin{itemize}
+  \item Keep considering the EUII as a "sensitivity analysis" tool to be read alongside avgPower and avgT1E to see how the design behaves under prior misspecification.
+  \item Stop considering EUII useful in case of prior misspecification. In fact, the EUII seems to be a better tool for comparing designs under the assumption of correctly specified priors but its interpretation under misspecification is a bit unclear. 
+  Thus, the idea would be to suggest the use of avgPower and avgT1E to perform a sensitivity analysis and evaluate the robustness of the borrowing (also evaluating different $\omega$) .
+  Then, the EUII would only be used to compare differnt design choices (SC vs DC vs Sequential vs Sequential with DC and or futility). 
+\end{itemize} 
+For the moment, I am more towards the second but I will make the decision after the inspection vs Sequential case. 
+
+
+<<plot_dual_euii, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="DC design: EUII as a function of the treatment effect $\\delta$, faceted by design prior. Color encodes the analysis prior (Vague shown dashed).">>=
 library(ggplot2)
 library(dplyr)
 
@@ -1680,7 +1709,7 @@ ggplot(df_euii,
 @
 
 
-<<plot_dual_euii_ratio, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="Ratio $\\EUII_{\\DC} / \\EUII_{\\SC}$ of the Dual Criterion to the Single Criterion average EUII as a function of the treatment effect $\\delta$, faceted by design prior. Color encodes the analysis prior (Vague shown dashed). The dashed horizontal line marks a ratio of $1$ (no difference between criteria). Shown for $\\delta \\ge \\DV = 50$.">>=
+<<plot_dual_euii_ratio, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=12, dev='cairo_pdf', fig.cap="Ratio $\\EUII_{\\DC} / \\EUII_{\\SC}$ of the DC to the SC EUII as a function of $\\delta$, faceted by design prior. Color encodes the analysis prior (Vague shown dashed).">>=
 library(ggplot2)
 library(dplyr)
 
@@ -1694,7 +1723,7 @@ df_ratio <- res_ratio$df_ratio |>
     Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
     Design_Prior   = factor(Design_Prior,   levels = dprior_names)
   )
-
+ 
 my_theme <- theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_blank())
 
@@ -1729,6 +1758,7 @@ SAME
 
 
 
+\subsection{Application 2:  an example using proportions, if there is still time} \note{TO DO}
 
 
 

@@ -2,24 +2,44 @@ library(dplyr)
 library(stringr)
 library(purrr)
 library(tidyr)
-
+library(RBesT)
 
 
 # -----------------------------------------------------
 # FUNCTIONS for Monte Carlo Sequential evaluation
 # -----------------------------------------------------
- 
- 
-oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2, 
+
+
+# The decision boundary is a function of the ANALYSIS: it is
+# built from the priors, the sample sizes and the decision rule, and takes
+# no theta and no delta.
+build_boundaries <- function(prior_1, prior_2, n1_seq, n2_seq, decisions_list) {
+  lapply(seq_along(n2_seq), function(k) {
+    d_succ <- decisions_list[[k]]$success
+    d_fut  <- decisions_list[[k]]$futility
+    list(
+      succ = if (!is.null(d_succ))
+        suppressMessages(RBesT::decision2S_boundary(prior_1, prior_2, n1_seq[k], n2_seq[k], d_succ)),
+      fut  = if (!is.null(d_fut))
+        suppressMessages(RBesT::decision2S_boundary(prior_1, prior_2, n1_seq[k], n2_seq[k], d_fut))
+    )
+  })
+}
+
+
+oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2,
                                 n1_seq, n2_seq, decisions_list,   # recall that n1_seq is cumulative
-                                sigma_1 = 88, sigma_2 = 88,       
+                                sigma_1 = 88, sigma_2 = 88,
                                 n_sim = 100000, seed = NULL,
+                                boundaries = NULL,   # from build_boundaries()
                                 weight.track = FALSE,
-                                type.weight.track = "uninformative.mixture", n_info_comps = 3)  {     # added these 2 params: so we can track the informative weight both if only one uninformative component (given by robustify) 
-                                                                                     # or even if we use a mixture as non-informative (e.g. 100 mmixture to approx a t-distri) 
+                                type.weight.track = "uninformative.mixture", n_info_comps = 3)  {     # added these 2 params: so we can track the informative weight both if only one uninformative component (given by robustify)
+                                                                                     # or even if we use a mixture as non-informative (e.g. 100 mmixture to approx a t-distri)
  
   if (!is.null(seed)) set.seed(seed)
  
+  # If we are computing conditional, there is only one theta.
+  # Instead for the average metric we will provide a vector of theta sampled from pi_D
   if (length(theta_1) == 1) theta_1 <- rep(theta_1, n_sim)
   if (length(theta_2) == 1) theta_2 <- rep(theta_2, n_sim)
  
@@ -29,7 +49,7 @@ oc2_seq_mc.normMix <- function(theta_1, theta_2, prior_1, prior_2,
   if (length(theta_2) != n_sim) stop("Number of theta_2 provided should be either one for classic OC or equal to 
                                       n_sim for avg OC")
  
-  K <- length(n2_seq)
+  K <- length(n2_seq) # number of stages
  
   if (length(n2_seq) != length(n1_seq)) stop("length of n1_seq and n2_seq must coincide")
   if (length(n2_seq) != length(decisions_list)) stop("length of n2_seq and decision_list must coincide")
@@ -97,23 +117,20 @@ if (weight.track) {
 
  
     # extract decisions
-    # d_succ may be a single decision2S object or a list of them (dual/multi criterion)
+    # d_succ is a single decision2S object. For a dual criterion it carries
+    # several criteria via vector pc/qc, e.g.
+    #   decision2S(pc = c(0.95, 0.50), qc = c(0, -50), lower.tail = TRUE)
     d_succ <- decisions_list[[k]]$success
     d_fut  <- decisions_list[[k]]$futility
 
     # Evaluate Efficacy Boundary (if defined for this stage)
+    # Reuse the prebuilt boundary when one was supplied, otherwise build it here.
     if (!is.null(d_succ)) {
-      d_succ_list  <- if (inherits(d_succ, "decision2S")) list(d_succ) else d_succ
-      is_lower_eff <- attr(d_succ_list[[1]], "lower.tail")
+      bnd_eff_fun  <- if (!is.null(boundaries)) boundaries[[k]]$succ else
+        suppressMessages(RBesT::decision2S_boundary(prior_1, prior_2, n1_seq[k], n2_seq[k], d_succ))
 
-      # For dual/multi criterion: combine boundaries — AND means take most restrictive
-      # lower.tail=TRUE (lower is better): most restrictive = minimum boundary
-      # lower.tail=FALSE (higher is better): most restrictive = maximum boundary
-      combine_bnd <- if (is_lower_eff) pmin else pmax
-      crit_val_eff <- Reduce(combine_bnd, lapply(d_succ_list, function(d) {
-        suppressMessages(RBesT::decision2S_boundary(prior_1, prior_2, n1_seq[k], n2_seq[k], d))(y_2_curr[active_idx])
-      }))
-
+      crit_val_eff <- bnd_eff_fun(y_2_curr[active_idx]) # find the critical value for each trial using the closure decision2S_boundary
+      is_lower_eff <- attr(d_succ, "lower.tail") # lower is better or larger is better?
       is_succ <- if (is_lower_eff) y_1_curr[active_idx] <= crit_val_eff else y_1_curr[active_idx] > crit_val_eff
     } else {
       is_succ <- rep(FALSE, n_active)
@@ -121,7 +138,8 @@ if (weight.track) {
  
     # Evaluate Futility Boundary (if defined for this stage)
     if (!is.null(d_fut)) {
-      bnd_fut_fun  <- suppressMessages(RBesT::decision2S_boundary(prior_1, prior_2, n1_seq[k], n2_seq[k], d_fut))
+      bnd_fut_fun  <- if (!is.null(boundaries)) boundaries[[k]]$fut else
+        suppressMessages(RBesT::decision2S_boundary(prior_1, prior_2, n1_seq[k], n2_seq[k], d_fut))
 
       crit_val_fut <- bnd_fut_fun(y_2_curr[active_idx])
       is_lower_fut <- attr(d_fut, "lower.tail")
@@ -154,6 +172,7 @@ if (weight.track) {
   idx_succ <- which(stop_eff)
   idx_fail <- which(!stop_eff)
  
+ ## Expected samp size given trial succeded
   EN_1_succ <- if (length(idx_succ) > 0) mean(n1_seq[stage_stopped[idx_succ]]) else NA
   EN_2_succ <- if (length(idx_succ) > 0) mean(n2_seq[stage_stopped[idx_succ]]) else NA
  
@@ -170,9 +189,6 @@ if (weight.track) {
     Cum_P_Fut  = cumsum(p_fut_vec),
     Exp_info_weight = w_inf_traj
   )
- 
-
-
 
   # --------------
   # calculate final metrics 
@@ -181,24 +197,24 @@ if (weight.track) {
   power_est <- sum(stop_eff) / n_sim
   fut_est <- sum(stop_fut) / n_sim
   
-  # MC errors 
-  mce_power <- sqrt((power_est * (1 - power_est)) / n_sim)
-  mce_fut   <- sqrt((fut_est * (1 - fut_est)) / n_sim)
+  ## MC errors 
+  # mce_power <- sqrt((power_est * (1 - power_est)) / n_sim)
+  # mce_fut   <- sqrt((fut_est * (1 - fut_est)) / n_sim)
   
-  mce_en_t  <- sd(n1_seq[stage_stopped]) / sqrt(n_sim)
-  mce_en_c  <- sd(n2_seq[stage_stopped]) / sqrt(n_sim)
+  # mce_en_t  <- sd(n1_seq[stage_stopped]) / sqrt(n_sim)
+  #mce_en_c  <- sd(n2_seq[stage_stopped]) / sqrt(n_sim)
 
-  # Return OC with MCE included
+  # Return OC (MC errors are available above, currently switched off)
   return(list(
     Overall = c(
       Power        = power_est,
-      MCE_Power    = mce_power,          
+      # MCE_Power    = mce_power,          
       Prob_Fut_seq = fut_est,
-      MCE_Fut      = mce_fut,            
+      # MCE_Fut      = mce_fut,            
       EN_t         = mean(n1_seq[stage_stopped]),
-      MCE_EN_t     = mce_en_t,           
+      # MCE_EN_t     = mce_en_t,           
       EN_c         = mean(n2_seq[stage_stopped]),
-      MCE_EN_c     = mce_en_c,           
+      # MCE_EN_c     = mce_en_c,           
       EN_t_Succ    = EN_1_succ,
       EN_c_Succ    = EN_2_succ,
       EN_t_Fail    = EN_1_fail,
@@ -218,16 +234,22 @@ avgoc2_seq_mc.normMix <- function(prior_1, prior_2,
  
   set.seed(seed)  
 
-  # Determine tail direction from the first (or only) success decision.
-  # success may be a single decision2S or a list of them (dual criterion).
-  d_succ_1 <- decisions_list[[1]][["success"]]
-  if (!inherits(d_succ_1, "decision2S")) d_succ_1 <- d_succ_1[[1]]
-  is_lower_tail <- attr(d_succ_1, "lower.tail")
-  
-  
+  # Determine direction from the stage 1 success decision. It is a single
+  # decision2S object. 
+
+  ## NOTE: cannot have a design with no efficacy at the interim (decisions_list[[1]]$success == NULL)
+  # Also, we are assuming that the direction for success is identical for every stage
+
+  is_lower_tail <- attr(decisions_list[[1]][["success"]], "lower.tail")
+
+  # Built once and shared by every delta: the boundary does not depend on theta or delta. 
+  boundaries <- build_boundaries(prior_1, prior_2, n1_seq, n2_seq, decisions_list)
+
   theta_c_draws <- RBesT::rmix(design_prior_c, n_sim)
 
 #function to process one specific delta value
+# if lower is better, then delta = theta_C - theta_T (like the thesis)
+# if lower is worse, then delta = theta_T - theta_C
   process <- function(d) {
    theta_t_draws <- if (is_lower_tail) theta_c_draws - d  else theta_c_draws + d
   
@@ -242,7 +264,8 @@ avgoc2_seq_mc.normMix <- function(prior_1, prior_2,
     sigma_1       = sigma_1,
     sigma_2       = sigma_2,
     n_sim         = n_sim,
-    seed          = NULL
+    seed          = NULL,
+    boundaries    = boundaries
   )
   }
 
@@ -255,104 +278,17 @@ avgoc2_seq_mc.normMix <- function(prior_1, prior_2,
     return(res_list)
   }
 }
- 
+# 
 
+# -----------------------------------------------------
+# EUII
+# -----------------------------------------------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- # -----------------
- # FORMAT results and EUII
-
-
-
-format.results <- function(res) {
- 
-  per_stage <- bind_rows(
-    lapply(names(res), function(nm) {
-      res[[nm]]$Per_Stage |>
-        mutate(delta = str_remove(nm, "delta\\.") |> as.numeric())
-    })
-  )
- 
-  # ---- Overall results ----
-  overall <- bind_rows(
-    lapply(names(res), function(nm) {
-      as.data.frame(t(res[[nm]]$Overall)) |>
-        mutate(delta = str_remove(nm, "delta\\.") |> as.numeric())
-    })
-  )
- 
-  K <- max(per_stage$Stage)
- 
-  # ---- Per-stage table (one row per delta x stage) ----
-  
-  per_stage_tab <- per_stage |>
-    mutate(
-      Stage_Label = ifelse(Stage == K, "Final", paste0("Interim_", Stage)),
-      P_Ind       = 1 - P_Succ - P_Fut,
-      Cum_P_Ind   = 1 - Cum_P_Succ - Cum_P_Fut,
-      across(c(P_Succ, P_Fut, P_Ind, Cum_P_Succ, Cum_P_Fut, Cum_P_Ind),
-             ~ round(100 * .x, 1))
-    ) |>
-    select("Delta" = delta, Stage_Label, N_Trt, N_Ctrl,
-           P_Succ, P_Fut, P_Ind,
-           Cum_P_Succ, Cum_P_Fut, Cum_P_Ind)  |> 
-    pivot_wider(names_from = Stage_Label, 
-    values_from = c(
-      N_Trt, N_Ctrl,
-      P_Succ, P_Fut, P_Ind,
-      Cum_P_Succ, Cum_P_Fut, Cum_P_Ind
-    ),
-    names_sep = "."
-    )
- 
-  # ---- Overall summary (one row per delta) ----
-  # Overall power and expected sample sizes.
-  overall_tab <- overall |>
-    mutate(
-      E_N = EN_t + EN_c,
-      E_N_Succ  = EN_t_Succ + EN_c_Succ,
-      E_N_Fail = EN_t_Fail + EN_c_Fail,
-      across(where(is.numeric), ~ round(.x, 1))
-    ) |>
-    select("Delta" = delta, Power, EN_t, EN_c, 
-           EN_t_Succ, EN_c_Succ, EN_t_Fail, EN_c_Fail, E_N,E_N_Succ, E_N_Fail)
- 
-  return(list(
-    per_stage = per_stage_tab, 
-    overall   = overall_tab
-  ))
-}
- 
- 
 compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5), eps = 1e-8) {
  
   # --- build stage-level table ----
   per_stage <- bind_rows(
-    lapply(names(res), function(nm) {
+    lapply(names(res), function(nm) { #names(res) is all the different true deltas 
       res[[nm]]$Per_Stage |>
         mutate(delta = sub("delta\\.", "", nm) |> as.numeric())
     })
@@ -364,7 +300,8 @@ compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5), eps = 1e-8) {
   per_stage_proc <- per_stage |>
     mutate(
       N_total     = N_Trt + N_Ctrl,
-      nonsig_prob = ifelse(Stage == K, 1 - Cum_P_Succ - Cum_P_Fut, P_Fut)
+      #if we are at last stage, all that is not a futility stop or a success, is Undefeined outcome, but I decided to say it is a fail of the test (non reject)
+      nonsig_prob = ifelse(Stage == K, 1 - Cum_P_Succ - Cum_P_Fut, P_Fut) 
     )
 
 
@@ -378,9 +315,17 @@ compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5), eps = 1e-8) {
       .groups = "drop"
     )
 
+  # Power exactly 0 or 1 makes E(1/N | sign) or E(1/N | nonsign) undefined (0/0),
+  bad <- pointwise_metrics$Power %in% c(0, 1)
+  if (any(bad)) {
+    cat("WARNING in compute_euii: Power is exactly 0 or 1 at delta =",
+        paste(pointwise_metrics$delta[bad], collapse = ", "),
+        "  the conditional E(1/N) is undefined there (increase n_sim).\n")
+  }
+
  null <- pointwise_metrics |> filter(delta == 0)
   if (nrow(null) == 0) {
-    stop("delta = 0 must be included to establish alpha and null sample size distributions.")
+    stop("delta = 0 must be included to compute the EUII.")
   }
  
   T1E <- null$Power
@@ -391,24 +336,35 @@ compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5), eps = 1e-8) {
  out <- lapply(prior_H1, function(x) {
     pointwise_metrics |>
     mutate(
-      LR_pos = pmax(Power / max(T1E, eps), eps),
-      LR_neg = pmax((1 - Power) / max(1 - T1E, eps), eps),
-      
-      post_odds_sig = LR_pos * (x / (1 - x)), # Posterior odds of H_1  O(H_1 | sign)
-      Pr_H1_sig     = post_odds_sig / (1 + post_odds_sig), # Posterior probability of H_1 P(H_1 | sign)
-      Pr_H0_sig     = 1 - Pr_H1_sig, 
-      
-      post_odds_nonsig = LR_neg * (x / (1 - x)),  # Posterior odds of H_1  O(H_1 |non sign)
-      Pr_H1_nonsig     = post_odds_nonsig / (1 + post_odds_nonsig), #P(H_1 | nonsign)
-      Pr_H0_nonsig     = 1 - Pr_H1_nonsig,
-      
+      # Clamp Power and T1E away from 0 and 1, so every log below is finite.
+      # The warning above fires exactly when this clamp happens.
+      Power_c = pmin(pmax(Power, eps), 1 - eps),
+      T1E_c   = pmin(pmax(T1E,   eps), 1 - eps),
+
+      # Likelihood ratios on the log scale. 
+      log_LR_pos = log(Power_c)    - log(T1E_c),           # log LR+ = log(Power / T1E)
+      log_LR_neg = log1p(-Power_c) - log1p(-T1E_c),        # log LR- = log((1-Power) / (1-T1E))
+      LR_pos     = exp(log_LR_pos),                        # kept for reporting only
+      LR_neg     = exp(log_LR_neg),
+
+      # Posterior odds of H_1 on the log scale: log O(H_1 | outcome) = log LR + logit(prior_H1).
+      # since Posterior Odds = LR * Prior Odds
+      log_post_odds_sig = log_LR_pos + qlogis(x),   # log O(H_1 | sign)
+      Pr_H1_sig         = plogis( log_post_odds_sig),  # P(H_1 | sign)
+      Pr_H0_sig         = plogis(-log_post_odds_sig),  # P(H_0 | sign)
+
+      log_post_odds_nonsig = log_LR_neg + qlogis(x),   # log O(H_1 | non sign)
+      Pr_H1_nonsig         = plogis( log_post_odds_nonsig), # P(H_1 | nonsign)
+      Pr_H0_nonsig         = plogis(-log_post_odds_nonsig),
+
+
       E_invN_sig = (E_invN_sig_null * Pr_H0_sig) + (E_invN_sig_cond * Pr_H1_sig),
       E_invN_nonsig = (E_invN_nonsig_null * Pr_H0_nonsig) + (E_invN_nonsig_cond * Pr_H1_nonsig)
     ) |>
     mutate(
-        log_EUII = (E_invN_sig * log(LR_pos)) - (E_invN_nonsig * log(LR_neg)), # log scale 
+        log_EUII = (E_invN_sig * log_LR_pos) - (E_invN_nonsig * log_LR_neg), # log scale
         EUII     = exp(log_EUII)
-            )  |> 
+            )  |>
     select ("Delta" = delta,  LR_pos, LR_neg, E_invN_sig, E_invN_nonsig, log_EUII, EUII)
  }
  )
@@ -416,6 +372,71 @@ compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5), eps = 1e-8) {
  names(out) <- as.character(prior_H1)
   return(out)
 }
+
+
+
+# -----------------------------------------------------
+# QUICK EXAMPLE
+# -----------------------------------------------------
+
+
+if (FALSE) {
+
+  sigma   <- 88
+  p_MAP   <- mixnorm(
+    c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
+    sigma = sigma, param = "ms"
+  )
+  p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
+
+  # Efficacy: dual criterion carried by a single decision2S (vector pc/qc).
+  sign.crit <- decision2S(pc = c(0.95, 0.50), qc = c(0, -50), lower.tail = TRUE)
+  # Futility: Pr(delta < 40 | data) >= 0.90, i.e. Pr(theta_T - theta_C > -40) >= 0.90.
+  fut.crit  <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
+
+  decisions_fut <- list(
+    list(success = sign.crit, futility = fut.crit),   # stage 1: efficacy + futility
+    list(success = sign.crit, futility = NULL)        # stage 2: final, efficacy only
+  )
+
+  n1_seq <- c(30, 60)   # treatment arm, cumulative
+  n2_seq <- c(20, 40)   # control arm, cumulative
+
+  # Conditional OC: a scalar theta fixes theta_C.
+  res_cond <- oc2_seq_mc.normMix(
+    theta_1 = -50, theta_2 = -50,
+    prior_1 = p_vague, prior_2 = p_MAP,
+    n1_seq  = n1_seq,  n2_seq  = n2_seq,
+    decisions_list = decisions_fut,
+    n_sim = 1000, seed = 1
+  )
+  res_cond$Overall
+  res_cond$Per_Stage
+
+  # Average OC: theta_C is drawn from the design prior, one draw per simulated
+  # trial. delta = 0 must be in the grid, since compute_euii reads the average
+  # T1E from it.
+  res_avg <- avgoc2_seq_mc.normMix(
+    prior_1 = p_vague, prior_2 = p_MAP,
+    n1_seq  = n1_seq,  n2_seq  = n2_seq,
+    decisions_list = decisions_fut,
+    delta          = c(0, 30, 60),
+    design_prior_c = p_MAP,
+    n_sim = 1000, seed = 123
+  )
+
+  ## --> avgoc2_seq_mc.normMix spirs out a list for every delta. 
+  ## Inside that list there are two df: $Overall and $Per_Stage
+res_avg$delta.0
+
+
+  # Sequential EUII. prior_H1 enters only here
+  res_euii <- compute_euii(res_avg, prior_H1 = c(0.01, 0.1, 0.5))
+
+  res_euii[["0.01"]]
+}
+
+
 
 
 

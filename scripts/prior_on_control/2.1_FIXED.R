@@ -152,8 +152,8 @@ rows_avg <- lapply(prior_names, function(aname) {
         Analysis_Prior = aname,
         Design_Prior   = dname,
         delta          = dv,
-        avgT1E         = t1e_val,
-        avgPower       = avg_fun(delta_new = -dv, design_prior2_new = dp)
+        avgT1E         = t1e_val, # a column with all t1e identical 
+        avgPower       = avg_fun(delta_new = -dv, design_prior2_new = dp) # first of these have delta = 0, so it is avgT1E
       )
     }))
   })
@@ -162,6 +162,20 @@ rows_avg <- lapply(prior_names, function(aname) {
 # rows_avg is a list of list of dataframes. SO rows_avg[[1]][[2]] recovers the df with analysis prior 1 (MAP)
 # and design priro 2 (MAP)
 rows_avg[[1]][[2]]
+#    Analysis_Prior Design_Prior delta     avgT1E   avgPower
+# 1             MAP          MAP     0 0.04999885 0.04999885
+# 2             MAP          MAP    10 0.04999885 0.12897861
+# 3             MAP          MAP    20 0.04999885 0.27192287
+# 4             MAP          MAP    30 0.04999885 0.46851064
+# 5             MAP          MAP    40 0.04999885 0.67210689
+# 6             MAP          MAP    50 0.04999885 0.83162425
+# 7             MAP          MAP    60 0.04999885 0.92778874
+# 8             MAP          MAP    70 0.04999885 0.97363421
+# 9             MAP          MAP    80 0.04999885 0.99154804
+# 10            MAP          MAP    90 0.04999885 0.99753338
+# 11            MAP          MAP   100 0.04999885 0.99932471
+
+
 
 df_avg <- bind_rows(unlist(rows_avg, recursive = FALSE)) |> # use recursive so it unlist only one layer
   mutate(
