@@ -1,5 +1,13 @@
 # =============================================================================
-# Sequential Design — Monte Carlo evaluation of AVERAGE OC and EUII
+# Sequential Design with TWO interim analyses — MC evaluation of AVG OC and EUII
+#
+# Same analysis as 2.3_SEQUENTIAL.MC.R, but the trial has three looks, timed as in
+# the original protocol (Hueber et al. 2012): total enrollment of 17, 41 and 60
+# patients at the two interims and the final analysis. With the 2:1 allocation
+# this gives cumulative arm sizes that are only approximately 2:1 at the interims
+# (11:6 and 27:14).
+# Futility can stop the trial at both interims, efficacy at every look.
+# Results saved to Output/SEQ2_MC_avg.RDS and Output/SEQ2_MC_euii.RDS.
 # =============================================================================
 
 library(RBesT)
@@ -18,8 +26,8 @@ sigma      <- 88
 delta_MCID <- 60
 DV         <- 50   # decision value of the dual criterion (see dual.crit below)
 
-n1_seq <- c(20, 40)   # treatment arm cumulative sizes
-n2_seq <- c(10, 20)   # control arm cumulative sizes
+n1_seq <- c(11, 27, 40)   # treatment arm cumulative sizes (three looks)
+n2_seq <- c(6, 14, 20)    # control arm cumulative sizes, stage totals 17, 41, 60
 
 delta_values <- c(0, seq(10, 100, by = 10))   
 mc_seed      <- 123                           # shared by both sweeps (paired comparison)
@@ -82,34 +90,33 @@ dual.crit <- decision2S(pc = c(0.95, 0.50), qc = c(0, -50), lower.tail = TRUE)
 
 sign.crit <- decision2S(pc = 0.95, qc = 0,  lower.tail = TRUE)
 
-# Futility (stage 1 only): Pr(delta < 40 | data) >= 0.90
+# Futility (both interims): Pr(delta < 40 | data) >= 0.90
 #   Pr(delta < 40) = Pr(theta_T - theta_C > -40), and decision2S fires on a ">="
 #   condition, hence the upper tail at qc = -40 with pc = 0.90.
 fut.crit <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
 
-
-#Need to build a list that contains as many lists as the number of analyses
 decisions_fut <- list(
-  list(success = dual.crit, futility = fut.crit),   
-  list(success = dual.crit, futility = NULL)        
+  list(success = dual.crit, futility = fut.crit),   # interim 1
+  list(success = dual.crit, futility = fut.crit),   # interim 2
+  list(success = dual.crit, futility = NULL)        # final look
 )
 decisions_no_fut <- list(
-  list(success = dual.crit, futility = NULL),       
-  list(success = dual.crit, futility = NULL)        
+  list(success = dual.crit, futility = NULL),
+  list(success = dual.crit, futility = NULL),
+  list(success = dual.crit, futility = NULL)
 )
 
 decisions_fut.single <- list(
-  list(success = sign.crit, futility = fut.crit),  
-  list(success = sign.crit, futility = NULL)        
+  list(success = sign.crit, futility = fut.crit),   # interim 1
+  list(success = sign.crit, futility = fut.crit),   # interim 2
+  list(success = sign.crit, futility = NULL)        # final look
 )
 decisions_no_fut.single <- list(
-  list(success = sign.crit, futility = NULL),       
-    list(success = sign.crit, futility = NULL)      
+  list(success = sign.crit, futility = NULL),
+  list(success = sign.crit, futility = NULL),
+  list(success = sign.crit, futility = NULL)
 )
 
-combos <- expand.grid(Analysis_Prior = prior_names,
-                      Design_Prior   = dprior_names,
-                      stringsAsFactors = FALSE, KEEP.OUT.ATTRS = FALSE)
 
 # ---------------------------------------------------------------------------
 # Shared theme
@@ -121,6 +128,12 @@ my_theme <- theme_minimal() +
 # ---------------------------------------------------------------------------
 # One MC run over every (analysis prior x design prior) combination
 # ---------------------------------------------------------------------------
+combos <- expand.grid(Analysis_Prior = prior_names,
+                      Design_Prior   = dprior_names,
+                      stringsAsFactors = FALSE, KEEP.OUT.ATTRS = FALSE)
+
+
+
 run_sweep <- function(decisions_list,
                       cores = 6, n_sim_avg = 1e6) {
 
@@ -285,7 +298,7 @@ df_stage <- df_stage  |>  mutate(
 
 
 # =============================================================================
-# Average T1E and average Power, one panel per criterion
+# PART 1 — Average T1E and average Power, one panel per criterion
 # =============================================================================
 # function to create the panel
 oc_layout <- function(p) {
@@ -329,21 +342,20 @@ print(p_pow)
 
 
 # =============================================================================
-# Per stage behaviour
+# PART 2 — Per stage behaviour, one panel per criterion
 # =============================================================================
-# What the interim actually does: how often it stops early for efficacy when the
-# treatment works, and how often it stops early for futility under the null.
+# What the interims actually do: how often the trial stops early for efficacy when
+# the treatment works, and how often it stops early for futility under the null.
+# With two interims there is one row per interim and per metric, four rows in total.
 df_stage1 <- bind_rows(
-  df_stage |> filter(Stage == 1, delta == delta_MCID) |>
+  df_stage |> filter(Stage <= 2, delta == delta_MCID) |>
     transmute(Criterion, Analysis_Prior, Design_Prior, Prob = P_Succ,
-              Metric = paste0("Early efficacy stop (delta = ", delta_MCID, ")")),
-  df_stage |> filter(Stage == 1, delta == 0) |>
+              Metric = paste0("Efficacy stop, interim ", Stage,
+                              " (delta = ", delta_MCID, ")")),
+  df_stage |> filter(Stage <= 2, delta == 0) |>
     transmute(Criterion, Analysis_Prior, Design_Prior, Prob = P_Fut,
-              Metric = "Early futility stop (delta = 0)")
+              Metric = paste0("Futility stop, interim ", Stage, " (delta = 0)"))
 )
-
-## So above we plot the early efficacy for delta = 60
-# below early futility when delta = 0
 
 p_stage <- ggplot(df_stage1,
                   aes(x = Design_Prior, y = Prob,
@@ -361,13 +373,12 @@ p_stage <- ggplot(df_stage1,
 print(p_stage)
 
 saveRDS(list(df_oc = df_oc, df_stage = df_stage, sweeps = sweeps),
-        file = "Output/SEQ_MC_avg.RDS")
-cat("\nMC average and per stage results saved to Output/SEQ_MC_avg.RDS\n")
-
+        file = "Output/SEQ2_MC_avg.RDS")
+cat("\nMC average and per stage results saved to Output/SEQ2_MC_avg.RDS\n")
 
 
 # =============================================================================
-# EUII for correctly specified prior
+# PART 3 — Sequential EUII, 
 # =============================================================================
 # hERE, WE ONLY USE THE correctly specified analysis prior (so MAP for both analysis and design prior)
 # Left: EUII of the four sequential designs, with the two fixed designs dashed.
@@ -396,32 +407,6 @@ fixed_base <- bind_rows(
 df_euii <- df_euii |>
   left_join(fixed_base, by = c("Delta", "Base")) |>
   mutate(EUII_ratio = EUII / EUII_fixed)
-
-
-# ---- Table to display----
-# ---------------------------------------------------------------------------
-tab_stage <- df_stage |>
-  filter(Analysis_Prior == "MAP", Design_Prior == "MAP", delta %in% c(0, 60)) |>
-  group_by(Criterion, delta) |>
-  summarise(
-    P_succ_interim = P_Succ[Stage == 1],
-    P_fut_interim  = P_Fut[Stage == 1],
-    P_succ_final   = P_Succ[Stage == max(Stage)],
-        .groups = "drop"
-  ) |>
-  mutate(Total_succ = P_succ_interim + P_succ_final)
-
-tab_designs <- tab_stage |>
-  left_join(df_oc |>
-              filter(Analysis_Prior == "MAP", Design_Prior == "MAP") |>
-              select(Criterion, delta, EN),
-            by = c("Criterion", "delta")) |>
-  arrange(delta, Criterion)
-
-knitr::kable(tab_designs, format = "pipe", digits = 3)
-
-
-
 
 
 
@@ -510,8 +495,8 @@ print((p_euii_abs / p_euii_ratio) +
         theme(legend.position = "bottom"))
 
 saveRDS(list(df_euii = df_euii, prior_H1 = prior_H1),
-        file = "Output/SEQ_MC_euii.RDS")
-cat("MC EUII results saved to Output/SEQ_MC_euii.RDS\n")
+        file = "Output/SEQ2_MC_euii.RDS")
+cat("MC EUII results saved to Output/SEQ2_MC_euii.RDS\n")
 
 
 
@@ -523,8 +508,9 @@ cat("MC EUII results saved to Output/SEQ_MC_euii.RDS\n")
 
 library(tidyr)
 
-n_min <- n1_seq[1] + n2_seq[1]                              #  30
-n_max <- n1_seq[length(n1_seq)] + n2_seq[length(n2_seq)]    #  60
+n_min <- n1_seq[1] + n2_seq[1]                              #  first interim total, 20
+n_mid <- n1_seq[2] + n2_seq[2]                              #  second interim total, 40
+n_max <- n1_seq[length(n1_seq)] + n2_seq[length(n2_seq)]    #  final total, 60
 
 
 sample_size <- df_euii |>
@@ -551,11 +537,14 @@ p_N_eff <- ggplot(band_N) +
   geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
   geom_line(aes(x = Delta, y = mid, color = Criterion), linewidth = 1.2) +
   geom_hline(yintercept = n_max, linetype = "dashed", color = "black",  linewidth = 0.4) +
+  geom_hline(yintercept = n_mid, linetype = "dotted", color = "grey40", linewidth = 0.4) +
   geom_hline(yintercept = n_min, linetype = "dotted", color = "grey40", linewidth = 0.4) +
   annotate("text", x = DV + 2, y = n_max - 1.3, hjust = 0, size = 3, color = "grey30",
            label = paste0("without futility (= ", n_max, ")")) +
+  annotate("text", x = DV + 2, y = n_mid + 1.1, hjust = 0, size = 3, color = "grey50",
+           label = paste0("second interim (= ", n_mid, ")")) +
   annotate("text", x = DV + 2, y = n_min + 1.1, hjust = 0, size = 3, color = "grey50",
-           label = paste0("interim (= ", n_min, ")")) +
+           label = paste0("first interim (= ", n_min, ")")) +
   facet_wrap(~Outcome) +
   scale_color_manual(values = crit_cols) +
   scale_fill_manual(values = crit_cols, guide = "none") +
@@ -568,176 +557,42 @@ p_N_eff <- ggplot(band_N) +
 print(p_N_eff)
 
 
+###########################
+# -------- Two interims against one: EUII ratio
+#
+# The natural question of this script: does the second interim add information per
+# patient beyond the first? The one interim results of 2.3_SEQUENTIAL.MC.R are read
+# from Output/SEQ_MC_euii.RDS and the ratio EUII(two interims) / EUII(one interim)
+# is computed per design and prior_H1. Both runs share the same seed, so theta_C is
+# common and the comparison is paired.
 
+df_euii_1int <- readRDS("Output/SEQ_MC_euii.RDS")$df_euii |>
+  select(Delta, prior_H1, Criterion, EUII_1int = EUII)
 
+df_ratio_12 <- df_euii |>
+  select(Delta, prior_H1, Criterion, EUII) |>
+  mutate(Criterion = as.character(Criterion)) |>
+  left_join(df_euii_1int |> mutate(Criterion = as.character(Criterion)),
+            by = c("Delta", "prior_H1", "Criterion")) |>
+  mutate(ratio_12 = EUII / EUII_1int)
 
-
-
-
-
-#########################################################################################################
-# -----
-# WHAT ABOUT USING DC AND SC together? 
-# First interim = DC, second = SC
-# vs First = SC, second = DC
-# 
-
-decisions_DC.SC <- list(
-  list(success = dual.crit, futility = fut.crit),   
-  list(success = sign.crit, futility = NULL)        
-)
-
-decisions_SC.DC <- list(
-  list(success = sign.crit, futility = fut.crit),   
-  list(success = dual.crit, futility = NULL)        
-)
-
-
-
-res_DC.SC <- avgoc2_seq_mc.normMix(
-      prior_1        = p_vague,
-      prior_2        = p_MAP,
-      n1_seq         = n1_seq,
-      n2_seq         = n2_seq,
-      decisions_list = decisions_DC.SC,
-      delta          = delta_values,
-      design_prior_c = p_MAP,
-      n_sim          = n_sim_avg,
-      seed           = mc_seed
-    )
-
-
-res_SC.DC <- avgoc2_seq_mc.normMix(
-      prior_1        = p_vague,
-      prior_2        = p_MAP,
-      n1_seq         = n1_seq,
-      n2_seq         = n2_seq,
-      decisions_list = decisions_SC.DC,
-      delta          = delta_values,
-      design_prior_c = p_MAP,
-      n_sim          = n_sim_avg,
-      seed           = mc_seed
-    )
-
-
-# EUII of the two hybrids
-euii_DC.SC <- compute_euii(res_DC.SC, prior_H1 = prior_H1) #list with the results for each prior_H1
-euii_SC.DC <- compute_euii(res_SC.DC, prior_H1 = prior_H1)
-
-# stack them with the two pure futility designs for comparison
-df_hyb <- bind_rows(
-  bind_rows(lapply(names(euii_DC.SC), function(pH1)
-    euii_DC.SC[[pH1]] |> mutate(prior_H1 = as.numeric(pH1), Criterion = "DC then SC + Fut."))),
-  bind_rows(lapply(names(euii_SC.DC), function(pH1)
-    euii_SC.DC[[pH1]] |> mutate(prior_H1 = as.numeric(pH1), Criterion = "SC then DC + Fut."))),
-  df_euii |>
-    filter(Analysis_Prior == "MAP", Design_Prior == "MAP",
-           Criterion %in% c("SC + Futility", "DC + Futility")) |>
-    mutate(Criterion = as.character(Criterion)) |>
-    select(Delta, Power, T1E, EUII, prior_H1, Criterion)
-)
-
-band_hyb <- df_hyb |>
+band_12 <- df_ratio_12 |>
+  mutate(Criterion = factor(Criterion, levels = design_labels)) |>
   group_by(Criterion, Delta) |>
-  summarise(lo = min(EUII), hi = max(EUII),
-            mid = EUII[prior_H1 == 0.5], .groups = "drop")
+  summarise(lo  = min(ratio_12),
+            hi  = max(ratio_12),
+            mid = ratio_12[prior_H1 == ph1_ref],
+            .groups = "drop")
 
-hyb_cols <- c("SC + Futility"     = "#56B4E9",
-              "DC + Futility"     = "#E69F00",
-              "DC then SC + Fut." = "#009E73",
-              "SC then DC + Fut." = "#CC79A7")
-
-ggplot(band_hyb) +
-  geom_line(aes(x = Delta, y = mid, color = Criterion), linewidth = 1.1) +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.4) +
-  scale_color_manual(values = hyb_cols) +
-  scale_fill_manual(values = hyb_cols, guide = "none") +
+p_ratio_12 <- ggplot(band_12) +
+  geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
+  geom_line(aes(x = Delta, y = mid, color = Criterion), linewidth = 1.2) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
+  scale_color_manual(values = crit_cols) +
+  scale_fill_manual(values = crit_cols, guide = "none") +
   coord_cartesian(xlim = c(DV, max(delta_values))) +
-  labs(x = expression(delta), y = "EUII") +
+  labs(x = expression(delta),
+       y = "EUII (two interims) / EUII (one interim)") +
   my_theme
 
-# EUII and error rates at the MCID
-df_hyb |> filter(Delta == delta_MCID, prior_H1 == 0.5) |>
-  select(Criterion, T1E, Power, EUII)
-
-
-# ------------------------------------------
-# Same comparison WITHOUT futility: hybrids vs pure SC and pure DC
-# ------------------------------------------------
-
-decisions_DC.SC.nofut <- list(
-  list(success = dual.crit, futility = NULL),
-  list(success = sign.crit, futility = NULL)
-)
-
-decisions_SC.DC.nofut <- list(
-  list(success = sign.crit, futility = NULL),
-  list(success = dual.crit, futility = NULL)
-)
-
-
-res_DC.SC.nofut <- avgoc2_seq_mc.normMix(
-      prior_1        = p_vague,
-      prior_2        = p_MAP,
-      n1_seq         = n1_seq,
-      n2_seq         = n2_seq,
-      decisions_list = decisions_DC.SC.nofut,
-      delta          = delta_values,
-      design_prior_c = p_MAP,
-      n_sim          = n_sim_avg,
-      seed           = mc_seed
-    )
-
-
-res_SC.DC.nofut <- avgoc2_seq_mc.normMix(
-      prior_1        = p_vague,
-      prior_2        = p_MAP,
-      n1_seq         = n1_seq,
-      n2_seq         = n2_seq,
-      decisions_list = decisions_SC.DC.nofut,
-      delta          = delta_values,
-      design_prior_c = p_MAP,
-      n_sim          = n_sim_avg,
-      seed           = mc_seed
-    )
-
-
-# EUII of the two hybrids without futility
-euii_DC.SC.nofut <- compute_euii(res_DC.SC.nofut, prior_H1 = prior_H1)
-euii_SC.DC.nofut <- compute_euii(res_SC.DC.nofut, prior_H1 = prior_H1)
-
-# stack them with the two pure designs without futility (aligned prior)
-df_hyb_nofut <- bind_rows(
-  bind_rows(lapply(names(euii_DC.SC.nofut), function(pH1)
-    euii_DC.SC.nofut[[pH1]] |> mutate(prior_H1 = as.numeric(pH1), Criterion = "DC then SC"))),
-  bind_rows(lapply(names(euii_SC.DC.nofut), function(pH1)
-    euii_SC.DC.nofut[[pH1]] |> mutate(prior_H1 = as.numeric(pH1), Criterion = "SC then DC"))),
-  df_euii |>
-    filter(Analysis_Prior == "MAP", Design_Prior == "MAP",
-           Criterion %in% c("SC", "DC")) |>
-    mutate(Criterion = as.character(Criterion)) |>
-    select(Delta, Power, T1E, EUII, prior_H1, Criterion)
-)
-
-band_hyb_nofut <- df_hyb_nofut |>
-  group_by(Criterion, Delta) |>
-  summarise(lo = min(EUII), hi = max(EUII),
-            mid = EUII[prior_H1 == 0.5], .groups = "drop")
-
-hyb_cols_nofut <- c("SC"         = "#0072B2",
-                    "DC"         = "#D55E00",
-                    "DC then SC" = "#009E73",
-                    "SC then DC" = "#CC79A7")
-
-ggplot(band_hyb_nofut) +
-  geom_line(aes(x = Delta, y = mid, color = Criterion), linewidth = 1.1) +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.4) +
-  scale_color_manual(values = hyb_cols_nofut) +
-  scale_fill_manual(values = hyb_cols_nofut, guide = "none") +
-  coord_cartesian(xlim = c(DV, max(delta_values))) +
-  labs(x = expression(delta), y = "EUII") +
-  my_theme
-
-# EUII and error rates at the MCID
-df_hyb_nofut |> filter(Delta == delta_MCID, prior_H1 == 0.5) |>
-  select(Criterion, T1E, Power, EUII)
+print(p_ratio_12)
