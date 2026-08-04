@@ -1,0 +1,393 @@
+\appendix
+% Number appendix equations as (A.1), (B.2), ... to distinguish them from the
+% plain (1), (2), ... of the main text.
+\numberwithin{equation}{section}
+\section{Mathematical Derivations under Normal Priors}
+\label{sec:appendix_normal_priors}
+
+\subsection{Derivation of the Posterior Decision Rule}
+
+\paragraph{Setup}
+Let $\bar{y}_C$ and $\bar{y}_T$ denote the observed sample means for the control and treatment arms, respectively. Recall that we assume that lower values of $y$ are clinically beneficial.  
+
+Conditional on the true underlying parameters, the sampling distributions of the arm means are given by:
+\begin{align*}
+    \bar{y}_C \mid \theta_C &\sim \mathcal{N}(\theta_C, v_C) \quad \text{where} \quad v_C = \frac{\sigma_C^2}{n_C}  \\
+    \bar{y}_T \mid \theta_T &\sim \mathcal{N}(\theta_T, v_T) \quad \text{where} \quad v_T = \frac{\sigma_T^2}{n_T}, 
+\end{align*}
+where $\sigma_C^2$ and $\sigma_T^2$ are the known variances, and $n_C, n_T$ are the sample sizes. The true treatment effect is defined as $\delta = \theta_C - \theta_T$. 
+
+During the design evaluation, the true parameter $\theta_C$ is either fixed at a specific scalar value $\theta_C^*$ (when computing conditional T1E or Power) or distributed following the design prior $\pi_D(\theta_C)$ (when calculating $\avgTIE$ or $\avgPow$).
+
+
+\paragraph{Analysis Prior and Posterior}
+We incorporate an informative historical analysis prior for the control arm, $\pi_A(\theta_C) \sim \mathcal{N}(\mu_{A,C}, \sigma_{A,C}^2)$, where $\mu_{A,C}$ represents the historical mean and $\sigma_{A,C}^2$ quantifies the prior uncertainty. We assume a non-informative analysis prior for the treatment arm.
+Due to Normal-Normal conjugacy, the posterior distribution for the control parameter remains Normally distributed, $\theta_C \mid \bar{y}_C \sim \mathcal{N}(\mu_{\text{post}}, \sigma_{\text{post}}^2)$, where:
+$$
+    \sigma_{\text{post}}^2 = \left( \frac{1}{\sigma_{A,C}^2} + \frac{1}{v_C} \right)^{-1} = \frac{\sigma_{A,C}^2 v_C}{\sigma_{A,C}^2 + v_C},
+$$
+and: 
+$$
+    \mu_{\text{post}} = (1 - W)\mu_{A,C} + W\bar{y}_C,
+$$
+given the data weight: 
+$$
+    W = \frac{1/v_C}{1/\sigma_{A,C}^2 + 1/v_C} = \frac{\sigma_{A,C}^2}{\sigma_{A,C}^2 + v_C},
+$$
+where $(1 - W)$ quantifies the weight of the historical prior on the final control estimate. 
+
+Conversely, we assume a non-informative (vague) analysis prior for $\theta_T$. Thus, the posterior for the treatment arm is driven entirely by the likelihood:
+$$
+    \theta_T \mid \bar{y}_T \sim \mathcal{N}(\bar{y}_T, v_T).
+$$
+
+\paragraph{Decision Rule}
+Assuming independence between the two trial arms, the posterior distribution of the treatment contrast $\delta = \theta_C - \theta_T$ is also Normal:
+$$
+    \delta \mid \bar{y}_C, \bar{y}_T \sim \mathcal{N}(\hat{\delta}, V_{\delta}),
+$$
+where the posterior mean and variance are exactly:
+\begin{align*}
+    \hat{\delta} &= \mu_{\text{post}} - \bar{y}_T \\
+    V_{\delta} &= \sigma_{\text{post}}^2 + v_T.
+\end{align*}
+
+A trial is declared successful if the posterior probability that the treatment effect exceeds a critical threshold $q$ (e.g., $q=0$ for any benefit, or $q=\delta_0$ for clinical relevance) is greater than a pre-specified confidence level $p$:
+\begin{align}
+    \Pr(\delta > q \mid \bar{y}_C, \bar{y}_T) &> p \nonumber \\
+    1 - \Phi\left( \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} \right) &> p. \label{eq:app_decision_rule}
+\end{align}
+If Inequality~\eqref{eq:app_decision_rule} holds, the null hypothesis is rejected.
+
+We can reformulate this inequality directly in terms of $\hat{\delta}$:
+\begin{proof}
+Starting from the posterior decision rule established in Equation~\eqref{eq:app_decision_rule}:
+$$
+    1 - \Phi\left( \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} \right) > p \implies \Phi\left( \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} \right) < 1 - p \implies \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} < \Phi^{-1}(1 - p).
+$$
+Using the symmetry of the standard Normal distribution, $\Phi^{-1}(1 - p) = - \Phi^{-1}(p)$. Defining $z_p = \Phi^{-1}(p)$ as the critical $z$-value corresponding to the required posterior probability threshold $p$ (e.g., if $p = 0.975$, $z_p \approx 1.96$), we obtain:
+$$
+    \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} < -z_p.
+$$
+Multiplying both sides by the strictly positive posterior standard deviation $\sqrt{V_{\delta}}$ and rearranging to isolate $\hat{\delta}$, we arrive at the final condition for study success:
+\begin{equation} \label{eq:app_success_condition_delta}
+    \hat{\delta} > q + z_p \sqrt{V_{\delta}}.
+\end{equation}
+\end{proof}
+
+We denote the deterministic right hand side of Equation~\eqref{eq:app_success_condition_delta} as $k$:
+$$
+    k = q + z_p \sqrt{V_{\delta}}.
+$$
+Because the posterior variance $V_{\delta}$ depends exclusively on the fixed prior variance $\sigma_{A,C}^2$ and the known sampling variances ($v_C, v_T$), the threshold $k$ is a constant determined entirely at the design stage.
+
+
+\subsection{Conditional Power and T1E}
+
+To evaluate the operating characteristics under theoretical repetitions of the trial, we derive the frequentist sampling distribution of $\hat{\delta}$.
+
+\paragraph{Expected Value of the Estimator}
+By linearity of expectation, and substituting $\E[\bar{y}_C \mid \theta_C] = \theta_C$ and $\E[\bar{y}_T \mid \theta_C, \delta] = \theta_C - \delta$, we obtain:
+\begin{align}
+    \E[\hat{\delta} \mid \theta_C, \delta] &= \E[\mu_{\text{post}} \mid \theta_C] - \E[\bar{y}_T \mid \theta_C, \delta] \nonumber \\
+    &= (1 - W)\mu_{A,C} + W \E[\bar{y}_C \mid \theta_C] - (\theta_C - \delta) \nonumber \\
+    &= (1 - W)\mu_{A,C} + W\theta_C - \theta_C + \delta \nonumber \\
+    &= (1 - W)(\mu_{A,C} - \theta_C) + \delta. \label{eq:app_expected_delta}
+\end{align}
+
+\paragraph{Sampling Variance of the Estimator}
+Assuming the control and treatment arms are enrolled independently:
+\begin{align}
+    \Var(\hat{\delta} \mid \theta_C, \delta) &= \Var(\mu_{\text{post}} \mid \theta_C) + \Var(\bar{y}_T \mid \theta_C, \delta) \nonumber \\
+    &= Var\Big((1 - W)\mu_{A,C} + W\bar{y}_C\Big) + \Var(\bar{y}_T) \nonumber \\
+    &= W^2 \Var(\bar{y}_C) + v_T \nonumber \\
+    &= W^2 v_C + v_T. \label{eq:app_variance_delta}
+\end{align}
+We denote this sampling variance as $V_{\text{samp}} = W^2 v_C + v_T$. The sampling distribution is thus:
+$$
+    \hat{\delta} \mid \theta_C, \delta \sim \mathcal{N}\Big( (1 - W)(\mu_{A,C} - \theta_C) + \delta, \; V_{\text{samp}} \Big).
+$$
+
+\paragraph{Closed-Form Solutions}
+To compute the conditional Power, we replace $\theta_C$ with a true control rate $\theta_C^*$ and integrate the sampling distribution over the success region defined by $k$:
+\begin{align*}
+    \Pow(\theta_C^*, \delta) &= \Pr(\hat{\delta} > k \mid \theta_C^*, \delta) \\
+    &= 1 - \Phi\left( \frac{k - \E[\hat{\delta} \mid \theta_C^*, \delta]}{\sqrt{V_{\text{samp}}}} \right). 
+\end{align*}
+Substituting the threshold $k$, we obtain the conditional Power:
+\begin{equation} \label{eq:app_power_closed_form}
+    \Pow(\theta_C^*, \delta) = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}} - \big[(1 - W)(\mu_{A,C} - \theta_C^*) + \delta\big]}{\sqrt{V_{\text{samp}}}} \right),
+\end{equation}
+which reduces to the conditional T1E by setting $\delta = 0$: 
+\begin{equation} \label{eq:app_t1e_closed_form}
+    \TIE(\theta_C^*) = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}} - (1 - W)(\mu_{A,C} - \theta_C^*)}{\sqrt{V_{\text{samp}}}} \right). 
+\end{equation}
+
+with $V_{\delta} = \frac{\sigma_{A,C}^2 v_C}{\sigma_{A,C}^2 + v_C} + v_T$.
+
+
+\subsection{Average Power and T1E}
+\label{sec:avgmetrics}
+When the true control parameter is distributed according to a Normal design prior, $\theta_C \sim \pi_D(\theta_C) = \mathcal{N}(\mu_{D,C}, \sigma_{D,C}^2)$, we have to obtain the marginal sampling distribution of $\hat{\delta}$.
+
+\paragraph{Marginal Expectation and Variance}
+Using the Law of Total Expectation over $\pi_D(\theta_C)$:
+    $$\E[\hat{\delta} \mid \delta] = E_{\theta_C} \Big[ \E[\hat{\delta} \mid \theta_C, \delta] \Big] $$.
+
+Substituting Equation~\eqref{eq:app_expected_delta}, we obtain:
+\begin{equation} \label{eq:app_marginal_expectation}
+    E_{\theta_C} \Big[ (1 - W)(\mu_{A,C} - \theta_C) + \delta \Big] = (1 - W)(\mu_{A,C} - \mu_{D,C}) + \delta. 
+\end{equation}
+Applying the Law of Total Variance:
+\begin{align}
+\Var(\hat{\delta} \mid \delta) &= E_{\theta_C} \Big[ \Var(\hat{\delta} \mid \theta_C, \delta) \Big] + \Var_{\theta_C} \Big( \E[\hat{\delta} \mid \theta_C, \delta] \Big) \nonumber \\
+&= E_{\theta_C} \Big[ V_{\text{samp}} \Big] + \Var_{\theta_C} \Big( (1 - W)(\mu_{A,C} - \theta_C) + \delta \Big) \nonumber \\
+&= V_{\text{samp}} + (1 - W)^2 \, \Var(\theta_C) \nonumber \\
+&= W^2 v_C + v_T + (1 - W)^2 \sigma_{D,C}^2. \label{eq:app_marginal_variance}
+\end{align}
+We denote this expanded variance as the marginal variance, $V_{\text{marg}}$. 
+
+\paragraph{Closed-Form Solutions}
+Evaluating the probability that this marginal distribution crosses $k$ yields the Average Power:
+\begin{equation} \label{eq:app_avgpower_closed_form}
+    \avgPow(\delta) = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}} - \big[(1 - W)(\mu_{A,C} - \mu_{D,C}) + \delta\big]}{\sqrt{V_{\text{marg}}}} \right).
+\end{equation}
+Setting $\delta = 0$ yields the Average T1E: 
+\begin{equation} \label{eq:app_avgt1e_closed_form}
+    \avgTIE = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}} - (1 - W)(\mu_{A,C} - \mu_{D,C})}{\sqrt{V_{\text{marg}}}} \right).
+\end{equation}
+
+with $V_{\delta} = \frac{\sigma_{A,C}^2 v_C}{\sigma_{A,C}^2 + v_C} + v_T$.
+
+\subsection{Mathematical Properties of the Averaged Metrics}
+
+\paragraph{Property 1: Predictive metrics closer to 50\%}
+Evaluating the conditional metric at the center of the design prior ($\theta_C^* = \mu_{D,C}$), the numerators for the $Z$-scores of conditional power and average power are identical. However, as proven in Equation~\eqref{eq:app_marginal_variance}, the marginal variance strictly exceeds the sampling variance ($V_{\text{marg}} > V_{\text{samp}}$). 
+Because the denominator of $Z_{\text{marg}}$ is larger, its absolute magnitude must be smaller:
+$$
+    |Z_{\text{marg}}| < |Z_{\text{cond}}| \quad \text{whenever the numerator is nonzero}.
+$$
+Since $\Phi(Z)$ is monotonically increasing and centered at $\Phi(0) = 0.5$, dividing by a larger variance shrinks the $Z$-score toward zero, forcing the average metric to be closer to $0.5$ compared to its conditional counterpart. 
+
+\paragraph{Property 2: Exact Control when Priors Coincide}
+Assume the design prior exactly matches the analysis prior ($\mu_{D,C} = \mu_{A,C}$ and $\sigma_{D,C}^2 = \sigma_{A,C}^2$). 
+The numerator bias term becomes $(1 - W)(\mu_{A,C} - \mu_{A,C}) = 0$. 
+In the denominator, substituting $\sigma_{A,C}^2$ into $V_{\text{marg}}$ and expanding weights $W$:
+\begin{align*}
+    W^2 v_C + (1 - W)^2 \sigma_{A,C}^2 &= \left( \frac{\sigma_{A,C}^2}{\sigma_{A,C}^2 + v_C} \right)^2 v_C + \left( \frac{v_C}{\sigma_{A,C}^2 + v_C} \right)^2 \sigma_{A,C}^2 \\
+    &= \frac{\sigma_{A,C}^2 v_C (\sigma_{A,C}^2 + v_C)}{(\sigma_{A,C}^2 + v_C)^2} = \frac{\sigma_{A,C}^2 v_C}{\sigma_{A,C}^2 + v_C} = \sigma_{\text{post}}^2.
+\end{align*}
+Therefore, $V_{\text{marg}} = \sigma_{\text{post}}^2 + v_T$, which is exactly $V_{\delta}$. Substituting these back into Equation~\eqref{eq:app_avgt1e_closed_form}:
+$$
+    \avgTIE = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}}}{\sqrt{V_{\delta}}} \right) = 1 - \Phi\left( \frac{q}{\sqrt{V_{\delta}}} + z_p \right).
+$$
+If $q = 0$, $\avgTIE = 1 - \Phi(z_p)$. Because $z_p = \Phi^{-1}(p)$ and the nominal significance level is $\alpha = 1 - p$, we achieve exact control: $\avgTIE = \alpha$. Note that this exact control holds at $q = 0$; for a non-zero reference value $q \neq 0$ (e.g., a non-inferiority margin), the result is $\avgTIE = 1 - \Phi(q/\sqrt{V_{\delta}} + z_p) \neq \alpha$.
+
+\paragraph{Property 3: The Triviality of a Vague Design Prior}
+Assuming a positive weight assigned to the historical prior ($(1 - W) > 0$), we evaluate the limit of the marginal variance as design uncertainty approaches infinity ($\sigma_{D,C}^2 \to \infty$):
+$$
+    \lim_{\sigma_{D,C}^2 \to \infty} V_{\text{marg}} = \lim_{\sigma_{D,C}^2 \to \infty} \Big[ W^2 v_C + v_T + (1 - W)^2 \sigma_{D,C}^2 \Big] = \infty.
+$$
+Substituting $V_{\text{marg}} \to \infty$ into Equation~\eqref{eq:app_avgt1e_closed_form}:
+$$
+    \lim_{\sigma_{D,C}^2 \to \infty} \avgTIE = 1 - \Phi\left( \lim_{\sigma_{D,C}^2 \to \infty} \frac{q + z_p \sqrt{V_{\delta}} - (1 - W)(\mu_{A,C} - \mu_{D,C})}{\sqrt{V_{\text{marg}}}} \right) = 1 - \Phi(0) = 0.5.
+$$
+Notably, the Average Power also converges to exactly 0.5.
+
+
+
+
+\section{Asymptotic EUII Derivation}
+\label{sec:app_asymptotic}
+
+\subsection{Setup}
+In this derivation, we assume a common per-patient variation $\sigma^2$. Thus, we can write: 
+$v_C=\sigma^2/n_C$, $v_T=\sigma^2/n_T$, $\sigma_{A,C}^2=\sigma^2/n_A$, and 
+\[
+  W=\frac{\sigma_{A,C}^2}{\sigma_{A,C}^2+v_C}=\frac{n_C}{n_C+n_A},\qquad
+  n_T=r_T n_C,\qquad n_{\mathrm{trial}}=n_C(1+r_T).
+\]
+
+We also allow the Design prior to be different from the Analysis prior.
+Three variances appear: 
+\begin{equation}\label{eq:vars}
+  V_\delta = W v_C + v_T,\qquad
+  V_{\mathrm{samp}} = W^2 v_C + v_T,\qquad
+  V_{\mathrm{marg}} = V_{\mathrm{samp}} + (1-W)^2\sigma_{D,C}^2,
+\end{equation}
+
+and the decision threshold is $k=q+z_p\sqrt{V_\delta}$, while the conflict bias is:
+\begin{equation}\label{eq:bias}
+  \beta \;=\; (1-W)\,(\mu_{A,C}-\mu_{D,C}),
+\end{equation}
+which goes to zero under prior alignment.
+
+Following from Section~\ref{sec:avgmetrics}, the average estimator is:
+$\hat\delta\sim\mathcal N(\delta+\beta,\,V_{\mathrm{marg}})$.
+
+Thus, following from \eqref{eq:app_avgpower_closed_form} and \eqref{eq:app_avgt1e_closed_form}, we can write:
+\begin{equation}\label{eq:avg}
+  \avgPow(\delta)=\Phi(b),\quad b=\frac{\delta+\beta-k}{\sqrt{V_{\mathrm{marg}}}};\qquad
+  \avgTIE=\avgPow(0)=\Phi(a),\quad a=\frac{\beta-k}{\sqrt{V_{\mathrm{marg}}}} .
+\end{equation}
+
+
+\subsection{Log EUII and the Mills Ratio}
+With avgPower odds $\Phi(b)/\Phi(-b)$ and avgT1E odds $\Phi(a)/\Phi(-a)$, the $\DOR$ and the $\EUII$ are:
+
+\[
+  \DOR=\frac{\Phi(b)/\Phi(-b)}{\Phi(a)/\Phi(-a)},\qquad
+  \EUII=\DOR^{1/n_{\mathrm{trial}}} .
+\]
+
+We can write these metrics in log space by using the log odds (logit) of a Gaussian CDF:
+$\Lodd(x):=\log\Phi(x)-\log\Phi(-x)$, which gives: 
+
+\begin{equation}\label{eq:logeuii}
+  \boxed{\;\log\EUII=\frac{\Lodd(b)-\Lodd(a)}{n_{\mathrm{trial}}}\;}.
+\end{equation}
+
+
+\paragraph{Mills Ratio}
+The Mills ratio is defined as $\Mills(x)=\dfrac{1-\Phi(x)}{\phi(x)}$, with the classical
+expansion
+\begin{equation}\label{eq:mills}
+  \Mills(x)=\frac1x-\frac1{x^3}+\frac{3}{x^5}-\cdots=\frac1x\bigl(1+o(1)\bigr),
+  \qquad x\to+\infty .
+\end{equation}
+
+We can use this result to obtain the asymptotic value of $\Lodd(x)$.
+As $x\to+\infty$ $\Phi(x) \to 1$, thus, $\log \Phi(x) \to 0$. Then, we can write:
+$\Phi(-x) = \phi(x) \Mills(x)$, so:
+\[
+  -\log\Phi(-x) =-\log\phi(x)-\log \Mills(x).
+\]
+Since $\phi(x)=(2\pi)^{-1/2}e^{-x^2/2}$ we have $-\log\phi(x)=\tfrac{x^2}{2}+\tfrac12\log(2\pi)$,
+and by \eqref{eq:mills} $-\log\Mills(x)=-\log\!\big(\tfrac1x(1+o(1))\big)=\log x+o(1)$.
+Adding the two, we finally obtain:
+\[
+  \Lodd(x)=\frac{x^2}{2}+\log x+\tfrac12\log(2\pi)+o(1) \approx \frac{x^2}{2}.
+\]
+
+ 
+\paragraph{Asymptotic values of the arguments}
+We now obtain the limits of the arguments $b$ and $a$ defined in Equation~\eqref{eq:avg}, analysing their numerator and denominator separately.
+
+\paragraph{Numerators} Both numerators are built from the bias $\beta$ and the threshold $k$.
+From Equation~\eqref{eq:bias}, $\beta = (1 - W)(\mu_{A,C} - \mu_{D,C})$; since
+\[
+  1 - W = \frac{n_A}{n_C + n_A} = O\!\left(\frac{1}{n_C}\right),
+\]
+and $(\mu_{A,C} - \mu_{D,C})$ is a fixed constant, we have $\beta = O\!\left(\frac{1}{n_C}\right) \to 0$. For the threshold $k = q + z_p \sqrt{V_\delta}$, the posterior variance from Equation~\eqref{eq:vars} is
+\[
+  V_\delta = W v_C + v_T = \frac{\sigma^2}{n_C + n_A} + \frac{\sigma^2}{r_T\, n_C} = O\!\left(\frac{1}{n_C}\right) \to 0,
+\]
+so $z_p \sqrt{V_\delta} = O\!\left(\frac{1}{\sqrt{n_C}}\right) \to 0$ and $k \to q$. The two numerators therefore converge to constants:
+\[
+  \underbrace{\delta + \beta - k}_{\text{numerator of } b} \;\longrightarrow\; \delta - q,
+  \qquad
+  \underbrace{\beta - k}_{\text{numerator of } a} \;\longrightarrow\; -q.
+\]
+
+\paragraph{Denominator} From Equation~\eqref{eq:vars}, $V_{\mathrm{marg}} = W^2 v_C + v_T + (1 - W)^2 \sigma_{D,C}^2$. Both $v_C = \sigma^2/n_C$ and $v_T = \sigma^2/(r_T n_C)$ are $O(1/n_C)$, and since $W = n_C/(n_C+n_A) \to 1$, $W^2 v_C = O(1/n_C)$. The 
+design-prior term is smaller still: $1 - W = n_A/(n_C+n_A) = O(1/n_C)$, so $(1 - W)^2 \sigma_{D,C}^2 = O(1/n_C^2)$ with $\sigma_{D,C}^2$ fixed. Adding them,
+\[
+  V_{\mathrm{marg}}
+  = \underbrace{W^2 v_C}_{O(1/n_C)}
+  + \underbrace{v_T}_{O(1/n_C)}
+  + \underbrace{(1 - W)^2 \sigma_{D,C}^2}_{O(1/n_C^2)}
+  = O\!\left(\frac{1}{n_C}\right),
+\]
+so the common denominator vanishes, $\sqrt{V_{\mathrm{marg}}} \to 0^+$.
+
+\paragraph{Convergence of $b$} Assuming we are evaluating the avgPower for a meaningful effect ($\delta > q$), the numerator of $b$ tends to the positive constant $\delta - q$ while the denominator tends to $0^+$, hence
+\[
+  b = \frac{\delta + \beta - k}{\sqrt{V_{\mathrm{marg}}}} \;\longrightarrow\; +\infty .
+\]
+
+\paragraph{Convergence of $a$} The numerator of $a$ tends to $-q$, so two cases arise:
+\begin{itemize}
+  \item if $q > 0$, the numerator tends to $-q < 0$ and the denominator to $0^+$, hence $a \to -\infty$;
+  \item if $q = 0$, then $k = z_p\sqrt{V_\delta}$ and both numerator and denominator of $a$ tend to $0$, so we need to expand. Dividing numerator and denominator by $\sqrt{V_\delta}$,
+  \[
+    a = \frac{\beta - z_p \sqrt{V_\delta}}{\sqrt{V_{\mathrm{marg}}}}
+      = \frac{\,\beta/\sqrt{V_\delta} - z_p\,}{\sqrt{V_{\mathrm{marg}}/V_\delta}} .
+  \]
+  Since $\beta = O(1/n_C)$ and $\sqrt{V_\delta} = O(1/\sqrt{n_C})$, the ratio $\beta/\sqrt{V_\delta} = O(1/\sqrt{n_C}) \to 0$; and $V_\delta,\,V_{\mathrm{marg}}$ share the same order, so $V_{\mathrm{marg}}/V_\delta \to 1$. Hence $a \to -z_p$.
+\end{itemize}
+
+
+\subsection{Asymptotic EUII}
+
+
+Recall from Equation~\eqref{eq:logeuii} that $\log\EUII = \dfrac{\Lodd(b)-\Lodd(a)}{n_{\mathrm{trial}}}$. We can use the fact that $\Lodd(x)\approx\tfrac{x^2}{2}$. For $q>0$ we have $b\to+\infty$ and $a\to-\infty$, so, using $\Lodd(-x)=-\Lodd(x)$,
+\[
+  \Lodd(b)-\Lodd(a) \approx \frac{b^2}{2} - \left(-\frac{a^2}{2}\right) = \frac{b^2+a^2}{2}.
+\]
+Substituting $b=\dfrac{\delta+\beta-k}{\sqrt{V_{\mathrm{marg}}}}$ and $a=\dfrac{\beta-k}{\sqrt{V_{\mathrm{marg}}}}$ with their numerator limits $\delta+\beta-k\to\delta-q$ and $\beta-k\to-q$,
+\[
+  \frac{b^2+a^2}{2} \;\longrightarrow\; \frac{(\delta-q)^2+q^2}{2\,V_{\mathrm{marg}}},
+\]
+so that
+\begin{equation}\label{eq:app_logeuii_asymp}
+  \log\EUII \;\longrightarrow\; \frac{(\delta-q)^2+q^2}{2\,V_{\mathrm{marg}}\,n_{\mathrm{trial}}} .
+\end{equation}
+The only quantity left to evaluate is the product $V_{\mathrm{marg}}\,n_{\mathrm{trial}}$.
+
+Since $W\to1$ and $1-W=O(1/n_C)$, we can write:
+\[
+  V_{\mathrm{marg}}
+  = \underbrace{W^2 v_C}_{\sigma^2/n_C \,+\, O(1/n_C^2)}
+  + \underbrace{v_T}_{\sigma^2/n_T}
+  + \underbrace{(1-W)^2 \sigma_{D,C}^2}_{O(1/n_C^2)} .
+\]
+Dropping the $O(1/n_C^2)$ terms, we remain with the two-sample variance:
+\[
+  V_{\mathrm{marg}} = \sigma^2\!\left(\frac{1}{n_C}+\frac{1}{n_T}\right) + O\!\left(\frac{1}{n_C^2}\right).
+\]
+Hence, with $n_{\mathrm{trial}}=n_C+n_T$ and $n_T=r_T n_C$,
+\[
+  V_{\mathrm{marg}}\,n_{\mathrm{trial}}
+  \;\longrightarrow\; \sigma^2\!\left(\frac{1}{n_C}+\frac{1}{n_T}\right)(n_C+n_T)
+  = \sigma^2\,\frac{(n_C+n_T)^2}{n_C\, n_T}
+  = \frac{\sigma^2(1+r_T)^2}{r_T} .
+\]
+
+\paragraph{Final Asymptotic EUII}
+Plugging this into Equation~\eqref{eq:app_logeuii_asymp} and exponentiating,
+\begin{equation}\label{eq:app_ceiling}
+  \lim_{n_C\to\infty}\EUII(n_C)
+  = \exp\!\left[\frac{r_T\big[(\delta-q)^2+q^2\big]}{2\sigma^2(1+r_T)^2}\right].
+\end{equation}
+For $q=0$ the argument $a\to-z_p$ stays finite, so $\Lodd(a)/n_{\mathrm{trial}}\to0$ and only the $b$-term contributes, the result is Equation~\eqref{eq:app_ceiling} evaluated at $q=0$.
+
+
+\subsection{Extension to the Dual Criterion}
+As already mentioned in the main text, the only difference when using a Dual Criterion is a new threshold:
+\begin{equation}\label{eq:app_kdc}
+  k_{\mathrm{DC}} = \max\!\Big(\,q + z_p\sqrt{V_\delta},\ \ \DV\,\Big).
+\end{equation}
+
+Everything else is unchanged: the DC average metrics are still $\avgPow^{\mathrm{DC}}(\delta) = \Phi(b_{\mathrm{DC}})$ and $\avgTIE^{\mathrm{DC}} = \Phi(a_{\mathrm{DC}})$, with
+\[
+  b_{\mathrm{DC}} = \frac{\delta+\beta-k_{\mathrm{DC}}}{\sqrt{V_{\mathrm{marg}}}},
+  \qquad
+  a_{\mathrm{DC}} = \frac{\beta-k_{\mathrm{DC}}}{\sqrt{V_{\mathrm{marg}}}},
+\]
+and $\log\EUII^{\mathrm{DC}}_{\mathrm{avg}} = \big(\Lodd(b_{\mathrm{DC}})-\Lodd(a_{\mathrm{DC}})\big)/n_{\mathrm{trial}}$ exactly as in Equation~\eqref{eq:logeuii}.
+
+\paragraph{Threshold at the limit}
+The derivation for the SC used the threshold only through its limit $k\to q$, so
+\[
+  k_{\mathrm{DC}} \;\longrightarrow\; \max(q,\DV) = \DV.
+\]
+(since $\DV > q$). We can thus follow the same computations of the asymptotic $\SC$ just replacing $q$ with $\DV$: the numerators become $\delta+\beta-k_{\mathrm{DC}}\to\delta-\DV$ and $\beta-k_{\mathrm{DC}}\to-\DV$, and for $\delta>\DV$ we have $b_{\mathrm{DC}}\to+\infty$ and $a_{\mathrm{DC}}\to-\infty$.
+
+
+\paragraph{Final Asymptotic EUII}
+Substituting $q$ with $\DV$ into Equation~\eqref{eq:app_ceiling} yields:
+\begin{equation}\label{eq:app_ceiling_dc}
+  \lim_{n_C\to\infty}\EUII^{\mathrm{DC}}_{\mathrm{avg}}(n_C)
+  = \exp\!\left[\frac{r_T\big[(\delta-\DV)^2+\DV^2\big]}{2\sigma^2(1+r_T)^2}\right],
+  \qquad \delta > \DV .
+\end{equation}

@@ -12,6 +12,9 @@
 
 # R/Markdown generated files
 *.tex
+# ...except these two, which are hand-written source, not knitr output
+!Final/appendix.tex
+!Final/newCommands.tex
 *.RData
 *.Rdata
 *.rdata
