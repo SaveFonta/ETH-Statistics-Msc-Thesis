@@ -1,13 +1,13 @@
 # =============================================================================
 # Sequential Design with TWO interim analyses — MC evaluation of AVG OC and EUII
 #
-# Same analysis as 2.3_SEQUENTIAL.MC.R, but the trial has three looks, timed as in
+# Same analysis as 05_sequential_one_interim.R, but the trial has three looks, timed as in
 # the original protocol (Hueber et al. 2012): total enrollment of 17, 41 and 60
 # patients at the two interims and the final analysis. With the 2:1 allocation
 # this gives cumulative arm sizes that are only approximately 2:1 at the interims
 # (11:6 and 27:14).
 # Futility can stop the trial at both interims, efficacy at every look.
-# Results saved to Output/SEQ2_MC_avg.RDS and Output/SEQ2_MC_euii.RDS.
+# Results saved to Output/seq_two_interim_avg.RDS and Output/seq_two_interim_euii.RDS.
 # =============================================================================
 
 library(RBesT)
@@ -16,7 +16,7 @@ library(ggplot2)
 library(gridExtra)
 library(patchwork)   # plot_layout(guides = "collect") for a single shared legend
 library(parallel)
-source("scripts/prior_on_control/00.functions.MC.R")
+source("scripts/00_functions_monte_carlo.R")
 
 
 # ---------------------------------------------------------------------------
@@ -373,8 +373,8 @@ p_stage <- ggplot(df_stage1,
 print(p_stage)
 
 saveRDS(list(df_oc = df_oc, df_stage = df_stage, sweeps = sweeps),
-        file = "Output/SEQ2_MC_avg.RDS")
-cat("\nMC average and per stage results saved to Output/SEQ2_MC_avg.RDS\n")
+        file = "Output/seq_two_interim_avg.RDS")
+cat("\nMC average and per stage results saved to Output/seq_two_interim_avg.RDS\n")
 
 
 # =============================================================================
@@ -400,8 +400,8 @@ read_fixed <- function(path, base_label) {
     transmute(Delta = delta, EUII_fixed = EUII, Base = base_label)
 }
 fixed_base <- bind_rows(
-  read_fixed("Output/FIXED_euii.RDS", "SC"),   
-  read_fixed("Output/DUAL_euii.RDS",  "DC")    
+  read_fixed("Output/fixed_SC_euii.RDS", "SC"),   
+  read_fixed("Output/fixed_DC_euii.RDS",  "DC")    
 )
 
 df_euii <- df_euii |>
@@ -495,8 +495,8 @@ print((p_euii_abs / p_euii_ratio) +
         theme(legend.position = "bottom"))
 
 saveRDS(list(df_euii = df_euii, prior_H1 = prior_H1),
-        file = "Output/SEQ2_MC_euii.RDS")
-cat("MC EUII results saved to Output/SEQ2_MC_euii.RDS\n")
+        file = "Output/seq_two_interim_euii.RDS")
+cat("MC EUII results saved to Output/seq_two_interim_euii.RDS\n")
 
 
 
@@ -561,12 +561,12 @@ print(p_N_eff)
 # -------- Two interims against one: EUII ratio
 #
 # The natural question of this script: does the second interim add information per
-# patient beyond the first? The one interim results of 2.3_SEQUENTIAL.MC.R are read
-# from Output/SEQ_MC_euii.RDS and the ratio EUII(two interims) / EUII(one interim)
+# patient beyond the first? The one interim results of 05_sequential_one_interim.R are read
+# from Output/seq_one_interim_euii.RDS and the ratio EUII(two interims) / EUII(one interim)
 # is computed per design and prior_H1. Both runs share the same seed, so theta_C is
 # common and the comparison is paired.
 
-df_euii_1int <- readRDS("Output/SEQ_MC_euii.RDS")$df_euii |>
+df_euii_1int <- readRDS("Output/seq_one_interim_euii.RDS")$df_euii |>
   select(Delta, prior_H1, Criterion, EUII_1int = EUII)
 
 df_ratio_12 <- df_euii |>

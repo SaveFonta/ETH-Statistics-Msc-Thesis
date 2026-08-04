@@ -10,7 +10,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(gridExtra)
-source("scripts/prior_on_control/00.functions.R")
+source("scripts/00_functions_exact.R")
 
 
 # ---------------------------------------------------------------------------
@@ -121,8 +121,8 @@ p_cond_Power <- ggplot(df_cond,
 
 grid.arrange(p_cond_T1E, p_cond_Power, ncol = 2)
 
-saveRDS(list(df_cond = df_cond), file = "Output/FIXED_cond.RDS")
-cat("Conditional results saved to Output/FIXED_cond.RDS\n")
+saveRDS(list(df_cond = df_cond), file = "Output/fixed_SC_cond.RDS")
+cat("Conditional results saved to Output/fixed_SC_cond.RDS\n")
 
 
 # =============================================================================
@@ -216,8 +216,8 @@ p_avg_Power <- ggplot(df_avg,
 
 grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
 
-saveRDS(list(df_avg = df_avg), file = "Output/FIXED_avg.RDS")
-cat("Average results saved to Output/FIXED_avg.RDS\n")
+saveRDS(list(df_avg = df_avg), file = "Output/fixed_SC_avg.RDS")
+cat("Average results saved to Output/fixed_SC_avg.RDS\n")
 
 
 # =============================================================================
@@ -289,5 +289,5 @@ p_EUII_delta <- ggplot(df_euii,
 
 print(p_EUII_delta)
 
-saveRDS(list(df_euii = df_euii), file = "Output/FIXED_euii.RDS")
-cat("EUII results saved to Output/FIXED_euii.RDS\n")
+saveRDS(list(df_euii = df_euii), file = "Output/fixed_SC_euii.RDS")
+cat("EUII results saved to Output/fixed_SC_euii.RDS\n")

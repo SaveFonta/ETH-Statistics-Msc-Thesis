@@ -2,7 +2,7 @@
 # Fixed Design with Dual Criterion — Conditional and Average OC + EUII
 # =============================================================================
 #
-# Mirrors 2.1_FIXED.R exactly (same priors, sample sizes, plots, structure)
+# Mirrors 02_fixed_design_SC.R exactly (same priors, sample sizes, plots, structure)
 # but uses the dual efficacy criterion from Gsponer et al. (2014):
 #   Pr(delta > 0  | data) > 0.95  AND  Pr(delta > 50 | data) > 0.50
 # instead of the single criterion Pr(delta > 0 | data) > 0.95.
@@ -14,8 +14,8 @@
 # Part 2 - Average T1E and Power      (avgoc2S.normMix)
 # Part 3 - EUII                       (DOR^{1/n_trial}, same as fixed)
 #
-# Results saved to Output/DUAL_cond.RDS, Output/DUAL_avg.RDS,
-#                  Output/DUAL_euii.RDS
+# Results saved to Output/fixed_DC_cond.RDS, Output/fixed_DC_avg.RDS,
+#                  Output/fixed_DC_euii.RDS
 # =============================================================================
 
 library(RBesT)
@@ -23,11 +23,11 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(gridExtra)
-source("scripts/prior_on_control/00.functions.R")
+source("scripts/00_functions_exact.R")
 
 
 # ---------------------------------------------------------------------------
-# Design parameters  (identical to 2.1_FIXED.R)
+# Design parameters  (identical to 02_fixed_design_SC.R)
 # ---------------------------------------------------------------------------
 sigma      <- 88
 n_T        <- 40
@@ -37,7 +37,7 @@ mu_A       <- -50
 
 
 # ---------------------------------------------------------------------------
-# Analysis priors  (identical to 2.1_FIXED.R)
+# Analysis priors  (identical to 02_fixed_design_SC.R)
 # ---------------------------------------------------------------------------
 p_MAP <- mixnorm(
   c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
@@ -57,7 +57,7 @@ prior_names <- names(analysis_priors)
 
 
 # ---------------------------------------------------------------------------
-# Design priors  (identical to 2.1_FIXED.R)
+# Design priors  (identical to 02_fixed_design_SC.R)
 # ---------------------------------------------------------------------------
 design_priors <- list(
   "Dirac (-50)"        = mixnorm(c(1, -50, 1e-16), sigma = sigma, param = "ms"),
@@ -137,8 +137,8 @@ p_cond_Power <- ggplot(df_cond,
 
 grid.arrange(p_cond_T1E, p_cond_Power, ncol = 2)
 
-saveRDS(list(df_cond = df_cond), file = "Output/DUAL_cond.RDS")
-cat("Conditional results saved to Output/DUAL_cond.RDS\n")
+saveRDS(list(df_cond = df_cond), file = "Output/fixed_DC_cond.RDS")
+cat("Conditional results saved to Output/fixed_DC_cond.RDS\n")
 
 
 # =============================================================================
@@ -208,8 +208,8 @@ p_avg_Power <- ggplot(filter(df_avg, delta == delta_MCID),
 
 grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
 
-saveRDS(list(df_avg = df_avg), file = "Output/DUAL_avg.RDS")
-cat("Average results saved to Output/DUAL_avg.RDS\n")
+saveRDS(list(df_avg = df_avg), file = "Output/fixed_DC_avg.RDS")
+cat("Average results saved to Output/fixed_DC_avg.RDS\n")
 
 
 # =============================================================================
@@ -274,8 +274,8 @@ p_EUII_delta <- ggplot(df_euii,
 
 print(p_EUII_delta)
 
-saveRDS(list(df_euii = df_euii), file = "Output/DUAL_euii.RDS")
-cat("EUII results saved to Output/DUAL_euii.RDS\n")
+saveRDS(list(df_euii = df_euii), file = "Output/fixed_DC_euii.RDS")
+cat("EUII results saved to Output/fixed_DC_euii.RDS\n")
 
 
 # =============================================================================
@@ -283,7 +283,7 @@ cat("EUII results saved to Output/DUAL_euii.RDS\n")
 # =============================================================================
 
 
-fixed_data    <- readRDS("Output/FIXED_euii.RDS")
+fixed_data    <- readRDS("Output/fixed_SC_euii.RDS")
 df_euii_fixed <- fixed_data$df_euii |>
   mutate(
     Analysis_Prior = as.character(Analysis_Prior),
@@ -348,5 +348,5 @@ p_ratio_delta <- ggplot(df_ratio,
 
 print(p_ratio_delta)
 
-saveRDS(list(df_ratio = df_ratio), file = "Output/DUAL_vs_FIXED_euii.RDS")
-cat("EUII ratio saved to Output/DUAL_vs_FIXED_euii.RDS\n")
+saveRDS(list(df_ratio = df_ratio), file = "Output/fixed_DC_vs_SC_euii.RDS")
+cat("EUII ratio saved to Output/fixed_DC_vs_SC_euii.RDS\n")

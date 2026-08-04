@@ -1,7 +1,4 @@
 library(dplyr)
-library(stringr)
-library(purrr)
-library(tidyr)
 library(RBesT)
 
 

@@ -1345,7 +1345,7 @@ We leave the extension of these metrics to borrowing on the treatment contrast a
 \section{Applications}
 \label{sec:Applications}
 <<load.functions, include=FALSE, cache=FALSE>>=
-source("../scripts/prior_on_control/00.functions.MC.R")
+source("../scripts/00_functions_monte_carlo.R")
 library(xtable)
 library(knitr)
 library(kableExtra)
@@ -1465,9 +1465,9 @@ library(patchwork)
 
 prior_names <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
                  "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
-df_sc <- readRDS("../Output/FIXED_cond.RDS")$df_cond |>
+df_sc <- readRDS("../Output/fixed_SC_cond.RDS")$df_cond |>
   dplyr::mutate(Prior = factor(Prior, levels = prior_names))
-df_dc <- readRDS("../Output/DUAL_cond.RDS")$df_cond |>
+df_dc <- readRDS("../Output/fixed_DC_cond.RDS")$df_cond |>
   dplyr::mutate(Prior = factor(Prior, levels = prior_names))
 mu_A <- -50
 
@@ -1543,8 +1543,8 @@ to_factors <- function(df) df |>
   dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
                 Design_Prior   = factor(Design_Prior,   levels = dprior_names))
 
-df_sc <- to_factors(readRDS("../Output/FIXED_euii.RDS")$df_euii)
-df_dc <- to_factors(readRDS("../Output/DUAL_avg.RDS")$df_avg)
+df_sc <- to_factors(readRDS("../Output/fixed_SC_euii.RDS")$df_euii)
+df_dc <- to_factors(readRDS("../Output/fixed_DC_avg.RDS")$df_avg)
 
 my_theme <- theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_blank())
@@ -1613,8 +1613,8 @@ to_factors <- function(df) df |>
   dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
                 Design_Prior   = factor(Design_Prior,   levels = dprior_names))
 
-df_sc <- to_factors(readRDS("../Output/FIXED_euii.RDS")$df_euii)
-df_dc <- to_factors(readRDS("../Output/DUAL_avg.RDS")$df_avg)
+df_sc <- to_factors(readRDS("../Output/fixed_SC_euii.RDS")$df_euii)
+df_dc <- to_factors(readRDS("../Output/fixed_DC_avg.RDS")$df_avg)
 
 my_theme <- theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_blank())
@@ -1700,11 +1700,11 @@ to_factors <- function(df) df |>
   dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
                 Design_Prior   = factor(Design_Prior,   levels = dprior_names))
 
-df_sc    <- to_factors(readRDS("../Output/FIXED_euii.RDS")$df_euii) |>
+df_sc    <- to_factors(readRDS("../Output/fixed_SC_euii.RDS")$df_euii) |>
   dplyr::filter(delta >= 50)
-df_dc    <- to_factors(readRDS("../Output/DUAL_euii.RDS")$df_euii) |>
+df_dc    <- to_factors(readRDS("../Output/fixed_DC_euii.RDS")$df_euii) |>
   dplyr::filter(delta >= 50)   # DC EUII not meaningful below the DV
-df_ratio <- to_factors(readRDS("../Output/DUAL_vs_FIXED_euii.RDS")$df_ratio) |>
+df_ratio <- to_factors(readRDS("../Output/fixed_DC_vs_SC_euii.RDS")$df_ratio) |>
   dplyr::filter(delta >= 50)
 
 my_theme <- theme_minimal() +
@@ -1790,7 +1790,7 @@ the avgT1E of the DC is far below the one of the SC in every scenario, at the pr
 <<plot_seq_oc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="One interim analysis: avgT1E (top) and avgPower at $\\delta = 60$ (bottom) across all analysis prior and design prior combinations, one panel per design. Color encodes the analysis prior (Vague shown dashed). The red line marks the nominal $0.05$.">>=
 library(patchwork)
 
-res_seq  <- readRDS("../Output/SEQ_MC_avg.RDS")
+res_seq  <- readRDS("../Output/seq_one_interim_avg.RDS")
 df_oc    <- res_seq$df_oc
 
 p_t1e <- oc_row(0, "Average T1E") +
@@ -1821,7 +1821,7 @@ $2\%$ of the trials, which explains the small loss of Power observed above ($0.9
 library(ggplot2)
 library(dplyr)
 
-res_seq  <- readRDS("../Output/SEQ_MC_avg.RDS")
+res_seq  <- readRDS("../Output/seq_one_interim_avg.RDS")
 df_stage <- res_seq$df_stage
 my_theme <- theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_blank())
@@ -1859,7 +1859,7 @@ ggplot(df_stage1,
 library(dplyr)
 library(kableExtra)
 
-res_seq  <- readRDS("../Output/SEQ_MC_avg.RDS")
+res_seq  <- readRDS("../Output/seq_one_interim_avg.RDS")
 df_stage <- res_seq$df_stage
 df_oc    <- res_seq$df_oc
 
@@ -1907,7 +1907,7 @@ library(ggplot2)
 library(dplyr)
 library(patchwork)
 
-res_euii <- readRDS("../Output/SEQ_MC_euii.RDS")
+res_euii <- readRDS("../Output/seq_one_interim_euii.RDS")
 df_euii  <- res_euii$df_euii
 my_theme <- theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_blank())
@@ -2069,7 +2069,7 @@ $9.8\%$ with two, and the DC from $2.6\%$ to $5.6\%$.
 <<plot_seq2_oc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="Two interim analyses: avgT1E (top) and avgPower at $\\delta = 60$ (bottom) across all analysis prior and design prior combinations, one panel per design. Color encodes the analysis prior (Vague shown dashed). The red line marks the nominal $0.05$.">>=
 library(patchwork)
 
-res_seq  <- readRDS("../Output/SEQ2_MC_avg.RDS")
+res_seq  <- readRDS("../Output/seq_two_interim_avg.RDS")
 df_oc    <- res_seq$df_oc
 
 p_t1e <- oc_row(0, "Average T1E") +
@@ -2101,7 +2101,7 @@ library(ggplot2)
 library(dplyr)
 library(ggh4x)
 
-res_seq  <- readRDS("../Output/SEQ2_MC_avg.RDS")
+res_seq  <- readRDS("../Output/seq_two_interim_avg.RDS")
 df_stage <- res_seq$df_stage
 my_theme <- theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_blank())
@@ -2142,7 +2142,7 @@ ggplot(df_stage1,
 library(dplyr)
 library(kableExtra)
 
-res_seq2  <- readRDS("../Output/SEQ2_MC_avg.RDS")
+res_seq2  <- readRDS("../Output/seq_two_interim_avg.RDS")
 df_stage2 <- res_seq2$df_stage
 df_oc2    <- res_seq2$df_oc
 
@@ -2190,8 +2190,8 @@ library(ggplot2)
 library(dplyr) 
 library(patchwork)  
 
-df_2int <- readRDS("../Output/SEQ2_MC_euii.RDS")$df_euii
-df_1int <- readRDS("../Output/SEQ_MC_euii.RDS")$df_euii
+df_2int <- readRDS("../Output/seq_two_interim_euii.RDS")$df_euii
+df_1int <- readRDS("../Output/seq_one_interim_euii.RDS")$df_euii
 
 design_labels <- c("SC", "SC + Futility", "DC", "DC + Futility")
 DV <- 50

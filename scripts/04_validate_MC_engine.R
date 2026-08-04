@@ -1,99 +1,40 @@
-library(RBesT)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(checkmate)  
-library(assertthat) 
+# =============================================================================
+# Sequential Design — verification of the Monte Carlo engine
+# =============================================================================
+# This file produces NO thesis results. Its only purpose is to check that the
+# Monte Carlo engine reproduces the exact analytical sequential operating
+# characteristics, so that 05_sequential_one_interim.R can be trusted.
+#
+#   reference  : oc2S_seq.dual.normMix  (defined below, exact, conditional)
+#   under test : oc2_seq_mc.normMix     (00_functions_monte_carlo.R)
+#
+# Only the CONDITIONAL operating characteristics are compared. That is enough:
+# the averaged metrics are obtained by drawing theta_C from the design prior,
+# which is exact Monte Carlo integration by construction, so once the conditional
+# engine is right the averaged one is too.
+#
+# Each analytical evaluation costs a few seconds, so the grid is deliberately
+# small. Expect a couple of minutes.
+#
+# Run from the Thesis/ root:
+#   Rscript scripts/04_validate_MC_engine.R
+# =============================================================================
+
+suppressMessages({
+  library(RBesT)
+  library(dplyr)
+})
+source("scripts/00_functions_monte_carlo.R")   # oc2_seq_mc.normMix
 
 
-# TOOO many function. Need to make some order at some point 
-
-
-# -----------------------------------------------
-# EXACT METHODS
-# -----------------------------------------------
-
-
-
-avgoc2S.normMix <- function(
-  prior1, prior2, n1, n2, decision, delta, design_prior2,   eps = 1e-6, Ngrid = 10, ...
-) {
-  
-  # Creates OC
-  oc_fun <- RBesT::oc2S(prior1, prior2, n1, n2, decision, eps = eps, ...)
-
-    # warm up cache
-  lim2_range <- RBesT::qmix(design_prior2, c(eps / 2, 1 - eps / 2))
-  lim1_range <- lim2_range + delta
-
-  # we know y_1 ~ N(theta_1, SEM_1), so in theory we should warm up cache for y_1 not for theta1
-  # this is not necessary cause inside oc2s this is alraedy handled  
-  
-  invisible(oc_fun(lim1_range, lim2_range))
-
-
-  # output function
-  design_fun <- function(delta_new = delta, design_prior2_new = design_prior2) {
-
-    res <- RBesT:::integrate_density_log(
-      log_integrand = function(x) {
-        log(oc_fun(x + delta_new, x))
-      },
-      mix = design_prior2_new,
-      Lplower = RBesT::logit(eps / 2),
-      Lpupper = RBesT::logit(1 - eps / 2)
-    )
-    
-    return(res)
-  }
-
-  return(design_fun)
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# -------------------------------------------------------
-# SEQUENTIAL DESIGN (only one interim analysis allowed)
-# -------------------------------------------------------
-
-
-# decision <- list ( list (success = succ.early, futility = fut.early), success = succ_final)
-
+# -----------------------------------------------------------------------------
+# oc2S_seq.dual.normMix — exact/analytical reference, validation-only.
+#
+# Used ONLY in this file, to check oc2_seq_mc.normMix (00_functions_monte_carlo.R)
+# against a closed-form calculation. It does not feed any thesis figure or
+# table, so it lives here rather than in the shared 00_functions_exact.R, which
+# should only contain functions the actual results pipeline depends on.
+# -----------------------------------------------------------------------------
 
 # n1 and n2 are vector of CUMULATIVE sample sizes for each stages (c(interim, final))
 # this mean NOT c(50,50), but c(50,100)
@@ -171,9 +112,9 @@ oc2S_seq.dual.normMix <- function(
 
   if ((!is.null(lower.tail_fut[[1]]) && lower.tail_succ[[1]] == lower.tail_fut[[1]]) |
       (!is.null(lower.tail_fut[[2]]) && lower.tail_succ[[2]] == lower.tail_fut[[2]])) {
-    stop("The success criteria and futility criteria must be on opposite tails, 
+    stop("The success criteria and futility criteria must be on opposite tails,
                                                         ensure to control it using 'lower.tail' in 'decision2S'")
-  } 
+  }
 
   ## Marginal standard errors at each stage
   ## (used for integration limits and sampling distributions)
@@ -220,7 +161,7 @@ oc2S_seq.dual.normMix <- function(
     # where D_1(y2_1) = bnd_succ[[1]](y2_1)
     p_succ_1 <- RBesT:::integrate_density_log(
         log_integrand = function(x) {
-          pnorm(bnd_succ[[1]](x), theta1, cSEM1[1], 
+          pnorm(bnd_succ[[1]](x), theta1, cSEM1[1],
           lower.tail = lower.tail_succ[[1]], log.p = TRUE)
         },
       mix     = mix_y2_1,
@@ -253,9 +194,9 @@ oc2S_seq.dual.normMix <- function(
     ## P(success at final) = E_{y2_1}[ E_{y1_1 in continuation region C_1}[
     ##                          E_{y2_2 | y2_1}[ P(y1_2 > (or <) bnd_succ[[2]](y2_2) | y1_1, theta1) ] ] ]
     ##
-    ## Outer integral over y2_1 ~ N(theta2, mSEM2[1]) 
-    ## Middle integral over y1_1 in continuation region 
-    ## Inner integral over y2_2 | y2_1 
+    ## Outer integral over y2_1 ~ N(theta2, mSEM2[1])
+    ## Middle integral over y1_1 in continuation region
+    ## Inner integral over y2_2 | y2_1
 
    p_succ_2 <- RBesT:::integrate_density_log(
       log_integrand = function(y2_1_vec) {
@@ -263,7 +204,7 @@ oc2S_seq.dual.normMix <- function(
 
           ## define continutation boundaries for y1_1 given y2_1.
           c_s <- bnd_succ[[1]](y2_1)
-          
+
           if (!is.null(bnd_fut[[1]])) {
             c_f <- bnd_fut[[1]](y2_1)
           } else {
@@ -278,7 +219,7 @@ oc2S_seq.dual.normMix <- function(
             c_hi <- c_s
           } else {
             # Lower is better: Continue if c_s < y1 < c_f
-            if (c_s >= c_f) return(-Inf) 
+            if (c_s >= c_f) return(-Inf)
             c_lo <- c_s
             c_hi <- c_f
           }
@@ -288,11 +229,11 @@ oc2S_seq.dual.normMix <- function(
 
           p_lo  <- pnorm(c_lo, theta1, cSEM1[1])
           p_hi  <- pnorm(c_hi, theta1, cSEM1[1])
-        
-          ## Prevent exactly 0 or 1 
-          p_lo <- max(min(p_lo, 1 - 1e-12), 1e-12) 
+
+          ## Prevent exactly 0 or 1
+          p_lo <- max(min(p_lo, 1 - 1e-12), 1e-12)
           p_hi <- max(min(p_hi, 1 - 1e-12), 1e-12)
-          
+
 
           ## integrate_density wants logit scale as extreme
           Lp_lo <- RBesT::logit(p_lo)
@@ -302,7 +243,7 @@ oc2S_seq.dual.normMix <- function(
           inner <- RBesT:::integrate_density_log(
             log_integrand = function(y1_1_vec) {
               sapply(y1_1_vec, function(y1_1) {
-                
+
                 mu1 <- cmean1(y1_1, theta1)
                 mu2 <- cmean2(y2_1, theta2)
                 mix_y2_2 <- RBesT::mixnorm(c(1, mu2, cSEM2[2]), sigma = cSEM2[2])
@@ -322,7 +263,7 @@ oc2S_seq.dual.normMix <- function(
                   Lpupper = RBesT::logit(1 - eps / 2)
                 )
 
-                ## succ_2 is a natural probability. 
+                ## succ_2 is a natural probability.
                 ## We must log it before handing it up to the middle log_integrand
                 if (succ_2 <= 0) return(-Inf)
                 log(succ_2)
@@ -386,11 +327,115 @@ oc2S_seq.dual.normMix <- function(
 }
 
 
+# ---------------------------------------------------------------------------
+# Design parameters (identical to 05_sequential_one_interim.R)
+# ---------------------------------------------------------------------------
+sigma      <- 88
+delta_MCID <- 60
+
+n1_seq <- c(20, 40)   # treatment arm, cumulative
+n2_seq <- c(10, 20)   # control arm, cumulative
+n_stg1 <- n1_seq[1] + n2_seq[1]
+n_stg2 <- n1_seq[2] + n2_seq[2]
+
+n_sim <- 200000       # MC replicates per evaluation
 
 
+# ---------------------------------------------------------------------------
+# Priors
+# ---------------------------------------------------------------------------
+p_MAP <- mixnorm(
+  c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
+  sigma = sigma, param = "ms"
+)
+p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
 
 
+# ---------------------------------------------------------------------------
+# Decision criteria (identical to 2.3)
+# ---------------------------------------------------------------------------
+# Efficacy, dual criterion: Pr(delta > 0) > 0.95 AND Pr(delta > 50) > 0.50
+sign.crit <- decision2S(pc = c(0.95, 0.50), qc = c(0, -50), lower.tail = TRUE)
+# Futility, stage 1 only: Pr(delta < 40 | data) >= 0.90
+fut.crit  <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
+
+# The analytical function accepts a bare decision2S for the final stage.
+decisions_an <- list(list(success = sign.crit, futility = fut.crit), sign.crit)
+# The MC engine wants the success/futility slots at every stage.
+decisions_mc <- list(list(success = sign.crit, futility = fut.crit),
+                     list(success = sign.crit, futility = NULL))
 
 
+# ---------------------------------------------------------------------------
+# Tolerances: everything is compared against 4 Monte Carlo standard errors.
+# N takes only the two values n_stg1 and n_stg2, so its variance is Bernoulli.
+# ---------------------------------------------------------------------------
+se_prop <- function(p) sqrt(p * (1 - p) / n_sim)
+se_EN   <- function(p_stop1) sqrt(p_stop1 * (1 - p_stop1) / n_sim) * abs(n_stg2 - n_stg1)
+
+report <- function(label, analytic, mc, tol) {
+  d  <- mc - analytic
+  ok <- abs(d) < tol
+  cat("  ", formatC(label, width = -18),
+      " analytic =", formatC(analytic, format = "f", digits = 5, width = 9),
+      "  MC =",      formatC(mc,       format = "f", digits = 5, width = 9),
+      "  diff =",    formatC(d,        format = "f", digits = 5, width = 9),
+      " ", if (ok) "PASS" else "**FAIL**", "\n")
+  ok
+}
 
 
+# ---------------------------------------------------------------------------
+# Conditional OC: analytical versus MC
+# ---------------------------------------------------------------------------
+cat("\n===============================================================\n")
+cat("Conditional OC, analytical versus MC (n_sim =", n_sim, ")\n")
+cat("tolerance: 4 Monte Carlo standard errors\n")
+cat("===============================================================\n")
+
+theta_c_check   <- c(-70, -50, -30)
+analysis_priors <- list("MAP" = p_MAP, "Vague" = p_vague)
+all_ok <- TRUE
+
+for (pname in names(analysis_priors)) {
+
+  oc_an <- oc2S_seq.dual.normMix(
+    prior1 = p_vague, prior2 = analysis_priors[[pname]],
+    n1 = n1_seq, n2 = n2_seq, decisions = decisions_an
+  )
+
+  for (tc in theta_c_check) {
+    # delta = 0 gives the type I error, delta = delta_MCID gives the power.
+    for (d in c(0, delta_MCID)) {
+
+      a <- oc_an(tc - d, tc)                       # theta_T = theta_C - delta
+      m <- oc2_seq_mc.normMix(
+        theta_1 = tc - d, theta_2 = tc,
+        prior_1 = p_vague, prior_2 = analysis_priors[[pname]],
+        n1_seq  = n1_seq,  n2_seq  = n2_seq,
+        decisions_list = decisions_mc, n_sim = n_sim, seed = 1
+      )
+      ps <- m$Per_Stage
+      p_stop1 <- a$P_Stop_Eff_Stg1 + a$P_Stop_Fut_Stg1
+
+      cat("\n", pname, " | theta_C =", tc, " | delta =", d, "\n")
+      all_ok <- report("P_Stop_Eff_Stg1", a$P_Stop_Eff_Stg1, ps$P_Succ[1],
+                       4 * se_prop(a$P_Stop_Eff_Stg1)) && all_ok
+      all_ok <- report("P_Stop_Fut_Stg1", a$P_Stop_Fut_Stg1, ps$P_Fut[1],
+                       4 * se_prop(a$P_Stop_Fut_Stg1)) && all_ok
+      all_ok <- report("Total_Power",     a$Total_Power,     m$Overall[["Power"]],
+                       4 * se_prop(a$Total_Power)) && all_ok
+      all_ok <- report("EN (Trt + Ctrl)", a$EN_Trt + a$EN_Pbo,
+                       m$Overall[["EN_t"]] + m$Overall[["EN_c"]],
+                       4 * se_EN(p_stop1)) && all_ok
+    }
+  }
+}
+
+cat("\n\n===============================================================\n")
+if (all_ok) {
+  cat("ALL CHECKS PASSED: the MC engine matches the analytical reference.\n")
+} else {
+  cat("SOME CHECKS FAILED: inspect the lines marked **FAIL** above.\n")
+}
+cat("===============================================================\n")

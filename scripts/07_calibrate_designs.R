@@ -15,12 +15,12 @@
 #                         the T1E target holds exactly at the returned n.
 #
 # The calibrated designs are saved to Output/CALIBRATED_designs.RDS.
-# The EUII comparison across delta is done later, in 2.6_CALIBRATED_EUII.R.
+# The EUII comparison across delta is done later, in 08_calibrated_euii_comparison.R.
 # =============================================================================
 
 library(RBesT)
 library(dplyr)
-source("scripts/prior_on_control/00.functions.MC.R")
+source("scripts/00_functions_monte_carlo.R")
 
 
 # ---------------------------------------------------------------------------

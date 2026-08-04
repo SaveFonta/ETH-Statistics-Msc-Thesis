@@ -8,7 +8,7 @@ library(ggplot2)
 library(gridExtra)
 library(patchwork)   # plot_layout(guides = "collect") for a single shared legend
 library(parallel)
-source("scripts/prior_on_control/00.functions.MC.R")
+source("scripts/00_functions_monte_carlo.R")
 
 
 # ---------------------------------------------------------------------------
@@ -361,8 +361,8 @@ p_stage <- ggplot(df_stage1,
 print(p_stage)
 
 saveRDS(list(df_oc = df_oc, df_stage = df_stage, sweeps = sweeps),
-        file = "Output/SEQ_MC_avg.RDS")
-cat("\nMC average and per stage results saved to Output/SEQ_MC_avg.RDS\n")
+        file = "Output/seq_one_interim_avg.RDS")
+cat("\nMC average and per stage results saved to Output/seq_one_interim_avg.RDS\n")
 
 
 
@@ -389,8 +389,8 @@ read_fixed <- function(path, base_label) {
     transmute(Delta = delta, EUII_fixed = EUII, Base = base_label)
 }
 fixed_base <- bind_rows(
-  read_fixed("Output/FIXED_euii.RDS", "SC"),   
-  read_fixed("Output/DUAL_euii.RDS",  "DC")    
+  read_fixed("Output/fixed_SC_euii.RDS", "SC"),   
+  read_fixed("Output/fixed_DC_euii.RDS",  "DC")    
 )
 
 df_euii <- df_euii |>
@@ -510,8 +510,8 @@ print((p_euii_abs / p_euii_ratio) +
         theme(legend.position = "bottom"))
 
 saveRDS(list(df_euii = df_euii, prior_H1 = prior_H1),
-        file = "Output/SEQ_MC_euii.RDS")
-cat("MC EUII results saved to Output/SEQ_MC_euii.RDS\n")
+        file = "Output/seq_one_interim_euii.RDS")
+cat("MC EUII results saved to Output/seq_one_interim_euii.RDS\n")
 
 
 

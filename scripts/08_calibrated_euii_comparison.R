@@ -1,20 +1,20 @@
 # =============================================================================
 # STEP 2 - EUII across delta for the calibrated designs
 # =============================================================================
-# Loads the designs calibrated in 2.5_CALIBRATED_COMPARISON.R (all sharing the
+# Loads the designs calibrated in 07_calibrate_designs.R (all sharing the
 # same avgT1E and the same avgPower at delta_MCID) and compares them across the
 # whole range of treatment effects. Since the error rates coincide by
 # construction, the EUII differences are attributable to the stopping structure
 # alone, priced per patient.
 #
 # Run from the Thesis/ root, AFTER 2.5:
-#   Rscript scripts/prior_on_control/2.6_CALIBRATED_EUII.R
+#   Rscript scripts/08_calibrated_euii_comparison.R
 # =============================================================================
 
 library(RBesT)
 library(dplyr)
 library(ggplot2)
-source("scripts/prior_on_control/00.functions.MC.R")
+source("scripts/00_functions_monte_carlo.R")
 
 
 # ---------------------------------------------------------------------------
