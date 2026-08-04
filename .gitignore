@@ -63,3 +63,4 @@ Output/
 plots/
 data/
 scripts/gsbDesign
+.latexbuild/
