@@ -33,6 +33,8 @@
 *.xlsx
 *.xls
 *.json
+# ...except VS Code project settings, which are checked-in config, not data
+!.vscode/settings.json
 *.xml
 *.tsv
 *.deb
