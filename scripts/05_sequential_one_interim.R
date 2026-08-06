@@ -1,235 +1,60 @@
 # =============================================================================
-# Sequential Design — Monte Carlo evaluation of AVERAGE OC and EUII
+# Sequential Design One interim — Monte Carlo evaluation of AVERAGE OC and EUII
+# =============================================================================
+# Structure: (1) data / simulation, (2) saveRDS, (3) plots and tables, each
+# labelled with the manuscript.Rnw chunk it feeds.
 # =============================================================================
 
-library(RBesT)
 library(dplyr)
 library(ggplot2)
-library(gridExtra)
 library(patchwork)   # plot_layout(guides = "collect") for a single shared legend
 library(parallel)
-source("scripts/00_functions_monte_carlo.R")
+source("scripts/00_shared_setup.R")
+source("scripts/00_functions.R")
+
+out_dir <- "Output/05_sequential_one_interim"
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 
 # ---------------------------------------------------------------------------
-# Design parameters
+# Schedule
 # ---------------------------------------------------------------------------
-sigma      <- 88
-delta_MCID <- 60
-DV         <- 50   # decision value of the dual criterion (see dual.crit below)
+n1_seq <- c(20, 40)   # trt arm cumulative sizes
+n2_seq <- c(10, 20)   # cntrl arm cumulative sizes
 
-n1_seq <- c(20, 40)   # treatment arm cumulative sizes
-n2_seq <- c(10, 20)   # control arm cumulative sizes
-
-delta_values <- c(0, seq(10, 100, by = 10))   
-mc_seed      <- 123                           # shared by both sweeps (paired comparison)
+delta_values <- c(0, seq(10, 100, by = 10))
+mc_seed      <- 123    # shared by every sweep (paired comparison)
 
 # Prior probability of H1 in the EUII. It does not enter the simulation, only the
-# processing with compute_euii, so the whole grid comes from a single
-# sweep. 
+# processing with compute_euii.
 prior_H1 <- c(0.01, 0.1, 0.5)
 
 
 # ---------------------------------------------------------------------------
-# Analysis priors
+# Decision criteria per stage
 # ---------------------------------------------------------------------------
-p_MAP <- mixnorm(
-  c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
-  sigma = sigma, param = "ms"
-)
-p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
-
-analysis_priors <- list(
-  "MAP"            = p_MAP,
-  "Robust (w=0.2)" = robustify(p_MAP, 0.2, mean = -50),
-  "Robust (w=0.4)" = robustify(p_MAP, 0.4, mean = -50),
-  "Robust (w=0.6)" = robustify(p_MAP, 0.6, mean = -50),
-  "Robust (w=0.8)" = robustify(p_MAP, 0.8, mean = -50),
-  "Vague"          = p_vague
-)
-prior_names <- names(analysis_priors)
-
-omega_map <- c(
-  "MAP"            = 0.0,
-  "Robust (w=0.2)" = 0.2,
-  "Robust (w=0.4)" = 0.4,
-  "Robust (w=0.6)" = 0.6,
-  "Robust (w=0.8)" = 0.8,
-  "Vague"          = 1.0
-)
-
-
-# ---------------------------------------------------------------------------
-# Design priors
-# ---------------------------------------------------------------------------
-design_priors <- list(
-  "Dirac (-50)"        = mixnorm(c(1, -50, 1e-16), sigma = sigma, param = "ms"),
-  "MAP"                = p_MAP,
-  "Skeptical (-90)"    = mixnorm(c(1, -90, 17.6), sigma = sigma, param = "ms"),
-  "Misspecified (-10)" = mixnorm(c(1, -10, 25),   sigma = sigma, param = "ms")
-)
-dprior_names <- names(design_priors)
-
-
-# ---------------------------------------------------------------------------
-# Decision criteria
-# ---------------------------------------------------------------------------
-# qc is on the scale of theta_T - theta_C = -delta, so delta thresholds flip sign.
-#
-# Efficacy (both stages), dual criterion:
-#   Pr(delta > 0 | data) > 0.95  AND  Pr(delta > 50 | data) > 0.50
-dual.crit <- decision2S(pc = c(0.95, 0.50), qc = c(0, -50), lower.tail = TRUE)
-
-sign.crit <- decision2S(pc = 0.95, qc = 0,  lower.tail = TRUE)
-
-# Futility (stage 1 only): Pr(delta < 40 | data) >= 0.90
-#   Pr(delta < 40) = Pr(theta_T - theta_C > -40), and decision2S fires on a ">="
-#   condition, hence the upper tail at qc = -40 with pc = 0.90.
-fut.crit <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
-
-
-#Need to build a list that contains as many lists as the number of analyses
 decisions_fut <- list(
-  list(success = dual.crit, futility = fut.crit),   
-  list(success = dual.crit, futility = NULL)        
+  list(success = dual.crit, futility = fut.crit),
+  list(success = dual.crit, futility = NULL)
 )
 decisions_no_fut <- list(
-  list(success = dual.crit, futility = NULL),       
-  list(success = dual.crit, futility = NULL)        
+  list(success = dual.crit, futility = NULL),
+  list(success = dual.crit, futility = NULL)
 )
 
 decisions_fut.single <- list(
-  list(success = sign.crit, futility = fut.crit),  
-  list(success = sign.crit, futility = NULL)        
+  list(success = sign.crit, futility = fut.crit),
+  list(success = sign.crit, futility = NULL)
 )
 decisions_no_fut.single <- list(
-  list(success = sign.crit, futility = NULL),       
-    list(success = sign.crit, futility = NULL)      
+  list(success = sign.crit, futility = NULL),
+  list(success = sign.crit, futility = NULL)
 )
 
-combos <- expand.grid(Analysis_Prior = prior_names,
-                      Design_Prior   = dprior_names,
-                      stringsAsFactors = FALSE, KEEP.OUT.ATTRS = FALSE)
-
-# ---------------------------------------------------------------------------
-# Shared theme
-# ---------------------------------------------------------------------------
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
-
-
-# ---------------------------------------------------------------------------
-# One MC run over every (analysis prior x design prior) combination
-# ---------------------------------------------------------------------------
-run_sweep <- function(decisions_list,
-                      cores = 6, n_sim_avg = 1e6) {
-
-  if (.Platform$OS.type != "unix") cores <- 1L   # mclapply cannot fork on Windows
-
-  cat("\n", nrow(combos), " prior combinations, n_sim = ", n_sim_avg,
-      ", cores = ", cores, "\n", sep = "")
-
-  res <- parallel::mclapply(seq_len(nrow(combos)), function(i) {
-    avgoc2_seq_mc.normMix(
-      prior_1        = p_vague,
-      prior_2        = analysis_priors[[combos$Analysis_Prior[i]]],
-      n1_seq         = n1_seq,
-      n2_seq         = n2_seq,
-      decisions_list = decisions_list,
-      delta          = delta_values,
-      design_prior_c = design_priors[[combos$Design_Prior[i]]],
-      n_sim          = n_sim_avg,
-      seed           = mc_seed
-    )
-  }, mc.cores = cores)
-
-  # mclapply reports failures as try-error elements instead of stopping
-  bad <- vapply(res, inherits, logical(1), "try-error")
-  if (any(bad)) {
-    cat("MC failed for the following prior combinations:\n")
-    cat(paste0("   ", combos$Analysis_Prior[bad], " | ", combos$Design_Prior[bad], "\n"), sep = "")
-    stop("MC failed for ", sum(bad), " of ", nrow(combos), " prior combinations.")
-  }
-  res
-}
-
-
-summarise_total <- function (sweeped) {
-
-list_res <- lapply(seq_along(sweeped), function(i) {
-  # first extract each of the 24 analysis x design
-  res <- sweeped[[i]]
-  #  merge all the deltas evaluated
-lapply(names(res), function(d){
-    ov  <- res[[d]]$Overall
-    Pow <- ov[["Power"]] #extract Power for each delta value
-    data.frame(
-      delta = sub("delta\\.", "", d)  |> as.numeric(),
-      Power = Pow,
-      # expected total sample size. 
-      EN    = ov[["EN_t"]] + ov[["EN_c"]]
-    )
-  })  |> bind_rows()
-})
-
-lapply(seq_len(nrow(combos)), function(combo){
-  list_res[[combo]]  |>  
-      mutate(
-        Analysis_Prior = combos$Analysis_Prior[[combo]], 
-        Design_Prior = combos$Design_Prior[[combo]]
-      )
-})  |>  bind_rows()
-
-}
-
-
-summarise_per.stage <- function (sweeped) {
-list_res <- lapply(seq_along(sweeped), function(i) {
-  # extract specific combination
-  res <- sweeped[[i]]
-
-  lapply(names(res), function(d){ 
-    res[[d]]$Per_Stage  |> 
-              select(Stage, P_Succ,  P_Fut, Cum_P_Succ, Cum_P_Fut)  |> 
-              mutate(delta = sub("delta\\.", "", d))
-  })  |>  bind_rows()
-})
-
-
-lapply (seq_len(nrow(combos)), function(combo){
-  list_res[[combo]]  |>  mutate(
-        Analysis_Prior = combos$Analysis_Prior[[combo]], 
-        Design_Prior = combos$Design_Prior[[combo]]
-  )
-})  |>  bind_rows()
-}
-
-
-
-# EUII for every prior_H1, 
-euii_table <- function(sweep) {
-  bind_rows(lapply(seq_along(sweep), function(i) {
-    e <- compute_euii(sweep[[i]], prior_H1 = prior_H1)
-    bind_rows(lapply(names(e), function(g) {
-      e[[g]] |>
-        mutate(prior_H1       = as.numeric(g),
-               Analysis_Prior = combos$Analysis_Prior[i],
-               Design_Prior   = combos$Design_Prior[i],
-               omega          = omega_map[[combos$Analysis_Prior[i]]])
-    }))
-  })) |>
-    mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
-           Design_Prior   = factor(Design_Prior,   levels = dprior_names))
-}
-
-
-
 
 # =============================================================================
-# Run one MC sweep per decision criterion
+# DATA — Run one MC sweep per decision criterion
 # =============================================================================
-# Four designs are compared. All use the SAME seed and the SAME n_sim, so theta_C
-# and the stage 1 data are common to all four and the comparison is paired.
 n_sim_avg <- 1e6
 
 designs <- list(
@@ -238,69 +63,88 @@ designs <- list(
   "DC"            = decisions_no_fut,
   "DC + Futility" = decisions_fut
 )
-design_labels <- names(designs)
 
+# sweep over all decision lists (i.e. designs)
 sweeps <- lapply(design_labels, function(nm) {
   cat("\n=== ", nm, " ===")
-  run_sweep(designs[[nm]], n_sim_avg = n_sim_avg)
+  run_sequential_sweep(decisions_list = designs[[nm]], combos, analysis_priors, design_priors,
+                       prior_1 = p_vague, n1_seq = n1_seq, n2_seq = n2_seq,
+                       delta_values = delta_values,
+                       n_sim_avg = n_sim_avg, mc_seed = mc_seed)
 })
 names(sweeps) <- design_labels
-
+names(sweeps$SC[[1]])
+sweeps$SC[["MAP | Dirac (-50)"]]  |> names()
 
 # ---------------------------------------------------------------------------
-# Stack the four sweeps, tagging each with its Criterion
+# DATA — Stack the four sweeps, adding each with its Criterion
 # ---------------------------------------------------------------------------
-# Total OC. create one column for avgt1e
 df_oc <- bind_rows(lapply(design_labels, function(nm) {
-  summarise_total(sweeps[[nm]]) |> mutate(Criterion = nm)
+  summarise_sweep(sweeps[[nm]], combos, extract_sweep_total) |> mutate(Criterion = nm)
 })) |>
   group_by(Criterion, Analysis_Prior, Design_Prior) |>
   mutate(avgT1E = Power[delta == 0]) |>
-  ungroup() 
+  ungroup()
 
-
-
-# Per stage OC
 df_stage <- bind_rows(lapply(design_labels, function(nm) {
-  summarise_per.stage(sweeps[[nm]]) |> mutate(Criterion = nm)
+  summarise_sweep(sweeps[[nm]], combos, extract_sweep_per_stage) |> mutate(Criterion = nm)
 })) |>
   mutate(delta = as.numeric(delta))
 
+df_oc <- df_oc |> mutate(
+  Criterion      = factor(Criterion, levels = design_labels),
+  Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+  Design_Prior   = factor(Design_Prior,   levels = dprior_names)
+)
 
-# Trasform to factors
-df_oc <- df_oc  |>  mutate(
-  Criterion = factor(Criterion, levels = design_labels),
-    Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
-    Design_Prior   = factor(Design_Prior,   levels = dprior_names)
-  )
-
-
-df_stage <- df_stage  |>  mutate(
-  Criterion = factor(Criterion, levels = design_labels),
-    Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
-    Design_Prior   = factor(Design_Prior,   levels = dprior_names)
-  )
-
-
+df_stage <- df_stage |> mutate(
+  Criterion      = factor(Criterion, levels = design_labels),
+  Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+  Design_Prior   = factor(Design_Prior,   levels = dprior_names)
+)
 
 
 # =============================================================================
+# DATA — EUII for correctly specified prior
+# =============================================================================
+# hERE, WE ONLY USE THE correctly specified analysis prior (so MAP for both analysis and design prior)
+
+df_euii <- bind_rows(lapply(design_labels, function(nm) {
+  sweep_euii_table(sweeps[[nm]], combos, prior_H1, omega_map, prior_names, dprior_names) |>
+    mutate(Criterion = nm)
+})) |>
+  filter(Analysis_Prior == "MAP", Design_Prior == "MAP") |>
+  mutate(Criterion = factor(Criterion, levels = design_labels),
+         Base      = if_else(grepl("^SC", as.character(Criterion)), "SC", "DC"))
+
+## Fixed baselines
+fixed_base <- read_fixed_baselines()
+
+df_euii <- df_euii |>
+  left_join(fixed_base, by = c("Delta", "Base")) |>
+  mutate(EUII_ratio = EUII / EUII_fixed)
+
+
+# =============================================================================
+# SAVE
+# =============================================================================
+saveRDS(list(df_oc = df_oc, df_stage = df_stage, sweeps = sweeps),
+        file = file.path(out_dir, "avg.RDS"))
+cat("\nMC average and per stage results saved to", file.path(out_dir, "avg.RDS"), "\n")
+
+saveRDS(list(df_euii = df_euii, prior_H1 = prior_H1),
+        file = file.path(out_dir, "euii.RDS"))
+cat("MC EUII results saved to", file.path(out_dir, "euii.RDS"), "\n")
+
+
+# =============================================================================
+# PLOTS AND TABLES
+# =============================================================================
+
+# --- manuscript.Rnw chunks: seq_oc_setup, plot_seq_oc --------------------
 # Average T1E and average Power, one panel per criterion
-# =============================================================================
-# function to create the panel
-oc_layout <- function(p) {
-  p +
-    geom_point(size = 2.2) +
-    geom_line(linewidth = 0.9) +
-    facet_wrap(~Criterion, nrow = 1) +
-    scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"), guide = "none") +
-    scale_color_viridis_d(option = "turbo", direction = -1) +
-    my_theme +
-    theme(axis.text.x = element_text(angle = 30, hjust = 1))
-}
-
-t1e <- df_oc  |>  filter (delta == 0)
-p_t1e <- oc_layout(
+t1e <- df_oc |> filter(delta == 0)
+p_t1e <- oc_facet_layout(
   ggplot(t1e,
          aes(x = Design_Prior, y = Power,
              color = Analysis_Prior, group = Analysis_Prior,
@@ -310,7 +154,7 @@ p_t1e <- oc_layout(
 
 print(p_t1e)
 
-p_pow <- oc_layout(
+p_pow <- oc_facet_layout(
   ggplot(filter(df_oc, delta == delta_MCID),
          aes(x = Design_Prior, y = Power,
              color = Analysis_Prior, group = Analysis_Prior,
@@ -322,15 +166,11 @@ print(p_pow)
 
 # Expected sample size. Futility leaves the average T1E and the average Power
 # basically unchanged, because it only stops trials that were going to fail
-# anyway. --> from here we don't see the advantage of futility analyis. Luckily WE 
+# anyway. --> from here we don't see the advantage of futility analyis. Luckily WE
 # HAVE DEVELOPED THE EUII
 
 
-
-
-# =============================================================================
-# Per stage behaviour
-# =============================================================================
+# --- manuscript.Rnw chunk: plot_seq_stage ---------------------------------
 # What the interim actually does: how often it stops early for efficacy when the
 # treatment works, and how often it stops early for futility under the null.
 df_stage1 <- bind_rows(
@@ -342,9 +182,6 @@ df_stage1 <- bind_rows(
               Metric = "Early futility stop (delta = 0)")
 )
 
-## So above we plot the early efficacy for delta = 60
-# below early futility when delta = 0
-
 p_stage <- ggplot(df_stage1,
                   aes(x = Design_Prior, y = Prob,
                       color = Analysis_Prior, group = Analysis_Prior,
@@ -352,54 +189,16 @@ p_stage <- ggplot(df_stage1,
   geom_point(size = 2.2) +
   geom_line(linewidth = 0.9) +
   facet_grid(Metric ~ Criterion) +
-  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"), guide = "none") +
-  scale_color_viridis_d(option = "turbo", direction = -1) +
+  scale_linetype_vague() +
+  scale_color_prior() +
   labs(x = "Design Prior", y = "Probability of stopping at the interim") +
   my_theme +
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
 print(p_stage)
 
-saveRDS(list(df_oc = df_oc, df_stage = df_stage, sweeps = sweeps),
-        file = "Output/seq_one_interim_avg.RDS")
-cat("\nMC average and per stage results saved to Output/seq_one_interim_avg.RDS\n")
 
-
-
-# =============================================================================
-# EUII for correctly specified prior
-# =============================================================================
-# hERE, WE ONLY USE THE correctly specified analysis prior (so MAP for both analysis and design prior)
-# Left: EUII of the four sequential designs, with the two fixed designs dashed.
-# Right: ratio of each sequential design to ITS OWN fixed counterpart, so SC and
-# SC + Futility are divided by the fixed SC, and DC and DC + Futility by the fixed DC.
-
-
-df_euii <- bind_rows(lapply(design_labels, function(nm) {
-  euii_table(sweeps[[nm]]) |> mutate(Criterion = nm)
-})) |>
-  filter(Analysis_Prior == "MAP", Design_Prior == "MAP") |>
-  mutate(Criterion = factor(Criterion, levels = design_labels),
-         Base      = if_else(grepl("^SC", as.character(Criterion)), "SC", "DC"))
-
-## Fixed baselines
-read_fixed <- function(path, base_label) {
-  readRDS(path)$df_euii |>
-    filter(Analysis_Prior == "MAP", Design_Prior == "MAP") |>
-    transmute(Delta = delta, EUII_fixed = EUII, Base = base_label)
-}
-fixed_base <- bind_rows(
-  read_fixed("Output/fixed_SC_euii.RDS", "SC"),   
-  read_fixed("Output/fixed_DC_euii.RDS",  "DC")    
-)
-
-df_euii <- df_euii |>
-  left_join(fixed_base, by = c("Delta", "Base")) |>
-  mutate(EUII_ratio = EUII / EUII_fixed)
-
-
-# ---- Table to display----
-# ---------------------------------------------------------------------------
+# --- manuscript.Rnw chunk: tab_seq_summary --------------------------------
 tab_stage <- df_stage |>
   filter(Analysis_Prior == "MAP", Design_Prior == "MAP", delta %in% c(0, 60)) |>
   group_by(Criterion, delta) |>
@@ -421,54 +220,23 @@ tab_designs <- tab_stage |>
 knitr::kable(tab_designs, format = "pipe", digits = 3)
 
 
-
-
-
-
-# --- colour encodes the DESIGN --------------------------------------------------
+# --- manuscript.Rnw chunk: plot_seq_euii (top/middle panels) -------------
+# Left: EUII of the four sequential designs, with the two fixed designs dashed.
+# Right: ratio of each sequential design to ITS OWN fixed counterpart, so SC and
+# SC + Futility are divided by the fixed SC, and DC and DC + Futility by the fixed DC.
+# colour encodes the DESIGN (crit_cols/crit_ltys from 00_shared_setup.R)
 crit_levels <- c(design_labels, "Fixed SC", "Fixed DC")
 
-crit_cols <- c("SC" = "#0072B2", "SC + Futility" = "#56B4E9",
-               "DC" = "#D55E00", "DC + Futility" = "#E69F00",
-               "Fixed SC" = "#0072B2", "Fixed DC" = "#D55E00")
-
-
-
-
-
-# prior_H1 shifts the EUII by about one percent and never changes the ranking of
-# the designs, so plotting one line per value only makes the plot more compilcated Instead the line is
-# drawn at prior_H1 = 0.5 and use the ribbon for the others
-ph1_ref <- 0.5
-
-euii_band <- function(df, value_col) {
-  df |>
-    mutate(Criterion = factor(as.character(Criterion), levels = crit_levels)) |>
-    group_by(Criterion, Delta) |>
-    summarise(lo  = min(.data[[value_col]]),
-              hi  = max(.data[[value_col]]),
-              mid = .data[[value_col]][prior_H1 == ph1_ref],
-              .groups = "drop")
-}
-
-df_band_abs   <- euii_band(df_euii, "EUII")
-df_band_ratio <- euii_band(df_euii, "EUII_ratio")
-
-# The two fixed designs carry no prior_H1: in a fixed design N is constant. They are single reference lines, with no band.
+# The two fixed designs carry no prior_H1: in a fixed design N is constant. 
 df_fixed_lines <- fixed_base |>
   transmute(Delta, EUII = EUII_fixed,
             Criterion = factor(paste("Fixed", Base), levels = crit_levels))
 
-# A fixed design shares the colour of its sequential counterpart, so colour alone cannot
-# tell "SC" from "Fixed SC". The linetype is therefore mapped to Criterion as well. Since
-# colour and linetype then have the same name and the same breaks, ggplot merges them into
-# a SINGLE legend whose keys show both the real colour and the real linetype.
-crit_ltys <- c("SC" = "solid", "SC + Futility" = "solid",
-               "DC" = "solid", "DC + Futility" = "solid",
-               "Fixed SC" = "twodash", "Fixed DC" = "twodash")
+df_euii_leveled <- df_euii |> mutate(Criterion = factor(as.character(Criterion), levels = crit_levels))
+df_band_abs   <- value_band(df_euii_leveled, "EUII",       c("Criterion", "Delta"))
+df_band_ratio <- value_band(df_euii_leveled, "EUII_ratio", c("Criterion", "Delta"))
 
-# --- top panel: absolute EUII, with the two fixed designs as references ---------
-# The panels are stacked and share the delta axis, so the top one drops its x axis.
+# top panel: absolute EUII, with the two fixed designs as references
 p_euii_abs <- ggplot() +
   geom_ribbon(data = df_band_abs,
               aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
@@ -488,8 +256,7 @@ p_euii_abs <- ggplot() +
   my_theme +
   theme(axis.text.x = element_blank())
 
-# --- bottom panel: ratio to the corresponding fixed design ---------------------
-
+# bottom panel: ratio to the corresponding fixed design
 p_euii_ratio <- ggplot(df_band_ratio) +
   geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
   geom_line(aes(x = Delta, y = mid, color = Criterion, linetype = Criterion),
@@ -500,8 +267,7 @@ p_euii_ratio <- ggplot(df_band_ratio) +
   scale_fill_manual(values = crit_cols, guide = "none") +
   guides(color = "none", linetype = "none") +
   coord_cartesian(xlim = c(DV, max(delta_values))) +
-  labs(x = expression(delta),
-       y = "EUII ratio") +
+  labs(x = expression(delta), y = "EUII ratio") +
   my_theme
 
 # patchwork stacks the panels and collects the guides, so they share one legend
@@ -509,43 +275,25 @@ print((p_euii_abs / p_euii_ratio) +
         patchwork::plot_layout(guides = "collect") &
         theme(legend.position = "bottom"))
 
-saveRDS(list(df_euii = df_euii, prior_H1 = prior_H1),
-        file = "Output/seq_one_interim_euii.RDS")
-cat("MC EUII results saved to Output/seq_one_interim_euii.RDS\n")
 
-
-
-
-###########################
-# -------- Effective sample size, 1 / E[1/N | outcome]
-#
-# As in the EUII panels, the line is drawn at prior_H1 = 0.5 and there is ribbon for the others
-
-library(tidyr)
-
+# --- manuscript.Rnw chunk: plot_seq_euii (bottom panel: effective sample size) ---
+# 1 / E[1/N | outcome]. As in the EUII panels, the line is drawn at prior_H1 = 0.5
+# and there is a ribbon for the others.
 n_min <- n1_seq[1] + n2_seq[1]                              #  30
 n_max <- n1_seq[length(n1_seq)] + n2_seq[length(n2_seq)]    #  60
-
 
 sample_size <- df_euii |>
   filter(grepl("Futility", Criterion)) |>
   select(Delta, prior_H1, Criterion, E_invN_sig, E_invN_nonsig) |>
-  pivot_longer(cols = c(E_invN_sig, E_invN_nonsig),
-               names_to = "E_inv_type", values_to = "E_inv_val") |>
+  tidyr::pivot_longer(cols = c(E_invN_sig, E_invN_nonsig),
+                      names_to = "E_inv_type", values_to = "E_inv_val") |>
   mutate(
-    N_eff     = 1 / E_inv_val,     
+    N_eff     = 1 / E_inv_val,
     Outcome   = factor(if_else(E_inv_type == "E_invN_sig", "Success", "Non success"),
                        levels = c("Success", "Non success")),
     Criterion = factor(as.character(Criterion), levels = design_labels)
   )
-
-# band to generate the ribbon
-band_N <- sample_size |>
-  group_by(Criterion, Outcome, Delta) |>
-  summarise(lo  = min(N_eff),
-            hi  = max(N_eff),
-            mid = N_eff[prior_H1 == ph1_ref],
-            .groups = "drop")
+band_N <- value_band(sample_size, "N_eff", c("Criterion", "Outcome", "Delta"))
 
 p_N_eff <- ggplot(band_N) +
   geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
@@ -559,185 +307,9 @@ p_N_eff <- ggplot(band_N) +
   facet_wrap(~Outcome) +
   scale_color_manual(values = crit_cols) +
   scale_fill_manual(values = crit_cols, guide = "none") +
-  # same delta window as the EUII panels, plus the sample size bounds
   coord_cartesian(xlim = c(DV, max(delta_values)), ylim = c(n_min, n_max)) +
   labs(x = expression(delta),
        y = expression("Effective sample size  " * (E * "[1/N | outcome]")^-1)) +
   my_theme
 
 print(p_N_eff)
-
-
-
-
-
-
-
-
-
-#########################################################################################################
-# -----
-# WHAT ABOUT USING DC AND SC together? 
-# First interim = DC, second = SC
-# vs First = SC, second = DC
-# 
-
-decisions_DC.SC <- list(
-  list(success = dual.crit, futility = fut.crit),   
-  list(success = sign.crit, futility = NULL)        
-)
-
-decisions_SC.DC <- list(
-  list(success = sign.crit, futility = fut.crit),   
-  list(success = dual.crit, futility = NULL)        
-)
-
-
-
-res_DC.SC <- avgoc2_seq_mc.normMix(
-      prior_1        = p_vague,
-      prior_2        = p_MAP,
-      n1_seq         = n1_seq,
-      n2_seq         = n2_seq,
-      decisions_list = decisions_DC.SC,
-      delta          = delta_values,
-      design_prior_c = p_MAP,
-      n_sim          = n_sim_avg,
-      seed           = mc_seed
-    )
-
-
-res_SC.DC <- avgoc2_seq_mc.normMix(
-      prior_1        = p_vague,
-      prior_2        = p_MAP,
-      n1_seq         = n1_seq,
-      n2_seq         = n2_seq,
-      decisions_list = decisions_SC.DC,
-      delta          = delta_values,
-      design_prior_c = p_MAP,
-      n_sim          = n_sim_avg,
-      seed           = mc_seed
-    )
-
-
-# EUII of the two hybrids
-euii_DC.SC <- compute_euii(res_DC.SC, prior_H1 = prior_H1) #list with the results for each prior_H1
-euii_SC.DC <- compute_euii(res_SC.DC, prior_H1 = prior_H1)
-
-# stack them with the two pure futility designs for comparison
-df_hyb <- bind_rows(
-  bind_rows(lapply(names(euii_DC.SC), function(pH1)
-    euii_DC.SC[[pH1]] |> mutate(prior_H1 = as.numeric(pH1), Criterion = "DC then SC + Fut."))),
-  bind_rows(lapply(names(euii_SC.DC), function(pH1)
-    euii_SC.DC[[pH1]] |> mutate(prior_H1 = as.numeric(pH1), Criterion = "SC then DC + Fut."))),
-  df_euii |>
-    filter(Analysis_Prior == "MAP", Design_Prior == "MAP",
-           Criterion %in% c("SC + Futility", "DC + Futility")) |>
-    mutate(Criterion = as.character(Criterion)) |>
-    select(Delta, Power, T1E, EUII, prior_H1, Criterion)
-)
-
-band_hyb <- df_hyb |>
-  group_by(Criterion, Delta) |>
-  summarise(lo = min(EUII), hi = max(EUII),
-            mid = EUII[prior_H1 == 0.5], .groups = "drop")
-
-hyb_cols <- c("SC + Futility"     = "#56B4E9",
-              "DC + Futility"     = "#E69F00",
-              "DC then SC + Fut." = "#009E73",
-              "SC then DC + Fut." = "#CC79A7")
-
-ggplot(band_hyb) +
-  geom_line(aes(x = Delta, y = mid, color = Criterion), linewidth = 1.1) +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.4) +
-  scale_color_manual(values = hyb_cols) +
-  scale_fill_manual(values = hyb_cols, guide = "none") +
-  coord_cartesian(xlim = c(DV, max(delta_values))) +
-  labs(x = expression(delta), y = "EUII") +
-  my_theme
-
-# EUII and error rates at the MCID
-df_hyb |> filter(Delta == delta_MCID, prior_H1 == 0.5) |>
-  select(Criterion, T1E, Power, EUII)
-
-
-# ------------------------------------------
-# Same comparison WITHOUT futility: hybrids vs pure SC and pure DC
-# ------------------------------------------------
-
-decisions_DC.SC.nofut <- list(
-  list(success = dual.crit, futility = NULL),
-  list(success = sign.crit, futility = NULL)
-)
-
-decisions_SC.DC.nofut <- list(
-  list(success = sign.crit, futility = NULL),
-  list(success = dual.crit, futility = NULL)
-)
-
-
-res_DC.SC.nofut <- avgoc2_seq_mc.normMix(
-      prior_1        = p_vague,
-      prior_2        = p_MAP,
-      n1_seq         = n1_seq,
-      n2_seq         = n2_seq,
-      decisions_list = decisions_DC.SC.nofut,
-      delta          = delta_values,
-      design_prior_c = p_MAP,
-      n_sim          = n_sim_avg,
-      seed           = mc_seed
-    )
-
-
-res_SC.DC.nofut <- avgoc2_seq_mc.normMix(
-      prior_1        = p_vague,
-      prior_2        = p_MAP,
-      n1_seq         = n1_seq,
-      n2_seq         = n2_seq,
-      decisions_list = decisions_SC.DC.nofut,
-      delta          = delta_values,
-      design_prior_c = p_MAP,
-      n_sim          = n_sim_avg,
-      seed           = mc_seed
-    )
-
-
-# EUII of the two hybrids without futility
-euii_DC.SC.nofut <- compute_euii(res_DC.SC.nofut, prior_H1 = prior_H1)
-euii_SC.DC.nofut <- compute_euii(res_SC.DC.nofut, prior_H1 = prior_H1)
-
-# stack them with the two pure designs without futility (aligned prior)
-df_hyb_nofut <- bind_rows(
-  bind_rows(lapply(names(euii_DC.SC.nofut), function(pH1)
-    euii_DC.SC.nofut[[pH1]] |> mutate(prior_H1 = as.numeric(pH1), Criterion = "DC then SC"))),
-  bind_rows(lapply(names(euii_SC.DC.nofut), function(pH1)
-    euii_SC.DC.nofut[[pH1]] |> mutate(prior_H1 = as.numeric(pH1), Criterion = "SC then DC"))),
-  df_euii |>
-    filter(Analysis_Prior == "MAP", Design_Prior == "MAP",
-           Criterion %in% c("SC", "DC")) |>
-    mutate(Criterion = as.character(Criterion)) |>
-    select(Delta, Power, T1E, EUII, prior_H1, Criterion)
-)
-
-band_hyb_nofut <- df_hyb_nofut |>
-  group_by(Criterion, Delta) |>
-  summarise(lo = min(EUII), hi = max(EUII),
-            mid = EUII[prior_H1 == 0.5], .groups = "drop")
-
-hyb_cols_nofut <- c("SC"         = "#0072B2",
-                    "DC"         = "#D55E00",
-                    "DC then SC" = "#009E73",
-                    "SC then DC" = "#CC79A7")
-
-ggplot(band_hyb_nofut) +
-  geom_line(aes(x = Delta, y = mid, color = Criterion), linewidth = 1.1) +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.4) +
-  scale_color_manual(values = hyb_cols_nofut) +
-  scale_fill_manual(values = hyb_cols_nofut, guide = "none") +
-  coord_cartesian(xlim = c(DV, max(delta_values))) +
-  labs(x = expression(delta), y = "EUII") +
-  my_theme
-
-# EUII and error rates at the MCID
-df_hyb_nofut |> filter(Delta == delta_MCID, prior_H1 == 0.5) |>
-  select(Criterion, T1E, Power, EUII)

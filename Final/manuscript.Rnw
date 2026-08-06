@@ -50,7 +50,7 @@ opts_chunk$set(echo = FALSE,
                )
 options(scipen = 10)
 
-# Shared colour palette (Okabe-Ito), reused across every figure in the
+# Shared colour palette, reused across every figure in the
 # manuscript so that SC/DC and Average/Conditional always match.
 col_sc   <- "#0072B2"
 col_dc   <- "#D55E00"
@@ -504,9 +504,14 @@ Consistent with the degenerate-prior view above, the conditional formulas of Equ
 
 
 \paragraph{Running example.} 
-In the figures below, the analysis prior is held fixed to the 1 component MAP prior ($\mu_{A,C} = -50$, $\sigma_{A,C}^2 = 88^2/20$) while the design prior parameters are varied to represent different assumptions about the true data generating process.
+In the figures below, the analysis prior is held fixed to the 1 component MAP prior ($\mu_{A,C} = -50$, $\sigma_{A,C}^2 = 88^2/20$) 
+while the design prior parameters are varied to represent different assumptions about the true data generating process.
 
-Figure~\ref{fig:plot_t1e} visualizes how T1E reacts to two types of conflict between analysis and design priors: location shift ($\mu_{A,C} \neq \mu_{D,C}$) and scale shift ($\sigma_{A,C} \neq \sigma_{D,C}$). The left panel shows that if the true placebo response is better than expected ($\mu_{D,C} < -50$), the T1E increases. The conditional T1E (conditioned on $\theta_C^* = \mu_{D,C}$) lies below the avgT1E throughout the plotted range. In the right panel, when design uncertainty $\sigma_{D,C}$ is zero we obtain the conditional T1E, while as $\sigma_{D,C} \to \infty$ the avgT1E converges to $0.5$, consistent with Equation~\eqref{eq:avgt1e_closed_form}.
+Figure~\ref{fig:plot_t1e} visualizes how T1E reacts to two types of conflict between analysis and design priors: location shift 
+($\mu_{A,C} \neq \mu_{D,C}$) and scale shift ($\sigma_{A,C} \neq \sigma_{D,C}$). The left panel shows that if the true placebo 
+response is better than expected ($\mu_{D,C} < -50$), the T1E increases. The conditional T1E (conditioned on $\theta_C^* = \mu_{D,C}$) 
+lies below the avgT1E throughout the plotted range. In the right panel, when design uncertainty $\sigma_{D,C}$ is zero we obtain the 
+conditional T1E, while as $\sigma_{D,C} \to \infty$ the avgT1E converges to $0.5$, consistent with Equation~\eqref{eq:avgt1e_closed_form}.
 
 <<plot_t1e, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Left panel shows T1E under Location Shift (varying $\\mu_{D,C}$), assuming $\\sigma_{D,C} = \\sigma_{A,C}$. Conditional metric is evaluated at $\\theta_C^* = \\mu_{D,C}$. Right panel shows Average T1E under Scale Shift (varying $\\sigma_{D,C}$) while setting $\\mu_{D,C} = \\mu_{A,C}$. The vertical gray dotted lines indicate the points of prior alignment ($\\pi_D = \\pi_A$). The red dashed line represents the nominal value of $0.05$">>=
 library(ggplot2)
@@ -515,7 +520,7 @@ library(tidyr)
 library(gridExtra)
 library(scales)
 
-# --- Trial Parameters & Functions  ---
+# --- Trial Parameters  ---
 sigma <- 88; n_C <- 20; n_T <- 40; n_A <- 20; N_total <- n_C + n_T
 v_C <- sigma^2 / n_C; v_T <- sigma^2 / n_T; sigma_A2 <- sigma^2 / n_A; mu_A <- -50
 q <- 0; z_p <- qnorm(0.95)
@@ -528,8 +533,10 @@ k_SC <- q + z_p * sqrt(V_delta)   # SC (significance) threshold
 # (SC: k = k_SC; dual criterion: k = max(DV, k_SC))
 condPower <- function(theta_C_star, delta, k)
   1 - pnorm((k - ((1 - W) * (mu_A - theta_C_star) + delta)) / sqrt(V_samp))
+
 avgPower <- function(mu_D, sigma_D2, delta, k)
   1 - pnorm((k - ((1 - W) * (mu_A - mu_D) + delta)) / sqrt(V_samp + (1 - W)^2 * sigma_D2))
+
 calc_EUII <- function(power, t1e, N) {
   eps <- 1e-10
   p <- pmax(pmin(power, 1 - eps), eps); t <- pmax(pmin(t1e, 1 - eps), eps)
@@ -542,15 +549,15 @@ my_theme <- theme_minimal() + theme(legend.position = "bottom", legend.title = e
 my_x_scale <- scale_x_continuous(trans = "log1p", breaks = c(0, 10, 100, 1000, 10000), labels = c("0\n(Cond.)", "10", "100", "1K", "10K"))
 
 # --- T1E Data & Plots ---
-df_t1e_loc <- data.frame(mu_D = seq(-90, -10, length.out = 100)) %>%
+df_t1e_loc <- data.frame(mu_D = seq(-90, -10, length.out = 100)) |>
   mutate(
     `Conditional T1E` = condPower(mu_D, 0, k_SC),
     `Average T1E` = avgPower(mu_D, sigma_A2, 0, k_SC)
-  ) %>%
+  ) |>
   pivot_longer(cols = c(`Conditional T1E`, `Average T1E`), names_to = "Metric", values_to = "Value")
 
 sigmas <- c(0, 10^seq(0, 5, length.out = 99))
-df_t1e_scale <- data.frame(sigma_D = sigmas) %>%
+df_t1e_scale <- data.frame(sigma_D = sigmas) |>
   mutate(Avg_T1E = avgPower(mu_A, sigma_D^2, 0, k_SC))
 
 p1a <- ggplot(df_t1e_loc, aes(x = mu_D, y = Value, color = Metric)) +
@@ -561,7 +568,7 @@ p1a <- ggplot(df_t1e_loc, aes(x = mu_D, y = Value, color = Metric)) +
   labs(x = expression("True Control Mean (" * mu["D,C"] * ")"),
        y = "T1E") +
   my_theme
-
+ 
 p1b <- ggplot(df_t1e_scale, aes(x = sigma_D, y = Avg_T1E)) +
   geom_line(color = "#E69F00", size = 1.2) +
   geom_hline(yintercept = 0.5, linetype = "dashed", color = "black", linewidth = 0.6) +
@@ -580,14 +587,14 @@ Figure~\ref{fig:plot_power} shows the behavior of statistical power assuming $\m
 
 <<plot_power, echo=FALSE, warning=FALSE, message=FALSE, dev='cairo_pdf', fig.height=4, fig.width=10, fig.cap="Left panel shows Conditional and Average Power evaluated across true treatment effects ($\\delta$), assuming aligned priors ($\\mu_{A,C} = \\mu_{D,C}$ and $\\sigma_{A,C} = \\sigma_{D,C}$). Right panel shows Average Power evaluated at $\\delta = 60$ as design uncertainty ($\\sigma_{D,C}$) increases, holding $\\mu_{D,C} = \\mu_{A,C}$. The vertical gray dotted lines indicate the points of prior alignment ($\\pi_D = \\pi_A$).">>=
 # --- Power Data & Plots ---
-df_pow_loc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
+df_pow_loc <- data.frame(delta = seq(0, 100, length.out = 100)) |>
   mutate(
     `Conditional Power` = condPower(mu_A, delta, k_SC),
     `Average Power` = avgPower(mu_A, sigma_A2, delta, k_SC)
-  ) %>%
+  ) |>
   pivot_longer(cols = c(`Conditional Power`, `Average Power`), names_to = "Metric", values_to = "Value")
 
-df_pow_scale <- data.frame(sigma_D = sigmas) %>%
+df_pow_scale <- data.frame(sigma_D = sigmas) |>
   mutate(Avg_Power = avgPower(mu_A, sigma_D^2, 60, k_SC))
 
 p2a <- ggplot(df_pow_loc, aes(x = delta, y = Value, color = Metric)) +
@@ -673,17 +680,17 @@ K_req   <- 88^2 * (qnorm(0.95) + qnorm(0.80))^2 / 60^2 # 13.30
 b_req   <- K_req * (2 + 1) - 2 * 20
 n_C_req <- (b_req + sqrt(b_req^2 + 4 * 2 * K_req * 20)) / (2 * 2)  # 11.5
 
-legend_labels <- c("n_A = 0", "n_A = 10", "n_A = 20", "n_A = 30")
+legend_labels <- expression(n[A] == 0, n[A] == 10, n[A] == 20, n[A] == 30)
 
 ggplot(df_ss, aes(x = n_C, y = power, colour = n_A)) +
   geom_line(linewidth = 0.8) +
   geom_hline(yintercept = 0.8, linetype = "dashed", colour = "grey50") +
   geom_vline(xintercept = n_C_req, linetype = "dotted", colour = "grey40") +
   geom_vline(xintercept = 20,      linetype = "dotted", colour = "grey40") +
-  annotate("text", x = n_C_req - 0.6, y = 0.15, label = paste0("n_C=", round(n_C_req, 1)),
-           hjust = 1, size = 3, colour = "grey30") +
-  annotate("text", x = 20 + 0.6, y = 0.15, label = "n_C=20",
-           hjust = 0, size = 3, colour = "grey30") +
+  annotate("text", x = n_C_req - 0.6, y = 0.15, label = paste0("n[C] == ", round(n_C_req, 1)),
+           hjust = 1, size = 3, colour = "grey30", parse = TRUE) +
+  annotate("text", x = 20 + 0.6, y = 0.15, label = "n[C] == 20",
+           hjust = 0, size = 3, colour = "grey30", parse = TRUE) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
   scale_colour_brewer(palette = "Set1", labels = legend_labels) +
   labs(x = expression(n[C]), y = "Average Power",
@@ -807,18 +814,18 @@ Figure~\ref{fig:plot_power_ratio} shows, on the left, the conditional and averag
 DV   <- 50  
 k_DC <- max(DV, k_SC)  
 
-df_rt1e_loc <- data.frame(mu_D = seq(-90, -10, length.out = 100)) %>%
+df_rt1e_loc <- data.frame(mu_D = seq(-90, -10, length.out = 100)) |>
   mutate(
     Conditional = condPower(mu_D, 0, k_DC) / condPower(mu_D, 0, k_SC),
     Average     = avgPower(mu_D, sigma_A2, 0, k_DC) / avgPower(mu_D,  sigma_A2, 0, k_SC)
-  ) %>%
+  ) |>
   pivot_longer(cols = c(Conditional, Average), names_to = "Metric", values_to = "Ratio")
 
-df_t1e_abs <- data.frame(mu_D = seq(-90, -10, length.out = 100)) %>%
+df_t1e_abs <- data.frame(mu_D = seq(-90, -10, length.out = 100)) |>
   mutate(  
      DC         = avgPower(mu_D, sigma_A2, 0, k_DC),
     SC = avgPower(mu_D, sigma_A2, 0, k_SC) 
-  ) %>%
+  ) |>
   pivot_longer(cols = c(DC, SC), names_to = "Criterion", values_to = "avgT1E")
 
 pr1a <- ggplot(df_rt1e_loc, aes(mu_D, Ratio, color = Metric)) +
@@ -841,19 +848,19 @@ grid.arrange(pr1a, pr1b, ncol = 2)
 @
 
 <<plot_power_ratio, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Left panel shows the Conditional and Average Power of the DC design evaluated across true treatment effects ($\\delta$), assuming aligned priors ($\\mu_{A,C} = \\mu_{D,C}$ and $\\sigma_{A,C} = \\sigma_{D,C}$). Right panel shows the Average Power of the DC and SC designs across the same effects. The vertical gray dotted line marks the decision value $\\DV = 50$.">>=
-df_pow_dc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
+df_pow_dc <- data.frame(delta = seq(0, 100, length.out = 100)) |>
   mutate(
     `Conditional Power` = condPower(mu_A, delta, k_DC),
     `Average Power`     = avgPower(mu_A, sigma_A2, delta, k_DC)
-  ) %>%
+  ) |>
   pivot_longer(cols = c(`Conditional Power`, `Average Power`),
                names_to = "Metric", values_to = "Value")
 
-df_pow_abs <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
+df_pow_abs <- data.frame(delta = seq(0, 100, length.out = 100)) |>
   mutate(
     DC         = avgPower(mu_A, sigma_A2, delta, k_DC),
     SC = avgPower(mu_A, sigma_A2, delta, k_SC)
-  ) %>%
+  ) |>
   pivot_longer(cols = c(DC, SC), names_to = "Criterion", values_to = "avgPower")
 
 pr2a <- ggplot(df_pow_dc, aes(delta, Value, color = Metric)) +
@@ -1045,13 +1052,13 @@ The right panel shows the Average EUII as a function of $\sigma_{D,C}$.
 
 <<plot_euii, echo=FALSE, warning=FALSE, message=FALSE, dev='cairo_pdf', fig.height=4, fig.width=10, fig.cap="EUII for the running example. Left: Conditional and Average EUII across $\\delta$ under aligned priors. Right: Average EUII at $\\delta = 60$ versus design uncertainty $\\sigma_{D,C}$; the dotted line marks alignment ($\\pi_D = \\pi_A$).">>=
 # --- EUII Data & Plots ---
-df_euii_loc <- data.frame(delta = seq(0, 100, length.out = 100)) %>%
+df_euii_loc <- data.frame(delta = seq(0, 100, length.out = 100)) |>
   mutate(
     Cond_EUII = calc_EUII(condPower(mu_A, delta, k_SC), condPower(mu_A, 0, k_SC), N_total),
     Avg_EUII  = calc_EUII(avgPower(mu_A, sigma_A2, delta, k_SC), avgPower(mu_A, sigma_A2, 0, k_SC), N_total)
-  ) %>% pivot_longer(cols = c(Cond_EUII, Avg_EUII), names_to = "Metric", values_to = "Value")
+  ) |> pivot_longer(cols = c(Cond_EUII, Avg_EUII), names_to = "Metric", values_to = "Value")
 
-df_euii_scale <- data.frame(sigma_D = sigmas) %>%
+df_euii_scale <- data.frame(sigma_D = sigmas) |>
   mutate(Avg_EUII = calc_EUII(avgPower(mu_A, sigma_D^2, 60, k_SC), avgPower(mu_A, sigma_D^2, 0, k_SC), N_total))
 
 p3a <- ggplot(df_euii_loc, aes(x = delta, y = Value, color = Metric)) +
@@ -1079,20 +1086,20 @@ Second, it lowers the avgPower, and this loss grows with $\delta$: the SC design
 For moderate effects the fixed reduction in avgT1E outweighs the small loss of avgPower, so the DC design has higher EUII, while for large effects the avgPower loss dominates. \note{I also tried to evaluate $\EUII^{\DC} = \EUII^{\SC}$ as a function of $\delta$. This could lead to a closed form intersection value for $\delta$, but I can't solve it algebraically. TO DO}
 
 <<plot_euii_ratio, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=10, dev='cairo_pdf', fig.cap="Left panel shows the ratio of the DC to the SC EUII, for the Conditional and Average metric, evaluated across true treatment effects (aligned priors $\\mu_{A,C} = \\mu_{D,C}$ and $\\sigma_{A,C} = \\sigma_{D,C}$). Right panel shows the corresponding EUII of the two designs.">>=
-df_reuii_loc <- data.frame(delta = seq(50, 100, length.out = 100)) %>%
+df_reuii_loc <- data.frame(delta = seq(50, 100, length.out = 100)) |>
   mutate(
     Conditional = calc_EUII(condPower(mu_A, delta, k_DC), condPower(mu_A, 0, k_DC), N_total) /
                   calc_EUII(condPower(mu_A, delta, k_SC), condPower(mu_A, 0, k_SC), N_total),
     Average     = calc_EUII(avgPower(mu_A, sigma_A2, delta, k_DC), avgPower(mu_A, sigma_A2, 0, k_DC), N_total) /
                   calc_EUII(avgPower(mu_A, sigma_A2, delta, k_SC), avgPower(mu_A, sigma_A2, 0, k_SC), N_total)
-  ) %>%
+  ) |>
   pivot_longer(cols = c(Conditional, Average), names_to = "Metric", values_to = "Ratio")
 
-df_euii_abs <- data.frame(delta = seq(50, 100, length.out = 100)) %>%
+df_euii_abs <- data.frame(delta = seq(50, 100, length.out = 100)) |>
   mutate(
     DC         = calc_EUII(avgPower(mu_A, sigma_A2, delta, k_DC), avgPower(mu_A, sigma_A2, 0, k_DC), N_total),
     SC = calc_EUII(avgPower(mu_A, sigma_A2, delta, k_SC), avgPower(mu_A, sigma_A2, 0, k_SC), N_total)
-  ) %>%
+  ) |>
   pivot_longer(cols = c(DC, SC), names_to = "Criterion", values_to = "avgEUII")
 
 pr3a <- ggplot(df_reuii_loc, aes(delta, Ratio, color = Metric)) +
@@ -1345,14 +1352,16 @@ We leave the extension of these metrics to borrowing on the treatment contrast a
 \section{Applications}
 \label{sec:Applications}
 <<load.functions, include=FALSE, cache=FALSE>>=
-source("../scripts/00_functions_monte_carlo.R")
+source("../scripts/00_shared_setup.R")   # prior_names, dprior_names, my_theme, scale_color_prior(),
+                                          # scale_linetype_vague(), design_labels, crit_cols, crit_ltys, ph1_ref
+source("../scripts/00_functions.R")
 library(xtable)
 library(knitr)
 library(kableExtra)
 library(RBesT)
 library(dplyr)
-library(tidyr)  
-library(ggplot2) 
+library(tidyr)
+library(ggplot2)
 @  
  
 \subsection{Crohn's Disease Application}
@@ -1463,16 +1472,10 @@ library(ggplot2)
 library(dplyr)
 library(patchwork)
 
-prior_names <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
-                 "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
-df_sc <- readRDS("../Output/fixed_SC_cond.RDS")$df_cond |>
+df_sc <- readRDS("../Output/02_fixed_design_SC/cond.RDS")$df_cond |>
   dplyr::mutate(Prior = factor(Prior, levels = prior_names))
-df_dc <- readRDS("../Output/fixed_DC_cond.RDS")$df_cond |>
+df_dc <- readRDS("../Output/03_fixed_design_DC/cond.RDS")$df_cond |>
   dplyr::mutate(Prior = factor(Prior, levels = prior_names))
-mu_A <- -50
-
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
 
 # rows carry one metric each, so the two designs share the y axis of that metric
 t1e_lim <- range(c(df_sc$T1E, df_dc$T1E))
@@ -1488,9 +1491,8 @@ cond_panel <- function(df, design, yvar, ylab, ylim, red_line = FALSE) {
     geom_vline(xintercept = mu_A, linetype = "dotted",
                color = "gray", linewidth = 0.8) +
     facet_wrap(~Design) +
-    scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
-                          guide = "none") +
-    scale_color_viridis_d(option = "turbo", direction = -1) +
+    scale_linetype_vague() +
+    scale_color_prior() +
     coord_cartesian(ylim = ylim) +
     labs(x = expression("True Control Mean (" * theta[C]^"*" * ")"), y = ylab) +
     my_theme +
@@ -1536,18 +1538,12 @@ library(ggplot2)
 library(dplyr)
 library(patchwork)
 
-prior_names  <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
-                  "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
-dprior_names <- c("Dirac (-50)", "MAP", "Skeptical (-90)", "Misspecified (-10)")
 to_factors <- function(df) df |>
   dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
                 Design_Prior   = factor(Design_Prior,   levels = dprior_names))
 
-df_sc <- to_factors(readRDS("../Output/fixed_SC_euii.RDS")$df_euii)
-df_dc <- to_factors(readRDS("../Output/fixed_DC_avg.RDS")$df_avg)
-
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
+df_sc <- to_factors(readRDS("../Output/02_fixed_design_SC/euii.RDS")$df_euii)
+df_dc <- to_factors(readRDS("../Output/03_fixed_design_DC/avg.RDS")$df_avg)
 
 # rows carry one metric each, so the two designs share the y axis of that metric
 t1e_lim <- range(c(df_sc$avgT1E, df_dc$avgT1E))
@@ -1564,9 +1560,8 @@ avg_panel <- function(df, design, dlt, yvar, ylab, ylim, red_line = FALSE) {
     geom_point(size = 2.3) +
     geom_line(linewidth = 1.0) +
     facet_wrap(~Design) +
-    scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
-                          guide = "none") +
-    scale_color_viridis_d(option = "turbo", direction = -1) +
+    scale_linetype_vague() +
+    scale_color_prior() +
     coord_cartesian(ylim = ylim) +
     labs(x = "Design Prior", y = ylab) +
     my_theme +
@@ -1605,19 +1600,13 @@ design prior (MAP and Dirac), and for the Vague prior in every panel, while prio
 library(ggplot2)
 library(dplyr)
 library(patchwork)
- 
-prior_names  <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
-                  "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
-dprior_names <- c("Dirac (-50)", "MAP", "Skeptical (-90)", "Misspecified (-10)")
+
 to_factors <- function(df) df |>
   dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
                 Design_Prior   = factor(Design_Prior,   levels = dprior_names))
 
-df_sc <- to_factors(readRDS("../Output/fixed_SC_euii.RDS")$df_euii)
-df_dc <- to_factors(readRDS("../Output/fixed_DC_avg.RDS")$df_avg)
-
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
+df_sc <- to_factors(readRDS("../Output/02_fixed_design_SC/euii.RDS")$df_euii)
+df_dc <- to_factors(readRDS("../Output/03_fixed_design_DC/avg.RDS")$df_avg)
 
 # facet_grid puts the framed design prior headers on top and a framed design
 # label (SC or DC) on the right of each row, so the two rows are clearly told apart.
@@ -1628,9 +1617,8 @@ pow_delta_panel <- function(df, design, ylab) {
              linetype = Analysis_Prior == "Vague")) +
     geom_line(linewidth = 1.1) +
     facet_grid(Design ~ Design_Prior) +
-    scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
-                          guide = "none") +
-    scale_color_viridis_d(option = "turbo", direction = -1) +
+    scale_linetype_vague() +
+    scale_color_prior() +
     coord_cartesian(xlim = c(50, 100), ylim = c(0, 1)) +
     labs(x = expression("True Treatment Effect (" * delta * ")"), y = ylab) +
     my_theme +
@@ -1693,22 +1681,16 @@ library(ggplot2)
 library(dplyr)
 library(patchwork)
 
-prior_names  <- c("MAP", "Robust (w=0.2)", "Robust (w=0.4)",
-                  "Robust (w=0.6)", "Robust (w=0.8)", "Vague")
-dprior_names <- c("Dirac (-50)", "MAP", "Skeptical (-90)", "Misspecified (-10)")
 to_factors <- function(df) df |>
   dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
                 Design_Prior   = factor(Design_Prior,   levels = dprior_names))
 
-df_sc    <- to_factors(readRDS("../Output/fixed_SC_euii.RDS")$df_euii) |>
+df_sc    <- to_factors(readRDS("../Output/02_fixed_design_SC/euii.RDS")$df_euii) |>
   dplyr::filter(delta >= 50)
-df_dc    <- to_factors(readRDS("../Output/fixed_DC_euii.RDS")$df_euii) |>
+df_dc    <- to_factors(readRDS("../Output/03_fixed_design_DC/euii.RDS")$df_euii) |>
   dplyr::filter(delta >= 50)   # DC EUII not meaningful below the DV
-df_ratio <- to_factors(readRDS("../Output/fixed_DC_vs_SC_euii.RDS")$df_ratio) |>
+df_ratio <- to_factors(readRDS("../Output/03_fixed_design_DC/vs_SC_euii.RDS")$df_ratio) |>
   dplyr::filter(delta >= 50)
-
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
 
 # the two EUII rows share one y axis, so the designs are directly comparable
 euii_lim <- range(c(df_sc$EUII, df_dc$EUII))
@@ -1721,9 +1703,8 @@ row_layout <- function(df, yvar, ylab, ylim = NULL) {
     facet_wrap(~Design_Prior, nrow = 1) +
     geom_hline(yintercept = 1, linetype = "dashed",
                color = "black", linewidth = 0.6) +
-    scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
-                          guide = "none") +
-    scale_color_viridis_d(option = "turbo", direction = -1) +
+    scale_linetype_vague() +
+    scale_color_prior() +
     labs(x = expression(delta), y = ylab) +
     my_theme
   if (!is.null(ylim)) p <- p + coord_cartesian(xlim = c(50, 100), ylim = ylim)
@@ -1758,9 +1739,6 @@ all metrics are computed by Monte Carlo simulation with $10^6$ replicates per ev
 library(ggplot2)
 library(dplyr)
 
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
-
 # facet_grid puts the framed design headers on top and a framed metric label on
 # the right of each row, so the two rows are clearly told apart. df_oc must be
 # assigned in the calling chunk before oc_row() is used.
@@ -1772,9 +1750,8 @@ oc_row <- function(dlt, metric) {
     geom_point(size = 2.2) +
     geom_line(linewidth = 0.9) +
     facet_grid(Metric ~ Criterion) +
-    scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
-                          guide = "none") +
-    scale_color_viridis_d(option = "turbo", direction = -1) +
+    scale_linetype_vague() +
+    scale_color_prior() +
     my_theme +
     theme(strip.background = element_rect(fill = "grey92", color = "grey55",
                                           linewidth = 0.4),
@@ -1790,7 +1767,7 @@ the avgT1E of the DC is far below the one of the SC in every scenario, at the pr
 <<plot_seq_oc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="One interim analysis: avgT1E (top) and avgPower at $\\delta = 60$ (bottom) across all analysis prior and design prior combinations, one panel per design. Color encodes the analysis prior (Vague shown dashed). The red line marks the nominal $0.05$.">>=
 library(patchwork)
 
-res_seq  <- readRDS("../Output/seq_one_interim_avg.RDS")
+res_seq  <- readRDS("../Output/05_sequential_one_interim/avg.RDS")
 df_oc    <- res_seq$df_oc
 
 p_t1e <- oc_row(0, "Average T1E") +
@@ -1821,10 +1798,8 @@ $2\%$ of the trials, which explains the small loss of Power observed above ($0.9
 library(ggplot2)
 library(dplyr)
 
-res_seq  <- readRDS("../Output/seq_one_interim_avg.RDS")
+res_seq  <- readRDS("../Output/05_sequential_one_interim/avg.RDS")
 df_stage <- res_seq$df_stage
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
 
 df_stage1 <- bind_rows(
   df_stage |> dplyr::filter(Stage == 1, delta == 60) |>
@@ -1842,9 +1817,8 @@ ggplot(df_stage1,
   geom_point(size = 2.2) +
   geom_line(linewidth = 0.9) +
   facet_grid(Metric ~ Criterion) +
-  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
-                        guide = "none") +
-  scale_color_viridis_d(option = "turbo", direction = -1) +
+  scale_linetype_vague() +
+  scale_color_prior() +
   labs(x = "Design Prior", y = "Probability of stopping at the interim") +
   my_theme +
   theme(axis.text.x = element_text(angle = 30, hjust = 1),
@@ -1859,7 +1833,7 @@ ggplot(df_stage1,
 library(dplyr)
 library(kableExtra)
 
-res_seq  <- readRDS("../Output/seq_one_interim_avg.RDS")
+res_seq  <- readRDS("../Output/05_sequential_one_interim/avg.RDS")
 df_stage <- res_seq$df_stage
 df_oc    <- res_seq$df_oc
 
@@ -1907,20 +1881,18 @@ library(ggplot2)
 library(dplyr)
 library(patchwork)
 
-res_euii <- readRDS("../Output/seq_one_interim_euii.RDS")
+res_euii <- readRDS("../Output/05_sequential_one_interim/euii.RDS")
 df_euii  <- res_euii$df_euii
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
 
-design_labels <- c("SC", "SC + Futility", "DC", "DC + Futility")
-crit_levels   <- c(design_labels, "Fixed SC", "Fixed DC")
+# Colours here follow the document-wide SC/DC palette (col_sc, col_dc, ...),
+# not the script-local crit_cols from 00_shared_setup.R, so they stay local.
+crit_levels <- c(design_labels, "Fixed SC", "Fixed DC")
 crit_cols <- c("SC" = col_sc, "SC + Futility" = col_cond,
                "DC" = col_dc, "DC + Futility" = col_avg,
                "Fixed SC" = col_sc, "Fixed DC" = col_dc)
 crit_ltys <- c("SC" = "solid", "SC + Futility" = "solid",
                "DC" = "solid", "DC + Futility" = "solid",
                "Fixed SC" = "twodash", "Fixed DC" = "twodash")
-DV <- 50
 
 euii_band <- function(df, value_col) {
   df |>
@@ -2069,7 +2041,7 @@ $9.8\%$ with two, and the DC from $2.6\%$ to $5.6\%$.
 <<plot_seq2_oc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="Two interim analyses: avgT1E (top) and avgPower at $\\delta = 60$ (bottom) across all analysis prior and design prior combinations, one panel per design. Color encodes the analysis prior (Vague shown dashed). The red line marks the nominal $0.05$.">>=
 library(patchwork)
 
-res_seq  <- readRDS("../Output/seq_two_interim_avg.RDS")
+res_seq  <- readRDS("../Output/06_sequential_two_interim/avg.RDS")
 df_oc    <- res_seq$df_oc
 
 p_t1e <- oc_row(0, "Average T1E") +
@@ -2101,10 +2073,8 @@ library(ggplot2)
 library(dplyr)
 library(ggh4x)
 
-res_seq  <- readRDS("../Output/seq_two_interim_avg.RDS")
+res_seq  <- readRDS("../Output/06_sequential_two_interim/avg.RDS")
 df_stage <- res_seq$df_stage
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
 
 df_stage1 <- bind_rows(
   df_stage |> dplyr::filter(Stage <= 2, delta == 60) |>
@@ -2126,9 +2096,8 @@ ggplot(df_stage1,
   geom_point(size = 2.0) +
   geom_line(linewidth = 0.8) +
   facet_nested(Delta_lab + Interim ~ Criterion) +
-  scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"),
-                        guide = "none") +
-  scale_color_viridis_d(option = "turbo", direction = -1) +
+  scale_linetype_vague() +
+  scale_color_prior() +
   labs(x = "Design Prior", y = "Probability of stopping at the interim") +
   my_theme +
   theme(axis.text.x = element_text(angle = 30, hjust = 1),
@@ -2142,7 +2111,7 @@ ggplot(df_stage1,
 library(dplyr)
 library(kableExtra)
 
-res_seq2  <- readRDS("../Output/seq_two_interim_avg.RDS")
+res_seq2  <- readRDS("../Output/06_sequential_two_interim/avg.RDS")
 df_stage2 <- res_seq2$df_stage
 df_oc2    <- res_seq2$df_oc
 
@@ -2190,11 +2159,8 @@ library(ggplot2)
 library(dplyr) 
 library(patchwork)  
 
-df_2int <- readRDS("../Output/seq_two_interim_euii.RDS")$df_euii
-df_1int <- readRDS("../Output/seq_one_interim_euii.RDS")$df_euii
-
-design_labels <- c("SC", "SC + Futility", "DC", "DC + Futility")
-DV <- 50
+df_2int <- readRDS("../Output/06_sequential_two_interim/euii.RDS")$df_euii
+df_1int <- readRDS("../Output/05_sequential_one_interim/euii.RDS")$df_euii
 
 # Top panel: ratio of two interim to one interim EUII, matched at the same Pr(H1)
 df_ratio12 <- df_2int |> 

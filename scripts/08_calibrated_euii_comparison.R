@@ -11,32 +11,23 @@
 #   Rscript scripts/08_calibrated_euii_comparison.R
 # =============================================================================
 
-library(RBesT)
 library(dplyr)
 library(ggplot2)
-source("scripts/00_functions_monte_carlo.R")
+source("scripts/00_shared_setup.R")          # sigma, p_MAP, p_vague, my_theme, ph1_ref
+source("scripts/00_functions.R")
+
+out_dir <- "Output/08_calibrated_euii_comparison"
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
-sigma <- 88
-
 n_sim_eval   <- 2e5
 delta_values <- c(0, seq(10, 100, by = 10))   # delta = 0 required by compute_euii
 prior_H1     <- c(0.01, 0.1, 0.5)
-ph1_ref      <- 0.5
 
-p_MAP <- mixnorm(
-  c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
-  sigma = sigma, param = "ms"
-)
-p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
-
-my_theme <- theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
-
-cal <- readRDS("Output/CALIBRATED_designs.RDS")
+cal <- readRDS("Output/07_calibrate_designs/designs.RDS")
 designs_cal <- cal$designs_cal
 design_names <- names(designs_cal)
 cat("Loaded", length(designs_cal), "calibrated designs (avgT1E =", cal$target_t1e,
@@ -69,12 +60,7 @@ df_euii <- lapply(design_names, function(nm) {
 }) |> bind_rows() |>
   mutate(Design = factor(Design, levels = design_names))
 
-band <- df_euii |>
-  group_by(Design, Delta) |>
-  summarise(lo  = min(EUII),
-            hi  = max(EUII),
-            mid = EUII[prior_H1 == ph1_ref],
-            .groups = "drop")
+band <- value_band(df_euii, "EUII", c("Design", "Delta"))
 
 
 # ---------------------------------------------------------------------------
@@ -108,5 +94,5 @@ p_euii <- ggplot(band) +
 print(p_euii)
 
 saveRDS(list(res_cal = res_cal, df_euii = df_euii, band = band),
-        file = "Output/CALIBRATED_euii.RDS")
-cat("\nResults saved to Output/CALIBRATED_euii.RDS\n")
+        file = file.path(out_dir, "euii.RDS"))
+cat("\nResults saved to", file.path(out_dir, "euii.RDS"), "\n")

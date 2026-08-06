@@ -14,33 +14,27 @@
 #                         threshold is recalibrated at every candidate size, so
 #                         the T1E target holds exactly at the returned n.
 #
-# The calibrated designs are saved to Output/CALIBRATED_designs.RDS.
+# The calibrated designs are saved to Output/07_calibrate_designs/designs.RDS.
 # The EUII comparison across delta is done later, in 08_calibrated_euii_comparison.R.
 # =============================================================================
 
-library(RBesT)
 library(dplyr)
-source("scripts/00_functions_monte_carlo.R")
+source("scripts/00_shared_setup.R")          # sigma, p_MAP, p_vague, delta_MCID
+source("scripts/00_functions.R")
+
+out_dir <- "Output/07_calibrate_designs"
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
-sigma      <- 88
-delta_MCID <- 60
-
 target_t1e   <- 0.05
 target_power <- 0.90
 
 n_sim_calib <- 5e4    # sims per evaluation inside the calibration search
 n_sim_check <- 2e5    # sims for the final verification of each design
 mc_seed     <- 123
-
-p_MAP <- mixnorm(
-  c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
-  sigma = sigma, param = "ms"
-)
-p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +127,7 @@ saveRDS(list(designs_cal   = designs_cal,
              delta_MCID    = delta_MCID,
              n_sim_calib   = n_sim_calib,
              mc_seed       = mc_seed),
-        file = "Output/CALIBRATED_designs.RDS")
-cat("\nCalibrated designs saved to Output/CALIBRATED_designs.RDS\n")
+        file = file.path(out_dir, "designs.RDS"))
+cat("\nCalibrated designs saved to", file.path(out_dir, "designs.RDS"), "\n")
 
 

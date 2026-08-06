@@ -6,7 +6,7 @@
 # characteristics, so that 05_sequential_one_interim.R can be trusted.
 #
 #   reference  : oc2S_seq.dual.normMix  (defined below, exact, conditional)
-#   under test : oc2_seq_mc.normMix     (00_functions_monte_carlo.R)
+#   under test : oc2_seq_mc.normMix     (00_functions.R)
 #
 # Only the CONDITIONAL operating characteristics are compared. That is enough:
 # the averaged metrics are obtained by drawing theta_C from the design prior,
@@ -24,15 +24,15 @@ suppressMessages({
   library(RBesT)
   library(dplyr)
 })
-source("scripts/00_functions_monte_carlo.R")   # oc2_seq_mc.normMix
+source("scripts/00_functions.R")   # oc2_seq_mc.normMix
 
 
 # -----------------------------------------------------------------------------
 # oc2S_seq.dual.normMix — exact/analytical reference, validation-only.
 #
-# Used ONLY in this file, to check oc2_seq_mc.normMix (00_functions_monte_carlo.R)
+# Used ONLY in this file, to check oc2_seq_mc.normMix (00_functions.R)
 # against a closed-form calculation. It does not feed any thesis figure or
-# table, so it lives here rather than in the shared 00_functions_exact.R, which
+# table, so it lives here rather than in the shared 00_functions.R, which
 # should only contain functions the actual results pipeline depends on.
 # -----------------------------------------------------------------------------
 

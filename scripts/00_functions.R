@@ -4,6 +4,46 @@ library(RBesT)
 
 
 # -----------------------------------------------------
+# EXACT METHODS (fixed design, closed-form / numerical integration)
+# -----------------------------------------------------
+
+avgoc2S.normMix <- function(
+  prior1, prior2, n1, n2, decision, delta, design_prior2,   eps = 1e-6, Ngrid = 10, ...
+) {
+
+  # Creates OC
+  oc_fun <- RBesT::oc2S(prior1, prior2, n1, n2, decision, eps = eps, ...)
+
+    # warm up cache
+  lim2_range <- RBesT::qmix(design_prior2, c(eps / 2, 1 - eps / 2))
+  lim1_range <- lim2_range + delta
+
+  # we know y_1 ~ N(theta_1, SEM_1), so in theory we should warm up cache for y_1 not for theta1
+  # this is not necessary cause inside oc2s this is alraedy handled
+
+  invisible(oc_fun(lim1_range, lim2_range))
+
+
+  # output function
+  design_fun <- function(delta_new = delta, design_prior2_new = design_prior2) {
+
+    res <- RBesT:::integrate_density_log(
+      log_integrand = function(x) {
+        log(oc_fun(x + delta_new, x))
+      },
+      mix = design_prior2_new,
+      Lplower = RBesT::logit(eps / 2),
+      Lpupper = RBesT::logit(1 - eps / 2)
+    )
+
+    return(res)
+  }
+
+  return(design_fun)
+}
+
+
+# -----------------------------------------------------
 # FUNCTIONS for Monte Carlo Sequential evaluation
 # -----------------------------------------------------
 
@@ -386,6 +426,152 @@ compute_euii <- function(res, prior_H1 = c(0.01, 0.1, 0.5), eps = 1e-8) {
  names(out) <- as.character(prior_H1)
   return(out)
 }
+
+
+
+# -----
+# One MC sweep over every (analysis prior x design prior) combination in `combos`.
+
+# Outputs list of avgoc2_seq_mc.normMix() results, one per row of `combos` (each
+#         itself is a list varying deltas), named "<Analysis_Prior> | <Design_Prior>"
+#         so a specific combo can be indexed directly, e.g. sweeps$SC[["MAP | Dirac (-50)"]].
+run_sequential_sweep <- function(decisions_list, combos, analysis_priors, design_priors,
+                                 prior_1, n1_seq, n2_seq, delta_values,
+                                 n_sim_avg = 1e6, mc_seed = 123, cores = 6) {
+
+  if (.Platform$OS.type != "unix") cores <- 1L   # mclapply cannot fork on Windows
+
+  cat("\n", nrow(combos), " prior combinations, n_sim = ", n_sim_avg,
+      ", cores = ", cores, "\n", sep = "")
+
+  res <- parallel::mclapply(seq_len(nrow(combos)), function(i) {
+    avgoc2_seq_mc.normMix(
+      prior_1        = prior_1,
+      prior_2        = analysis_priors[[combos$Analysis_Prior[i]]],
+      n1_seq         = n1_seq,
+      n2_seq         = n2_seq,
+      decisions_list = decisions_list,
+      delta          = delta_values,
+      design_prior_c = design_priors[[combos$Design_Prior[i]]],
+      n_sim          = n_sim_avg,
+      seed           = mc_seed
+    )
+  }, mc.cores = cores)
+
+  # Name each element by its combo, e.g. "MAP | Dirac (-50)", so can extract like (sweeps$SC[["MAP | Dirac (-50)"]]) 
+  names(res) <- paste(combos$Analysis_Prior, combos$Design_Prior, sep = " | ")
+
+  # mclapply reports failures as try-error elements
+  bad <- vapply(res, inherits, logical(1), "try-error")
+  if (any(bad)) {
+    cat("MC failed for the following prior combinations:\n")
+    cat(paste0("   ", combos$Analysis_Prior[bad], " | ", combos$Design_Prior[bad], "\n"), sep = "")
+    stop("MC failed for ", sum(bad), " of ", nrow(combos), " prior combinations.")
+  }
+  res
+}
+
+
+# extract every delta's result within every combo, then stacks the rows.
+
+# `extract` returns one data.frame per delta, so summarise outputs
+# single data.frame stacking extract()'s rows across every delta and every
+# combo, with Analysis_Prior/Design_Prior columns attached.
+summarise_sweep <- function(sweeped, combos, extract) {
+
+  list_res <- lapply(seq_along(sweeped), function(i) {
+    res <- sweeped[[i]]
+    lapply(names(res), function(d) extract(res[[d]], d)) |> bind_rows()
+  })
+
+  lapply(seq_len(nrow(combos)), function(combo) {
+    list_res[[combo]] |>
+      mutate(
+        Analysis_Prior = combos$Analysis_Prior[[combo]],
+        Design_Prior   = combos$Design_Prior[[combo]]
+      )
+  }) |> bind_rows()
+}
+
+
+# Extractors to use in summarise_sweep(): pull one delta's result down to the row(s)
+# needed for the total OC table (df_oc) or the per-stage table (df_stage).
+# Output: -> one-row data.frame: delta, Power, EN.
+extract_sweep_total <- function(res_d, d) {
+  ov <- res_d$Overall
+  data.frame(delta = sub("delta\\.", "", d) |> as.numeric(),
+             Power = ov[["Power"]],
+             EN    = ov[["EN_t"]] + ov[["EN_c"]])   # expected total sample size
+}
+# Output: -> one row per stage: Stage, P_Succ, P_Fut, Cum_P_Succ, Cum_P_Fut, delta.
+extract_sweep_per_stage <- function(res_d, d) {
+  res_d$Per_Stage |>
+    select(Stage, P_Succ, P_Fut, Cum_P_Succ, Cum_P_Fut) |>
+    mutate(delta = sub("delta\\.", "", d))
+}
+
+
+# compute EUII (every prior_H1) across all combos in one sweep.
+# Output a data.frame with EUII/LR/E[1/N] columns for every combo x prior_H1
+# combination (see compute_euii() for the column list).
+sweep_euii_table <- function(sweep, combos, prior_H1, omega_map, prior_names, dprior_names) {
+  bind_rows(lapply(seq_along(sweep), function(i) {
+    e <- compute_euii(sweep[[i]], prior_H1 = prior_H1)
+    bind_rows(lapply(names(e), function(g) {
+      e[[g]] |>
+        mutate(prior_H1       = as.numeric(g),
+               Analysis_Prior = combos$Analysis_Prior[i],
+               Design_Prior   = combos$Design_Prior[i],
+               omega          = omega_map[[combos$Analysis_Prior[i]]])
+    }))
+  })) |>
+    mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+           Design_Prior   = factor(Design_Prior,   levels = dprior_names))
+}
+
+
+
+# Read the two fixed EUII baselines (SC and DC) at one analysis/design
+# prior combination.
+# Output: data.frame with Delta, EUII_fixed, Base ("SC"/"DC"), one row per delta per design.
+read_fixed_baselines <- function(sc_path = "Output/02_fixed_design_SC/euii.RDS",
+                                 dc_path = "Output/03_fixed_design_DC/euii.RDS",
+                                 analysis_prior = "MAP", design_prior = "MAP") {
+  read_one <- function(path, base_label) {
+    readRDS(path)$df_euii |>
+      filter(Analysis_Prior == analysis_prior, Design_Prior == design_prior) |>
+      mutate(Delta = delta, EUII_fixed = EUII, Base = base_label) |>
+      select(Delta, EUII_fixed, Base)
+  }
+  bind_rows(read_one(sc_path, "SC"), read_one(dc_path, "DC"))
+}
+
+
+# One panel per Criterion, coloured by Analysis_Prior, faceted layout shared by
+# the avgT1E and avgPower plots.
+oc_facet_layout <- function(p) {
+  p +
+    geom_point(size = 2.2) +
+    geom_line(linewidth = 0.9) +
+    facet_wrap(~Criterion, nrow = 1) +
+    scale_linetype_vague() +
+    scale_color_prior() +
+    my_theme +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+}
+
+
+# Summarise a value column into a reference line (prior_H1 = ph1_ref) plus a
+# min/max ribbon over the rest of the prior_H1 grid, grouped by `group_cols`.
+value_band <- function(df, value_col, group_cols, ph1_ref = 0.5) {
+  df |>
+    group_by(across(all_of(group_cols))) |>
+    summarise(lo  = min(.data[[value_col]]),
+              hi  = max(.data[[value_col]]),
+              mid = .data[[value_col]][prior_H1 == ph1_ref],
+              .groups = "drop")
+}
+
 
 
 
