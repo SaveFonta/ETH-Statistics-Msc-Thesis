@@ -578,11 +578,12 @@ value_band <- function(df, value_col, group_cols, ph1_ref = 0.5) {
 # -----------------------------------------------------
 # Threshold calibration for Bayesian group sequential designs
 #
-# Find the common posterior probability threshold p, applied at EVERY look (in a Pocock way), 
-# such that the avgT1E of the sequential design equals a target.
+# Find the common posterior probability threshold p, 
+# such that the avgT1E of the sequential design equals a target. 
+# decision_builder(p) handles the parameter p. By default p is like Pocock constant way
 #
 # To use uniroot, every evaluation reuses the same seed, so 
-# T1E(p) is a monotone function of p. 
+# T1E(p) is a monotone function of p (decreasing with p)
 #
 # criterion = "SC": success is Pr(delta > q | data) >= p.
 # criterion = "DC": success is Pr(delta > q | data) >= p AND
@@ -593,6 +594,7 @@ value_band <- function(df, value_col, group_cols, ph1_ref = 0.5) {
 #   delta = theta_C - theta_T as in the thesis. FALSE: delta = theta_T - theta_C.
 # sigma_1, sigma_2: known sampling standard deviations (treatment, control).
 # delta_null: true effect at which the T1E is computed (usually 0).
+
 # decisions_builder:
 #   A function(p) returning a decisions_list of length K, exactly like the
 #   one passed to avgoc2_seq_mc.normMix. When given, it overrides criterion,
@@ -605,9 +607,9 @@ value_band <- function(df, value_col, group_cols, ph1_ref = 0.5) {
 
 calibrate_threshold <- function(target_t1e,
                                 n1_seq, n2_seq,
-                                prior_cntrl,                 # control analysis prior
-                                prior_treat,                 # set to vague usually
-                                design_prior = prior_cntrl,  # aligned by default
+                                prior_cntrl,            # control analysis prior
+                                prior_treat,            # set to vague usually
+                                design_prior = prior_cntrl,  # aligned by default, would be weird to calibrate our design assuming design prior different from an prior
                                 criterion    = c("SC", "DC"),
                                 q  = 0,   # NV (null value)
                                 DV = 50,
@@ -620,12 +622,11 @@ calibrate_threshold <- function(target_t1e,
                                 seed  = 123,
                                 tol   = 1e-4,
                                 lower_is_better = TRUE,
-                                decisions_builder = NULL) {  # in case I wanted to supply something else, only optimize for one p
-
+                                decisions_builder = NULL) {  
   criterion <- match.arg(criterion)
   K <- length(n2_seq)
 
-  # decisions list for a given threshold p, efficacy at every look, no futility.
+  # decisions list for a given threshold p, efficacy at every look, no futility, in case decision_builder not provided
   make_decisions <- if (!is.null(decisions_builder)) decisions_builder else function(p) {
     crit <- if (criterion == "SC") {
       if (lower_is_better) {
@@ -640,12 +641,12 @@ calibrate_threshold <- function(target_t1e,
         RBesT::decision2S(pc = c(p, p_DV), qc = c(q, DV), lower.tail = FALSE)
       }
     }
-    lapply(seq_len(K), function(k) list(success = crit, futility = NULL)) # don't calibrate for futility
+    lapply(seq_len(K), function(k) list(success = crit, futility = NULL)) # don't calibrate for futility and default is Pocock way
   }
 
 
 
-  # average T1E at threshold p
+  # avgT1E at threshold p
   t1e_at <- function(p) {
     res <- avgoc2_seq_mc.normMix(
       prior_1        = prior_treat,
@@ -658,7 +659,7 @@ calibrate_threshold <- function(target_t1e,
       sigma_1        = sigma_1,
       sigma_2        = sigma_2,
       n_sim          = n_sim,
-      seed           = seed
+      seed           = seed #setting the seed is crucial s.t. this is a function
     )
     res$Overall[["Power"]]
   }
@@ -697,242 +698,6 @@ calibrate_threshold <- function(target_t1e,
        attained = TRUE, criterion = criterion, decisions = make_decisions(p_star))
 }
 
-# ---- Some examples for decisions_builder --- 
-
-if (FALSE){
-
-# SC with futility stopping at interim
-builder_sc_fut <- function(p) {
-  succ <- decision2S(pc = p,    qc = 0,   lower.tail = TRUE)
-  fut  <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE) 
-  list(
-    list(success = succ, futility = fut),    
-    list(success = succ, futility = NULL)    
-  )
-}
-
-# SC at interim, DC at final:
-builder_sc_then_dc <- function(p) {
-  sc <- decision2S(pc = p,           qc = 0,          lower.tail = TRUE)
-  dc <- decision2S(pc = c(p, 0.5),   qc = c(0, -50),  lower.tail = TRUE)
-  list(
-    list(success = sc, futility = NULL),
-    list(success = dc, futility = NULL)
-  )
-}
-
-
-# Power family style
-# the idea here is using the power family f = alfa * (info.ratio)^rho = (1-p) * (1/2)^rho 
-builder_pow <- function(p) {
-  p_int <- 1 - ( (1 - p) * (1/2)^2) 
-  list(
-    list(success = decision2S(pc = p_int, qc = 0, lower.tail = TRUE), futility = NULL),
-    list(success = decision2S(pc = p,     qc = 0, lower.tail = TRUE), futility = NULL)
-  )
-}
-
-
-# do the same for 3 stages:
-builder_pow_3stage <- function(p) {
-  p_int1 <- 1 - ((1 - p) * (1/3)^2)
-  p_int2 <- 1 - ( (1 - p) * (2/3)^2 )
-  
-  list(
-    list(success = RBesT::decision2S(pc = p_int1, qc = 0, lower.tail = TRUE), futility = NULL),
-    list(success = RBesT::decision2S(pc = p_int2, qc = 0, lower.tail = TRUE), futility = NULL),
-    list(success = RBesT::decision2S(pc = p,      qc = 0, lower.tail = TRUE), futility = NULL)
-  )
-}
-
-
-#  O'Brien Fleming 
-#   p_k = pnorm(qnorm(p) / sqrt(t_k)).
-# The final look uses exactly p. 
-make_builder_obf <- function(fracs) {   # information fractions, last one = 1
-  function(p) {
-    p_k <- pnorm(qnorm(p) / sqrt(fracs))
-    lapply(p_k, function(pk) list(
-      success  = RBesT::decision2S(pc = pk, qc = 0, lower.tail = TRUE),
-      futility = NULL
-    ))
-  }
-}
-
-builder_obf_1int <- make_builder_obf(c(1/2, 1))            # one interim
-builder_obf_2int <- make_builder_obf(c(1/3, 2/3, 1))       # two interims
-builder_obf_3int <- make_builder_obf(c(1/4, 2/4, 3/4, 1))  # three interims
-
-
-# Haybittle-Peto
-builder_hp <- function(p) {
-  list(
-    list(success = RBesT::decision2S(pc = 0.999, qc = 0, lower.tail = TRUE), futility = NULL),
-    list(success = RBesT::decision2S(pc = 0.999, qc = 0, lower.tail = TRUE), futility = NULL),
-    # Final Look: Standard target (p)
-    list(success = RBesT::decision2S(pc = p,     qc = 0, lower.tail = TRUE), futility = NULL)
-  )
-}
-
-
-
-# Make sure you have gsDesign and RBesT installed
-# install.packages(c("gsDesign", "RBesT"))
-
-## NOTE: the tuning parameter here is `u`, not a posterior probability like the
-## other builders' `p`. u = 0 gives the raw nominal OBF boundary (already
-## strict, e.g. ~0.98-0.997 for a two-look 0.025 design) and u = 1 gives
-## threshold = 1 (impossible). The meaningful range is therefore [0, 1], NOT
-## the default p_interval = c(0.6, 0.999) used elsewhere in this file: passing
-## this builder to calibrate_threshold/calibrate_design without overriding
-## p_interval to something like c(0, 1) will search entirely inside the
-## "already near-impossible" region and likely misreport the target as
-## unattainable. Widen further below 0 if even u = 0 turns out too strict.
-make_builder_sy_obf <- function(fracs, alpha = 0.025) {
-
-  # Step 1: Number of analyses (interims + final)
-  k <- length(fracs)
-
-  # Step 2: Extract the exact frequentist Z-scores for an OBF design
-  # test.type = 1 (one-sided superior), sfu = "OF" (exact O'Brien-Fleming boundary)
-  gs_obj <- gsDesign::gsDesign(k = k, test.type = 1, alpha = alpha,
-                               timing = fracs, sfu = "OF")
-  z_scores <- gs_obj$upper$bound
-
-  # Step 3: Transform Z-scores into baseline theoretical probabilities
-  p_theoretical <- pnorm(z_scores)
-
-  # Return the builder function that takes the tuning parameter 'u'
-  function(u) {
-
-    # Step 4: Apply the Shi & Yin calibration formula
-    # c_k = Phi(z_k) + {1 - Phi(z_k)} * u
-    p_calibrated <- p_theoretical + (1 - p_theoretical) * u
-
-    # Step 5: Format the output for RBesT decision making
-    lapply(p_calibrated, function(pk) {
-      list(
-        success  = RBesT::decision2S(pc = pk, qc = 0, lower.tail = TRUE),
-        futility = NULL
-      )
-    })
-  }
-}
-
-
-
-# --- How to initialize it ---
-# Create the builder for a trial with 1 interim at 50% and a final look at 100%
-builder_sy_1int <- make_builder_sy_obf(c(1/2, 1))
-
-# Create the builder for a trial with 2 interims (33%, 67%) and a final look (100%)
-builder_sy_2int <- make_builder_sy_obf(c(1/3, 2/3, 1))
-
-
-
-
-
-make_builder_sy_pocock <- function(fracs, alpha = 0.025) {
-  
-  # Step 1: Number of analyses (interims + final)
-  k <- length(fracs)
-  
-  # Step 2: Extract the exact frequentist Z-scores for a Pocock design
-  # test.type = 1 (one-sided superior), sfu = "Pocock" (exact Pocock boundary)
-  gs_obj <- gsDesign::gsDesign(k = k, test.type = 1, alpha = alpha, 
-                               timing = fracs, sfu = "Pocock")
-  z_scores <- gs_obj$upper$bound
-  
-  # Step 3: Transform Z-scores into baseline theoretical probabilities
-  p_theoretical <- pnorm(z_scores)
-  
-  # Return the builder function that takes the tuning parameter 'u'
-  function(u) {
-    
-    # Step 4: Apply the Shi & Yin calibration formula
-    p_calibrated <- p_theoretical + (1 - p_theoretical) * u
-    
-    # Step 5: Format the output for RBesT decision making
-    lapply(p_calibrated, function(pk) {
-      list(
-        success  = RBesT::decision2S(pc = pk, qc = 0, lower.tail = TRUE),
-        futility = NULL
-      )
-    })
-  }
-}
-
-
-
-#### IMPORTANT --> for all these method, make a builder like the others. 
-# SO It easy to adapt to as many interim we want 
-
-# Tying the futility treshold to the efficacy!! That is not a bad idea
-builder_linked <- function(p) {
-  succ <- decision2S(pc = p,           qc = 0,   lower.tail = TRUE)
-  fut  <- decision2S(pc = min(0.995, max(0.95, p + 0.1)), qc = -40, lower.tail = FALSE)  # capped, p + 0.1 can pass 1
-  list(
-    list(success = succ, futility = fut),
-    list(success = succ, futility = NULL)
-  )
-}
-
-}
-
-
-
-
-# --- Here an example using gsdesign of the various tresholds to use: 
-
-if (FALSE) {
-library(gsDesign)
-k_stages <- 4                      # 4 looks (3 interims + 1 final)
-t_frac   <- c(0.25, 0.5, 0.75, 1)  # Information fractions
-alpha    <- 0.05                  
-
-# --- COMPUTE THE BOUNDARIES (Z-SCORES) ---
-
-#  Approx O'Brien-Fleming (Lan-DeMets) (1 - pnorm (qnorm(alfa) / sqrt(t)))
-obf <- gsDesign(k = k_stages, test.type = 1, alpha = alpha, 
-                timing = t_frac, sfu = sfLDOF)
-
-# TRUE OBF
-obf_true <- gsDesign(k = k_stages, test.type = 1, alpha = alpha, 
-                timing = t_frac, sfu = "OF")
-
-# Power Family (rho = 2) 
-pow2 <- gsDesign(k = k_stages, test.type = 1, alpha = alpha, 
-                 timing = t_frac, sfu = sfPower, sfupar = 2)
-
-#  approx Pocock (Lan-DeMets) f = alfa * log(1 + (e-1)*t)
-poc <- gsDesign(k = k_stages, test.type = 1, alpha = alpha, 
-                timing = t_frac, sfu = sfLDPocock)
-# can also obtain using sfLDPocock(alpha = 0.025, t = 1:4 / 4)$spend
-
-#  TRUE Pocock
-poc_true <- gsDesign(k = k_stages, test.type = 1, alpha = alpha, 
-                timing = t_frac, sfu = "Pocock")
-
-# Haybittle-Peto (Brick wall at interims, standard at the end)
-# p=0.001 translates to a Z-score of ~3.09
-hp <- c(qnorm(1 - 0.001), qnorm(1 - 0.001), qnorm(1 - 0.001), qnorm(1 - alpha))
-
-# Combine all Z-scores into a single table
-z_bounds <- data.frame(
-  Fraction = t_frac,
-  OBF = obf$upper$bound,
-  True_OBF = obf_true$upper$bound,
-  Power_R2 = pow2$upper$bound,
-  Pocok =  poc$upper$bound,
-  True_Pocock = poc_true$upper$bound,
-  Haybittle_Peto = hp
-)
-
-print(round(z_bounds, 3))
-}
-
-
-
 # -----------------------------------------------------
 # Joint calibration of threshold and sample size
 #
@@ -944,15 +709,10 @@ print(round(z_bounds, 3))
 # Basically we try to find the n_max to reach a specific avgPower. Then with that n_max
 # we adjust p to also achieve that specific avgT1E
 
-# sigma_1, sigma_2, p_DV, p_interval, delta_null, tol, lower_is_better and
-# decisions_builder have the same meaning as in calibrate_threshold and are
-# forwarded to it at every candidate size. With a decisions_builder the list
-# it returns must have length equal to the number of looks in the base
-# schedule
 # -----------------------------------------------------
 
 calibrate_design <- function(target_t1e, target_power, delta_power,
-                             n1_base, n2_base,          # base cumulative schedule
+                             n1_base, n2_base,          
                              prior_cntrl, prior_treat,
                              design_prior = prior_cntrl,
                              criterion = c("SC", "DC"),
@@ -1036,7 +796,7 @@ calibrate_design <- function(target_t1e, target_power, delta_power,
 
   
 
-  ## IDEA: we have eval_at(n_max)[["power"]] which outputs the avgPower at a fixed avgT1E
+  ## IDEA: we have eval_at(n_max)[["power"]] which outputs the avgPower
   #  The result is an increasing function in n_max. 
   # So we need to find the root of the function:  e_curr(n_max)[["power"]] - targetPower
 
@@ -1047,7 +807,7 @@ calibrate_design <- function(target_t1e, target_power, delta_power,
   ## If the current power value is larger, we can halve the n2max till we are below the target power 
   # at that point we have the value for n2max that can be a lower bound for the target one  
 
-  if (e_curr$power >= target_power) {          # search downward
+  if (e_curr$power >= target_power) {          # search downward bound
     # Upper bound:
     hi <- n_max_curr; e_hi <- e_curr
 
@@ -1058,7 +818,7 @@ calibrate_design <- function(target_t1e, target_power, delta_power,
     ## keep going to halve if we still are above
     while (e_lo$power >= target_power && lo > 2) {
 
-      # old lower bound becomes upper 
+      # old lower bound becomes upper, andd we will repeat the halving
       hi <- lo; e_hi <- e_lo
       lo <- max(2, floor(lo / 2)); e_lo <- eval_at(lo)
     }
@@ -1101,124 +861,5 @@ calibrate_design <- function(target_t1e, target_power, delta_power,
               delta_power = delta_power, criterion = criterion,
               decisions = e_hi$cal$decisions)
   out
-}
-
-
-# -----------------------------------------------------
-# QUICK EXAMPLE
-# -----------------------------------------------------
-
-
-if (FALSE) {
-  library(RBesT)
-  sigma   <- 88
-  p_MAP   <- mixnorm(
-    c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
-    sigma = sigma, param = "ms"
-  )
-  p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
-
-  # Efficacy: dual criterion carried by a single decision2S (vector pc/qc).
-  sign.crit <- decision2S(pc = c(0.95, 0.50), qc = c(0, -50), lower.tail = TRUE)
-  # Futility: Pr(delta < 40 | data) >= 0.90, i.e. Pr(theta_T - theta_C > -40) >= 0.90.
-  fut.crit  <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
-
-  decisions_fut <- list(
-    list(success = sign.crit, futility = fut.crit),   # stage 1: efficacy + futility
-    list(success = sign.crit, futility = NULL)        # stage 2: final, efficacy only
-  )
-
-  n1_seq <- c(30, 60)   # treatment arm, cumulative
-  n2_seq <- c(20, 40)   # control arm, cumulative
-
-  # Conditional OC: a scalar theta fixes theta_C.
-  res_cond <- oc2_seq_mc.normMix(
-    theta_1 = -50, theta_2 = -50,
-    prior_1 = p_vague, prior_2 = p_MAP,
-    n1_seq  = n1_seq,  n2_seq  = n2_seq,
-    decisions_list = decisions_fut,
-    n_sim = 1000, seed = 1
-  )
-  res_cond$Overall
-  res_cond$Per_Stage
-
-  # Average OC: theta_C is drawn from the design prior, one draw per simulated
-  # trial. delta = 0 must be in the grid, since compute_euii reads the average
-  # T1E from it.
-  res_avg <- avgoc2_seq_mc.normMix(
-    prior_1 = p_vague, prior_2 = p_MAP,
-    n1_seq  = n1_seq,  n2_seq  = n2_seq,
-    decisions_list = decisions_fut,
-    delta          = c(0, 30, 60),
-    design_prior_c = p_MAP,
-    n_sim = 1000, seed = 123
-  )
-
-  ## --> avgoc2_seq_mc.normMix spirs out a list for every delta. 
-  ## Inside that list there are two df: $Overall and $Per_Stage
-res_avg$delta.0
-
-
-  # Sequential EUII. prior_H1 enters only here
-  res_euii <- compute_euii(res_avg, prior_H1 = c(0.01, 0.1, 0.5))
-
-  res_euii[["0.01"]]
-}
-
-
-
-# Example of the calibration
-
-if (FALSE){
-
-    library(RBesT)
-  sigma   <- 88
-  p_MAP   <- mixnorm(
-    c(0.4848, -52.457, 21.154), c(0.4598, -47.465, 7.843), c(0.0554, -50.355, 48.164),
-    sigma = sigma, param = "ms"
-  )
-  p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
-
-  # Efficacy: dual criterion carried by a single decision2S (vector pc/qc).
-  sign.crit <- decision2S(pc = c(0.95, 0.50), qc = c(0, -50), lower.tail = TRUE)
-  # Futility: Pr(delta < 40 | data) >= 0.90, i.e. Pr(theta_T - theta_C > -40) >= 0.90.
-  fut.crit  <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
-
-  decisions_fut <- list(
-    list(success = sign.crit, futility = fut.crit),   # stage 1: efficacy + futility
-    list(success = sign.crit, futility = NULL)        # stage 2: final, efficacy only
-  )
-
-  n1_seq <- c(30, 60)   # treatment arm, cumulative
-  n2_seq <- c(20, 40)   # control arm, cumulative
-
-
-resT1E <- calibrate_threshold(0.05, n1_seq = n1_seq, n2_seq= n2_seq, prior_cntrl = p_MAP, prior_treat = p_vague, 
-                    criterion = "SC")
-
-res_design <- calibrate_design(target_t1e = 0.05, target_power = 0.9, delta_power = 60, 
-                               n1_base = n1_seq, n2_base = n2_seq, prior_cntrl = p_MAP, prior_treat = p_vague, 
-                              criterion = "SC")
-
-
-
-  # What about using a special decsion_criteria? 
-  # Let's say we want to use power family
-        builder_pow <- function(p) {
-        p_int <- 1 - ( (1 - p) * (1/2)^2) 
-        list(
-          list(success = decision2S(pc = p_int, qc = 0, lower.tail = TRUE), futility = NULL),
-          list(success = decision2S(pc = p,     qc = 0, lower.tail = TRUE), futility = NULL)
-        )
-      }
-
-resT1E_special <- calibrate_threshold(0.05, n1_seq = n1_seq, n2_seq= n2_seq, prior_cntrl = p_MAP, prior_treat = p_vague, 
-                    criterion = "SC", decisions_builder = builder_pow)
-
-res_design_special <- calibrate_design(target_t1e = 0.05, target_power = 0.9, delta_power = 60, 
-                               n1_base = n1_seq, n2_base = n2_seq, prior_cntrl = p_MAP, prior_treat = p_vague, 
-                              criterion = "SC", decisions_builder = builder_pow) 
-
-
 }
 

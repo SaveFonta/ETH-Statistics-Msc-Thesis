@@ -1,24 +1,13 @@
 # =============================================================================
 # Sequential Design with TWO interim analyses — MC evaluation of AVG OC and EUII
 #
-# Same analysis as 05_sequential_one_interim.R (shares every summary/plotting
-# helper via 00_functions.R), but the trial has three looks, timed
-# as in the original protocol (Hueber et al. 2012): total enrollment of 17, 41
-# and 60 patients at the two interims and the final analysis. With the 2:1
-# allocation this gives cumulative arm sizes that are only approximately 2:1 at
-# the interims (11:6 and 27:14).
-# Futility can stop the trial at both interims, efficacy at every look.
-# Results saved to Output/06_sequential_two_interim/avg.RDS and .../euii.RDS.
-#
-# Structure: (1) data / simulation, (2) saveRDS, (3) plots and tables, each
-# labelled with the manuscript.Rnw chunk it feeds.
+# Same analysis as 05_sequential_one_interim.R, but the trial has three looks
 # =============================================================================
 
 library(dplyr)
 library(ggplot2)
-library(patchwork)   # plot_layout(guides = "collect") for a single shared legend
 library(parallel)
-source("scripts/00_shared_setup.R")          # sigma, priors, decision criteria, theme, crit_cols...
+source("scripts/00_shared_setup.R")
 source("scripts/00_functions.R")
 
 out_dir <- "Output/06_sequential_two_interim"
@@ -26,7 +15,7 @@ dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 
 # ---------------------------------------------------------------------------
-# Schedule specific to the two-interim design
+# Schedule
 # ---------------------------------------------------------------------------
 n1_seq <- c(11, 27, 40)   # treatment arm cumulative sizes (three looks)
 n2_seq <- c(6, 14, 20)    # control arm cumulative sizes, stage totals 17, 41, 60
@@ -35,13 +24,12 @@ delta_values <- c(0, seq(10, 100, by = 10))
 mc_seed      <- 123    # shared by every sweep (paired comparison)
 
 # Prior probability of H1 in the EUII. It does not enter the simulation, only the
-# processing with compute_euii, so the whole grid comes from a single sweep.
+# processing with compute_euii.
 prior_H1 <- c(0.01, 0.1, 0.5)
 
 
 # ---------------------------------------------------------------------------
-# Decision criteria per stage (success/futility criteria themselves come from
-# 00_shared_setup.R: sign.crit, dual.crit, fut.crit)
+# Decision criteria per stage
 # ---------------------------------------------------------------------------
 decisions_fut <- list(
   list(success = dual.crit, futility = fut.crit),   # interim 1
@@ -69,8 +57,6 @@ decisions_no_fut.single <- list(
 # =============================================================================
 # DATA — Run one MC sweep per decision criterion
 # =============================================================================
-# Four designs are compared. All use the SAME seed and the SAME n_sim, so theta_C
-# and the stage 1 data are common to all four and the comparison is paired.
 n_sim_avg <- 1e6
 
 designs <- list(
@@ -80,6 +66,7 @@ designs <- list(
   "DC + Futility" = decisions_fut
 )
 
+# sweep over all decision lists (i.e. designs)
 sweeps <- lapply(design_labels, function(nm) {
   cat("\n=== ", nm, " ===")
   run_sequential_sweep(designs[[nm]], combos, analysis_priors, design_priors,
@@ -91,7 +78,7 @@ names(sweeps) <- design_labels
 
 
 # ---------------------------------------------------------------------------
-# DATA — Stack the four sweeps, tagging each with its Criterion
+# DATA — Stack the four sweeps, adding each with its Criterion
 # ---------------------------------------------------------------------------
 df_oc <- bind_rows(lapply(design_labels, function(nm) {
   summarise_sweep(sweeps[[nm]], combos, extract_sweep_total) |> mutate(Criterion = nm)
@@ -119,7 +106,7 @@ df_stage <- df_stage |> mutate(
 
 
 # =============================================================================
-# DATA — Sequential EUII, correctly specified prior
+# DATA — EUII for correctly specified prior
 # =============================================================================
 # hERE, WE ONLY USE THE correctly specified analysis prior (so MAP for both analysis and design prior)
 
@@ -178,16 +165,10 @@ p_pow <- oc_facet_layout(
 
 print(p_pow)
 
-# Expected sample size. Futility leaves the average T1E and the average Power
-# basically unchanged, because it only stops trials that were going to fail
-# anyway. --> from here we don't see the advantage of futility analyis. Luckily WE
-# HAVE DEVELOPED THE EUII
+
 
 
 # --- manuscript.Rnw chunk: plot_seq2_stage --------------------------------
-# What the interims actually do: how often the trial stops early for efficacy when
-# the treatment works, and how often it stops early for futility under the null.
-# With two interims there is one row per interim and per metric, four rows in total.
 df_stage1 <- bind_rows(
   df_stage |> filter(Stage <= 2, delta == delta_MCID) |>
     transmute(Criterion, Analysis_Prior, Design_Prior, Prob = P_Succ,
@@ -212,66 +193,6 @@ p_stage <- ggplot(df_stage1,
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
 print(p_stage)
-
-# NOTE: tab_seq2_summary in the manuscript builds its table directly from
-# Output/06_sequential_two_interim/avg.RDS, so there is no corresponding
-# table-building block here.
-
-
-# --- Own diagnostic only, no manuscript chunk reads this -------------------
-# Absolute EUII of the two-interim designs against the fixed-design references.
-# The manuscript's two-interim EUII figure is plot_seq2_vs_one below (ratio to
-# the one-interim designs) instead of this absolute view.
-crit_levels <- c(design_labels, "Fixed SC", "Fixed DC")
-
-# The two fixed designs carry no prior_H1: in a fixed design N is constant. They
-# are single reference lines, with no band.
-df_fixed_lines <- fixed_base |>
-  transmute(Delta, EUII = EUII_fixed,
-            Criterion = factor(paste("Fixed", Base), levels = crit_levels))
-
-df_euii_leveled <- df_euii |> mutate(Criterion = factor(as.character(Criterion), levels = crit_levels))
-df_band_abs   <- value_band(df_euii_leveled, "EUII",       c("Criterion", "Delta"))
-df_band_ratio <- value_band(df_euii_leveled, "EUII_ratio", c("Criterion", "Delta"))
-
-# top panel: absolute EUII, with the two fixed designs as references
-p_euii_abs <- ggplot() +
-  geom_ribbon(data = df_band_abs,
-              aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
-  geom_line(data = df_band_abs,
-            aes(x = Delta, y = mid, color = Criterion, linetype = Criterion),
-            linewidth = 1.2) +
-  geom_line(data = df_fixed_lines,
-            aes(x = Delta, y = EUII, color = Criterion, linetype = Criterion),
-            linewidth = 1.0) +
-  geom_hline(yintercept = 1, linetype = "dotted", color = "black", linewidth = 0.4) +
-  scale_color_manual(values = crit_cols, drop = FALSE) +
-  scale_linetype_manual(values = crit_ltys, drop = FALSE) +
-  scale_fill_manual(values = crit_cols, guide = "none") +
-  guides(color = guide_legend(nrow = 2), linetype = guide_legend(nrow = 2)) +
-  coord_cartesian(xlim = c(DV, max(delta_values))) +
-  labs(x = NULL, y = "EUII") +
-  my_theme +
-  theme(axis.text.x = element_blank())
-
-# bottom panel: ratio to the corresponding fixed design
-p_euii_ratio <- ggplot(df_band_ratio) +
-  geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
-  geom_line(aes(x = Delta, y = mid, color = Criterion, linetype = Criterion),
-            linewidth = 1.2) +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
-  scale_color_manual(values = crit_cols) +
-  scale_linetype_manual(values = crit_ltys) +
-  scale_fill_manual(values = crit_cols, guide = "none") +
-  guides(color = "none", linetype = "none") +
-  coord_cartesian(xlim = c(DV, max(delta_values))) +
-  labs(x = expression(delta), y = "EUII ratio") +
-  my_theme
-
-# patchwork stacks the panels and collects the guides, so they share one legend
-print((p_euii_abs / p_euii_ratio) +
-        patchwork::plot_layout(guides = "collect") &
-        theme(legend.position = "bottom"))
 
 
 # --- manuscript.Rnw chunk: plot_seq2_vs_one (bottom panel: eff. sample size) ---

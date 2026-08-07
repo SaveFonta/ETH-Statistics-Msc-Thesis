@@ -1246,7 +1246,6 @@ It may be interesting to compare designs that share the same error rates (T1E an
 Since no closed form is available for the sequential operating characteristics,
 both the threshold and the sample size are calibrated numerically, following the same simulation based calibration principle used by \citet{zhu2017bayesian} and \citet{shi2019control} to reproduce a target frequentist T1E in a Bayesian sequential design, here extended to the avgT1E. 
 \note{Here maybe would be nice to add an algorithm box}
-\begin{comment}
 
 
 The threshold search (Algorithm~\ref{alg:calibrate_threshold}) finds the common posterior probability $p$, applied at every look, that
@@ -1319,7 +1318,6 @@ a residual correction on top of such a shape, as in \citet{shi2019control}, push
 by a second parameter, refining an asymptotically valid boundary into one with exact finite sample control. Any of these shapes can also be combined
 with a futility rule by supplying a builder that returns a non-null futility criterion at the relevant looks, so that the threshold search calibrates
 the design taking the futility stopping into account.
-\end{comment}
 
 
 \subsection{Borrowing on the Treatment Contrast}
@@ -2253,7 +2251,7 @@ bottom_panel2 <- p_ess2 +
 (top_panel12 / bottom_panel2) &
   theme(legend.position = "bottom")
 @
-
+ 
 \paragraph{Conclusion}
 Adding another interim increases the EUII in every case, but this comes at the cost of an inflated
 avgT1E. For example, the DC arrives at the nominal $5\%$ and loses the conservatism that justified it in the fixed design. 

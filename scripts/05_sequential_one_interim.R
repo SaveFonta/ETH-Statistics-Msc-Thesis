@@ -1,9 +1,6 @@
 # =============================================================================
 # Sequential Design One interim — Monte Carlo evaluation of AVERAGE OC and EUII
 # =============================================================================
-# Structure: (1) data / simulation, (2) saveRDS, (3) plots and tables, each
-# labelled with the manuscript.Rnw chunk it feeds.
-# =============================================================================
 
 library(dplyr)
 library(ggplot2)
