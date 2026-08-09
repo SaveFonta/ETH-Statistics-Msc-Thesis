@@ -1,47 +1,14 @@
-# =============================================================================
-# Usage examples for 00_functions.R
-# =============================================================================
-# Nothing here runs on source() (everything costly is wrapped in if (FALSE)),
-# this file is meant to be read and copy-pasted from, or run block by block.
-# Run from the Thesis/ root so the source() below resolves.
-#
-# What's here:
-#   1. Core engine walkthrough: conditional OC, average OC, sequential EUII
-#   2. Calibration walkthrough: default threshold, then a custom decisions_builder
-#   3. Ad-hoc custom criteria (mixed SC/DC across stages)
-#   4. Power-family spending style
-#   5. O'Brien-Fleming, whole shape scaled by one parameter p
-#   6. Haybittle-Peto, whole shape scaled by one parameter p
-#   7. Shi & Yin (2019) style: keep the *nominal* frequentist shape fixed and
-#      calibrate a separate interpolation parameter u instead of p directly
-#   8. Linking the futility threshold to the efficacy threshold
-#   9. Reference-only: comparing raw boundary Z-scores across shapes via gsDesign
-#
-# Sections 3-9 are about `decisions_builder`: calibrate_threshold() and
-# calibrate_design() (in 00_functions.R) by default calibrate a single flat
-# threshold p, applied identically at every look (Pocock style). Passing a
-# `decisions_builder = function(p) {...}` overrides that default: only p is
-# calibrated, but the builder decides how p turns into the actual per-stage
-# decisions_list, so any boundary shape (or any custom multi-criterion rule)
-# can be calibrated the same way. A decisions_builder must be function(p)
-# returning a list of length K (one entry per stage), each entry
-# list(success = <decision2S>, futility = <decision2S or NULL>).
-#
-# None of sections 3-9 is wired into the thesis pipeline yet (see manuscript's
-# Future Work: boundary shapes), it is scaffolding for that extension.
-# =============================================================================
 
-source("scripts/00_functions.R")   # oc2_seq_mc.normMix, avgoc2_seq_mc.normMix,
-                                    # compute_euii, calibrate_threshold, calibrate_design
+
+source("scripts/00_functions.R") 
 library(gsDesign)
 
 
 # =============================================================================
-# 1. Core engine walkthrough: conditional OC, average OC, sequential EUII
+# 1. Example
 # =============================================================================
-# n_sim is kept small (1000) here since this is just a walkthrough of the
-# calling convention, not a real evaluation (the thesis pipeline uses 1e6).
-if (FALSE) {
+
+
   library(RBesT)
   sigma   <- 88
   p_MAP   <- mixnorm(
@@ -50,20 +17,18 @@ if (FALSE) {
   )
   p_vague <- mixnorm(c(1, -50, 8800), sigma = sigma, param = "ms")
 
-  # Efficacy: dual criterion carried by a single decision2S (vector pc/qc).
   sign.crit <- decision2S(pc = c(0.95, 0.50), qc = c(0, -50), lower.tail = TRUE)
-  # Futility: Pr(delta < 40 | data) >= 0.90, i.e. Pr(theta_T - theta_C > -40) >= 0.90.
   fut.crit  <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
 
   decisions_fut <- list(
-    list(success = sign.crit, futility = fut.crit),  # stage 1: efficacy + futility
-    list(success = sign.crit, futility = NULL)        # stage 2: final, efficacy only
+    list(success = sign.crit, futility = fut.crit),  
+    list(success = sign.crit, futility = NULL)        
   )
 
-  n1_seq <- c(30, 60)   # treatment arm, cumulative
-  n2_seq <- c(20, 40)   # control arm, cumulative
+  n1_seq <- c(30, 60) 
+  n2_seq <- c(20, 40)  
 
-  # Conditional OC: a scalar theta fixes theta_C.
+  # Conditional OC
   res_cond <- oc2_seq_mc.normMix(
     theta_1 = -50, theta_2 = -50,
     prior_1 = p_vague, prior_2 = p_MAP,
@@ -74,25 +39,123 @@ if (FALSE) {
   res_cond$Overall
   res_cond$Per_Stage
 
-  # Average OC: theta_C is drawn from the design prior, one draw per simulated
-  # trial. delta = 0 must be in the grid, since compute_euii reads the average
-  # T1E from it.
+  # Average OC
   res_avg <- avgoc2_seq_mc.normMix(
     prior_1 = p_vague, prior_2 = p_MAP,
     n1_seq  = n1_seq,  n2_seq  = n2_seq,
     decisions_list = decisions_fut,
     delta          = c(0, 30, 60),
     design_prior_c = p_MAP,
-    n_sim = 1000, seed = 123
+    n_sim = 1e6, seed = 123
   )
 
   # avgoc2_seq_mc.normMix returns a list keyed by delta; each entry has
-  # $Overall and $Per_Stage, same shape as oc2_seq_mc.normMix's own output.
+  # $Overall and $Per_Stage
   res_avg$delta.0
 
-  # Sequential EUII. prior_H1 enters only here, not in the simulation itself.
+  # Sequential EUII. prior_H1 enters only here, not in the simulation
   res_euii <- compute_euii(res_avg, prior_H1 = c(0.01, 0.1, 0.5))
   res_euii[["0.01"]]
+
+
+
+
+
+resT1E <- calibrate_threshold(0.05, n1_seq = n1_seq, n2_seq = n2_seq,
+                                prior_cntrl = p_MAP, prior_treat = p_vague,
+                                criterion = "SC")
+
+
+seeds <- seq(123, 135)
+res_seeds <- parallel::mclapply(seq_along(seeds), function(x){
+  res <- calibrate_threshold(0.05, n1_seq = n1_seq, n2_seq = n2_seq,
+                                prior_cntrl = p_MAP, prior_treat = p_vague,
+                                criterion = "SC", seed = seeds[[x]])
+}, mc.cores = length(seeds))
+
+df <- data.frame(seed = seeds, 
+            p = sapply(res_seeds, function(x) x$p)
+  )
+
+ggplot (df, aes(x = seed, y = p)) + geom_point() + geom_hline(yintercept = mean(df$p))
+
+
+
+
+
+make_builder_obf <- function(fracs) {
+  function(p) {
+    p_k <- pnorm(qnorm(p) / sqrt(fracs))
+    lapply(p_k, function(pk) list(
+      success  = RBesT::decision2S(pc = pk, qc = 0, lower.tail = TRUE),
+      futility = NULL
+    ))
+  }
+}
+
+builder_obf_1int <- make_builder_obf(c(1 / 2, 1))               # one interim
+
+
+resT1E_obf <- calibrate_threshold(0.05, n1_seq = n1_seq, n2_seq = n2_seq,
+                                   prior_cntrl = p_MAP, prior_treat = p_vague,
+                                   criterion = "SC",
+                                   decisions_builder = builder_obf_1int)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -157,17 +220,15 @@ if (FALSE) {
 
   res_p 
   res_n
-  #as p varies, avgT1E varies a lot, and also avgPower varies a bit
-  # if instead we keep p fixed and vary sample size, avgT1E fluctuates and avgPower varies a lot. 
+  # what we need to do is for each n_max to change p such that avgT1E achieves what I want
+  # Thus with that n and p we get an avgPower 
 
-  # This mean that changin n_max doesnt influence much 
-}
+  # Then if we reduce n, we need to change p a bit, but avgT1E doesnt change much if we change n,
 
 
 # =============================================================================
 # 2. Calibration walkthrough: default threshold, then a custom decisions_builder
 # =============================================================================
-if (FALSE) {
   library(RBesT)
   sigma   <- 88
   p_MAP   <- mixnorm(
@@ -239,9 +300,57 @@ final <- data.frame(
   achieved_t1e   = sapply(res_seeds, function(r) r$achieved_t1e),
   achieved_power = sapply(res_seeds, function(r) r$achieved_power)
 )
+  
 print(final)
 
 mean(final$p)
+
+
+
+  allo_ratio  <- n1_seq[length(n1_seq)] / n2_seq[length(n2_seq)]
+  info_ratio <- n2_seq / n2_seq[length(n2_seq)]
+
+## What about varying seed AND the starting n2max (same allo_ratio/info_ratio
+## shape, just a different anchor to start the bracket search from)? If the
+## bisection search is genuinely finding the smallest n regardless of where it
+## started, every starting point should converge to the same final n_max, for
+## every seed.
+
+seeds2          <- seq(123, 127)              # 5 seeds
+starting_n2max  <- c(10, 20, 40, 80, 160)     # 5 starting anchors, 16x range, same ratios
+
+grid <- expand.grid(seed = seeds2, start_n2max = starting_n2max)
+cores_grid <- if (.Platform$OS.type != "unix") 1L else nrow(grid)  # one core per combination
+
+res_grid <- parallel::mclapply(seq_len(nrow(grid)), function(i) {
+  s      <- grid$seed[i]
+  n2max0 <- grid$start_n2max[i]
+
+  # rebuild a starting schedule at this n2max0, same allo_ratio/info_ratio shape
+  n2_base_i <- pmax(1, round(info_ratio * n2max0)); n2_base_i <- cummax(n2_base_i)
+  n1_base_i <- pmax(1, round(allo_ratio * n2_base_i))
+
+  calibrate_design(target_t1e = 0.05, target_power = 0.9, delta_power = 60,
+                   n1_base = n1_base_i, n2_base = n2_base_i,
+                   prior_cntrl = p_MAP, prior_treat = p_vague,
+                   criterion = "SC", seed = s)
+}, mc.cores = cores_grid)
+
+final_grid <- data.frame(
+  seed           = grid$seed,
+  start_n2max    = grid$start_n2max,
+  p              = sapply(res_grid, function(r) r$p),
+  n_max          = sapply(res_grid, function(r) max(r$n1_seq) + max(r$n2_seq)),
+  achieved_t1e   = sapply(res_grid, function(r) r$achieved_t1e),
+  achieved_power = sapply(res_grid, function(r) r$achieved_power)
+)
+print(final_grid)
+
+# Per seed: does the final n_max stay the same across every starting anchor?
+by_seed <- aggregate(n_max ~ seed, final_grid, function(x) length(unique(x)))
+names(by_seed)[2] <- "n_distinct_n_max"
+cat("\nDistinct final n_max per seed (1 = fully starting-point independent):\n")
+print(by_seed)
 
 
 
@@ -265,7 +374,6 @@ mean(final$p)
                                          n1_base = n1_seq, n2_base = n2_seq,
                                          prior_cntrl = p_MAP, prior_treat = p_vague,
                                          criterion = "SC", decisions_builder = builder_pow)
-}
 
 
 # =============================================================================
