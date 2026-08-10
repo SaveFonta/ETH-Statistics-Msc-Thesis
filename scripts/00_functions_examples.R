@@ -61,6 +61,10 @@ library(gsDesign)
 
 
 
+n1_seq <- c(11, 27, 40)   # treatment arm cumulative sizes (three looks)
+n2_seq <- c(6, 14, 20)    # control arm cumulative sizes, stage totals 17, 41, 60
+
+
 resT1E <- calibrate_threshold(0.05, n1_seq = n1_seq, n2_seq = n2_seq,
                                 prior_cntrl = p_MAP, prior_treat = p_vague,
                                 criterion = "SC")
@@ -77,29 +81,64 @@ df <- data.frame(seed = seeds,
             p = sapply(res_seeds, function(x) x$p)
   )
 
-ggplot (df, aes(x = seed, y = p)) + geom_point() + geom_hline(yintercept = mean(df$p))
+df  |> summary()
+
+ggplot(df, aes(x = "", y = p)) +
+  geom_boxplot(width = 0.3, outlier.shape = NA) +
+  geom_jitter(width = 0.05, height = 0) +
+  labs(x = NULL)
+ggsave("scripts/plot.png", width = 7, height = 5)
 
 
 
 
 
-make_builder_obf <- function(fracs) {
-  function(p) {
-    p_k <- pnorm(qnorm(p) / sqrt(fracs))
-    lapply(p_k, function(pk) list(
-      success  = RBesT::decision2S(pc = pk, qc = 0, lower.tail = TRUE),
-      futility = NULL
-    ))
-  }
+
+
+
+builder_obf_2int_explicit <- function(p) {
+  p_1 <- pnorm(qnorm(p) / sqrt(1 / 3))   
+  p_2 <- pnorm(qnorm(p) / sqrt(2 / 3))   
+  p_3 <- p                               
+  list(
+    list(success = RBesT::decision2S(pc = p_1, qc = 0, lower.tail = TRUE), futility = NULL),
+    list(success = RBesT::decision2S(pc = p_2, qc = 0, lower.tail = TRUE), futility = NULL),
+    list(success = RBesT::decision2S(pc = p_3, qc = 0, lower.tail = TRUE), futility = NULL)
+  )
 }
-
-builder_obf_1int <- make_builder_obf(c(1 / 2, 1))               # one interim
-
+builder_obf_2int_explicit(0.95)
 
 resT1E_obf <- calibrate_threshold(0.05, n1_seq = n1_seq, n2_seq = n2_seq,
                                    prior_cntrl = p_MAP, prior_treat = p_vague,
                                    criterion = "SC",
-                                   decisions_builder = builder_obf_1int)
+                                   decisions_builder = builder_obf_2int_explicit)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
