@@ -145,9 +145,9 @@ p_t1e <- oc_facet_layout(
   ggplot(t1e,
          aes(x = Design_Prior, y = Power,
              color = Analysis_Prior, group = Analysis_Prior,
-             linetype = Analysis_Prior == "Vague"))) +
+             linetype = Analysis_Prior == "vague"))) +
   geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", linewidth = 0.5) +
-  labs(x = "Design Prior", y = "Average T1E")
+  labs(x = "Design Prior", y = "average T1E")
 
 print(p_t1e)
 
@@ -155,9 +155,9 @@ p_pow <- oc_facet_layout(
   ggplot(filter(df_oc, delta == delta_MCID),
          aes(x = Design_Prior, y = Power,
              color = Analysis_Prior, group = Analysis_Prior,
-             linetype = Analysis_Prior == "Vague"))) +
+             linetype = Analysis_Prior == "vague"))) +
   labs(x = "Design Prior",
-       y = bquote("Average Power"))
+       y = bquote("average power"))
 
 print(p_pow)
 
@@ -182,7 +182,7 @@ df_stage1 <- bind_rows(
 p_stage <- ggplot(df_stage1,
                   aes(x = Design_Prior, y = Prob,
                       color = Analysis_Prior, group = Analysis_Prior,
-                      linetype = Analysis_Prior == "Vague")) +
+                      linetype = Analysis_Prior == "vague")) +
   geom_point(size = 2.2) +
   geom_line(linewidth = 0.9) +
   facet_grid(Metric ~ Criterion) +

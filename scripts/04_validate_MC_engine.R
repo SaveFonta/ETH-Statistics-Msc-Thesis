@@ -394,7 +394,7 @@ cat("tolerance: 4 Monte Carlo standard errors\n")
 cat("===============================================================\n")
 
 theta_c_check   <- c(-70, -50, -30)
-analysis_priors <- list("MAP" = p_MAP, "Vague" = p_vague)
+analysis_priors <- list("MAP" = p_MAP, "vague" = p_vague)
 all_ok <- TRUE
 
 for (pname in names(analysis_priors)) {

@@ -1,0 +1,85 @@
+\chapter{Computational Framework for the Average Metrics}
+\label{app:computational_framework}
+
+This appendix sets out the computational framework behind the average metrics, which extends the \texttt{RBesT} package \citep{weber_applying_2021}.
+
+Let $\bar{y}_T$ and $\bar{y}_C$ denote the sample means for the treatment and control arms, respectively.
+
+Success is determined by a decision function $D(\bar{y}_T, \bar{y}_C) \in \{0, 1\}$, which evaluates whether the posterior distribution of the treatment contrast, 
+  $\delta = \theta_C - \theta_T$, satisfies a set of predefined conditions. For instance, a standard design requires the posterior probability to 
+  exceed a specific threshold: $\Pr(\delta > q \mid \bar{y}_T, \bar{y}_C) > p$ for threshold $q$ and probability $p$.
+
+When evaluating multiple conditions simultaneously, such as in \textit{dual criterion} designs requiring both statistical significance and clinical relevance 
+\citep{roychoudhury_beyond_2018}, the decision is formulated as the product of Heaviside step functions for each condition\footnote{Note that this product 
+formulation naturally generalizes to an arbitrary number of conditions} $H(x)$, where $H(x) = 1$ for $x > 0$ and $0$ for $x \le 0$:
+
+$$D(\bar{y}_T, \bar{y}_C) = \prod_{i} H\Big(\Pr(\delta \ge q_{c,i} \mid \bar{y}_T, \bar{y}_C) - p_{c,i}\Big)$$
+
+
+
+The specification of priors, the sample sizes ($n_T$, $n_C$), and the decision function $D(\bar{y}_T, \bar{y}_C)$ uniquely define a conditional Decision Boundary 
+$D_T(\bar{y}_C)$ for each observed control outcome $\bar{y}_C$,
+$$D_T(\bar{y}_C) = \max\{\bar{y}_T : D(\bar{y}_T, \bar{y}_C) = 1\}$$
+This represents the maximal threshold the treatment data $\bar{y}_T$ must satisfy to declare success.
+
+Given this boundary, we can compute the conditional probability of success $\Pr(\text{Success} \mid \theta_C, \theta_T)$ required in Equation~\eqref{eq:m_joint}. Assuming
+ true parameters $\theta_C$ and $\theta_T$, the overall probability of a success is the expectation of crossing the boundary $D_T(\bar{y}_C)$ over the sampling
+ distribution of the control data:
+\begin{equation}
+  \label{eq:oc2S_general}
+  \Pr(\text{Success} \mid \theta_C, \theta_T) = \int_{-\infty}^{\infty} F_T\left(D_T(\bar{y}_C) \mid \theta_T\right) f_C\left(\bar{y}_C \mid \theta_C\right) \, d\bar{y}_C,
+\end{equation}
+where $F_T\left(\cdot \mid \theta_T\right)$ is the cumulative distribution function of the treatment statistic evaluated at the decision boundary, and
+ $f_C\left(\cdot \mid \theta_C\right)$ is the probability density function of the control statistic.
+
+Because we are working with normally distributed endpoints, the sampling distributions for the sample means are Normal: 
+$\bar{y}_m \sim \mathcal{N}(\theta_m, v_m^2)$ for $m \in \{T, C\}$, where $v_m = \sigma_m / \sqrt{n_m}$. Consequently, the general integral in 
+Equation~\eqref{eq:oc2S_general} can be evaluated directly using the standard Normal CDF ($\Phi$) and PDF ($\phi$):
+\begin{equation}
+  \label{eq:oc2S_normal}
+  \Pr(\text{Success} \mid \theta_C, \theta_T) = \int_{-\infty}^{\infty} \Phi\left(\frac{D_T(\bar{y}_C) - \theta_T}{v_T}\right) \frac{1}{v_C} \phi\left(\frac{\bar{y}_C - \theta_C}{v_C}\right) \, d\bar{y}_C.
+\end{equation}
+ 
+
+\section{Averaging over the design prior}
+
+Equation~\eqref{eq:oc2S_normal} gives the probability of success at a fixed pair $(\theta_C, \theta_T)$.
+The average metrics of Section~\ref{subsec:metrics_bayesian} replace that fixed pair by a draw from the
+design prior. Writing $\theta_T = \theta_C - \delta$, so that the treatment effect is held at the value of
+interest while the control parameter varies, the average probability of success is
+\begin{equation} \label{eq:avg_integral}
+  \Pr(\text{Success} \mid \delta, \pi_D)
+  = \int_{-\infty}^{\infty} \Pr\!\left(\text{Success} \given \theta_C,\, \theta_C - \delta\right)
+    \pi_D(\theta_C)\, d\theta_C .
+\end{equation}
+Setting $\delta = 0$ returns the $\avgTIE$ and any other $\delta$ returns the $\avgPow$ at that effect, so a
+single integral produces both metrics. The integrand is the conditional curve of
+Equation~\eqref{eq:oc2S_normal}, which is bounded in $[0,1]$ and smooth in $\theta_C$, and the integral is
+evaluated numerically on the logit scale over the central mass of $\pi_D$, discarding a mass $\varepsilon$ in
+each tail. For a Normal mixture design prior no simulation is required at any point.
+
+\section{Monte Carlo evaluation of sequential designs}
+
+A group sequential design has no closed form counterpart to Equation~\eqref{eq:avg_integral}, because success
+at look $k$ depends on the whole history of the trial. The operating characteristics are therefore obtained by
+simulation, with three features that keep the cost manageable.
+
+\paragraph{Boundaries are precomputed once.} The decision boundary at each look is a property of the analysis,
+not of the truth: it is determined by the priors, the sample sizes and the decision rule, and depends neither on
+$\theta_C$ nor on $\delta$. Each look therefore contributes a function $D_{T,k}(\bar{y}_{C,k})$, built once
+before the simulation starts and reused for every replicate and every value of $\delta$.
+
+\paragraph{Trials are simulated in parallel and retired as they stop.} For $n_{\text{sim}}$ replicates the
+control parameter is drawn from the design prior, $\theta_C^{(i)} \sim \pi_D$, and the treatment parameter is
+set to $\theta_T^{(i)} = \theta_C^{(i)} - \delta$. At each look only the increment of new patients is
+generated, and the running arm means are updated cumulatively. A replicate that crosses the efficacy boundary is
+recorded as an efficacy stop at that look, one that crosses the futility boundary as a futility stop, and either
+way it is removed from the active set, so later looks are simulated only for the trials still running.
+
+\paragraph{The conditional case is the same computation.} Drawing every $\theta_C^{(i)}$ from $\pi_D$ gives
+the average metrics, while fixing $\theta_C^{(i)} = \theta_C^*$ for all $i$ gives the conditional ones. The
+conditional operating characteristics are thus the special case of a degenerate design prior, and no separate
+code path is needed.
+
+The stopping probabilities of Section~\ref{subsec:sequential} are the proportions of replicates retired at each
+look, and summing the efficacy proportions over looks gives $\avgPow$, or $\avgTIE$ when $\delta = 0$.

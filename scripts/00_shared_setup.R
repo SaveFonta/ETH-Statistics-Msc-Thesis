@@ -24,22 +24,20 @@ p_MAP <- mixnorm(
 p_vague <- mixnorm(c(1, mu_A, 8800), sigma = sigma, param = "ms")
 
 analysis_priors <- list(
-  "MAP"            = p_MAP,
-  "Robust (w=0.2)" = robustify(p_MAP, 0.2, mean = mu_A),
-  "Robust (w=0.4)" = robustify(p_MAP, 0.4, mean = mu_A),
-  "Robust (w=0.6)" = robustify(p_MAP, 0.6, mean = mu_A),
-  "Robust (w=0.8)" = robustify(p_MAP, 0.8, mean = mu_A),
-  "Vague"          = p_vague
+  "MAP"             = p_MAP,
+  "robust (w=0.2)"  = robustify(p_MAP, 0.20, mean = mu_A),
+  "robust (w=0.35)" = robustify(p_MAP, 0.35, mean = mu_A),
+  "robust (w=0.5)"  = robustify(p_MAP, 0.50, mean = mu_A),
+  "vague"           = p_vague
 )
 prior_names <- names(analysis_priors)
 
 omega_map <- c(
-  "MAP"            = 0.0,
-  "Robust (w=0.2)" = 0.2,
-  "Robust (w=0.4)" = 0.4,
-  "Robust (w=0.6)" = 0.6,
-  "Robust (w=0.8)" = 0.8,
-  "Vague"          = 1.0
+  "MAP"             = 0.00,
+  "robust (w=0.2)"  = 0.20,
+  "robust (w=0.35)" = 0.35,
+  "robust (w=0.5)"  = 0.50,
+  "vague"           = 1.00
 )
 
 
@@ -49,8 +47,8 @@ omega_map <- c(
 design_priors <- list(
   "Dirac (-50)"        = mixnorm(c(1, mu_A, 1e-16), sigma = sigma, param = "ms"),
   "MAP"                = p_MAP,
-  "Skeptical (-90)"    = mixnorm(c(1, -90, 17.6), sigma = sigma, param = "ms"),
-  "Misspecified (-10)" = mixnorm(c(1, -10, 25),   sigma = sigma, param = "ms")
+  "skeptical (-90)"    = mixnorm(c(1, -90, 17.6), sigma = sigma, param = "ms"),
+  "misspecified (-10)" = mixnorm(c(1, -10, 25),   sigma = sigma, param = "ms")
 )
 dprior_names <- names(design_priors)
 
@@ -82,10 +80,10 @@ fut.crit <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
 my_theme <- theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_blank())
 
-# One shared colour ramp for the 6 analysis priors, used on every OC/EUII plot.
+# One shared colour ramp for the analysis priors, used on every OC/EUII plot.
 scale_color_prior <- function(...) scale_color_viridis_d(option = "turbo", direction = -1, ...)
 
-# The "Vague" (no borrowing) reference line is always dashed, every other
+# The "vague" (no borrowing) reference line is always dashed, every other
 # analysis prior solid.
 scale_linetype_vague <- function() scale_linetype_manual(values = c("TRUE" = "dashed", "FALSE" = "solid"), guide = "none")
 

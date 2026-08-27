@@ -93,7 +93,7 @@ ggsave("scripts/plot.png", width = 7, height = 5)
 
 
 
-#OBF style
+# OBF style
 
 builder_obf_2int <- function(p) {
   p_1 <- pnorm(qnorm(p) / sqrt(1 / 3))   

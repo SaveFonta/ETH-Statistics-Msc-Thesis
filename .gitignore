@@ -2,6 +2,8 @@
 *.aux
 *.log
 *.toc
+*.lof
+*.lot
 *.out
 *.pdf
 *.synctex.gz
@@ -13,8 +15,8 @@
 # R/Markdown generated files
 *.tex
 # ...except these two, which are hand-written source, not knitr output
-!Final/appendix.tex
-!Final/newCommands.tex
+!archive/manuscript-article/appendix.tex
+!archive/manuscript-article/newCommands.tex
 *.RData
 *.Rdata
 *.rdata
@@ -71,3 +73,14 @@ INDEX.md
 
 # Scratch ideas/exploration notes, not part of the thesis, never tracked
 IDEAS/
+# --- ETH SfS thesis (MasterThesisSfSVersionSep25/) ---
+# The global *.tex rule above would otherwise drop hand written chapter sources,
+# and the global *.pdf rule would drop the mandatory signed declaration.
+# Re-include the real sources first, then re-exclude the knitr generated ones.
+!MasterThesisSfSVersionSep25/*.tex
+!MasterThesisSfSVersionSep25/Chapters/*.tex
+MasterThesisSfSVersionSep25/MasterThesisSfS.tex
+MasterThesisSfSVersionSep25/Chapters/Methodology.tex
+MasterThesisSfSVersionSep25/Chapters/Applications.tex
+!MasterThesisSfSVersionSep25/confirmation-originality.pdf
+!MasterThesisSfSVersionSep25/confirmation-originality-scan.pdf

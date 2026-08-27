@@ -53,10 +53,10 @@ my_x_scale <- scale_x_continuous(trans = "log1p", breaks = c(0, 10, 100, 1000, 1
 # --- T1E Data & Plots ---
 df_t1e_loc <- data.frame(mu_D = seq(-90, -10, length.out = 100)) |>
   mutate(
-    `Conditional T1E` = condPower(mu_D, 0, k_SC),
-    `Average T1E` = avgPower(mu_D, sigma_A2, 0, k_SC)
+    `conditional T1E` = condPower(mu_D, 0, k_SC),
+    `average T1E` = avgPower(mu_D, sigma_A2, 0, k_SC)
   ) |>
-  pivot_longer(cols = c(`Conditional T1E`, `Average T1E`), names_to = "Metric", values_to = "Value")
+  pivot_longer(cols = c(`conditional T1E`, `average T1E`), names_to = "Metric", values_to = "Value")
 
 sigmas <- c(0, 10^seq(0, 5, length.out = 99))
 df_t1e_scale <- data.frame(sigma_D = sigmas) |>
@@ -66,8 +66,8 @@ p1a <- ggplot(df_t1e_loc, aes(x = mu_D, y = Value, color = Metric)) +
   geom_line(size = 1.2) +
   geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", linewidth = 0.4) +
   geom_vline(xintercept = mu_A, linetype = "dotted", color = "gray", linewidth = 0.8) +
-  scale_color_manual(values = c("Average T1E" = col_avg, "Conditional T1E" = col_cond)) +
-  labs(x = expression("True Control Mean (" * mu["D,C"] * ")"),
+  scale_color_manual(values = c("average T1E" = col_avg, "conditional T1E" = col_cond)) +
+  labs(x = expression("True control mean (" * mu["D,C"] * ")"),
        y = "T1E") +
   my_theme
 
@@ -91,18 +91,18 @@ grid.arrange(p1a, p1b, ncol = 2)
 # --- Power Data & Plots ---
 df_pow_loc <- data.frame(delta = seq(0, 100, length.out = 100)) |>
   mutate(
-    `Conditional Power` = condPower(mu_A, delta, k_SC),
-    `Average Power` = avgPower(mu_A, sigma_A2, delta, k_SC)
+    `conditional power` = condPower(mu_A, delta, k_SC),
+    `average power` = avgPower(mu_A, sigma_A2, delta, k_SC)
   ) |>
-  pivot_longer(cols = c(`Conditional Power`, `Average Power`), names_to = "Metric", values_to = "Value")
+  pivot_longer(cols = c(`conditional power`, `average power`), names_to = "Metric", values_to = "Value")
 
 df_pow_scale <- data.frame(sigma_D = sigmas) |>
   mutate(Avg_Power = avgPower(mu_A, sigma_D^2, 60, k_SC))
 
 p2a <- ggplot(df_pow_loc, aes(x = delta, y = Value, color = Metric)) +
   geom_line(size = 1) +
-  scale_color_manual(values = c("Average Power" = col_avg, "Conditional Power" = col_cond)) +
-  labs(x = expression("True Effect (" * delta * ")"),
+  scale_color_manual(values = c("average power" = col_avg, "conditional power" = col_cond)) +
+  labs(x = expression("True effect (" * delta * ")"),
        y = "Power") +
   my_theme
 
@@ -156,7 +156,7 @@ ggplot(df_ss, aes(x = n_C, y = power, colour = n_A)) +
            hjust = 0, size = 3, colour = "grey30", parse = TRUE) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 1)) +
   scale_colour_brewer(palette = "Set1", labels = legend_labels) +
-  labs(x = expression(n[C]), y = "Average Power",
+  labs(x = expression(n[C]), y = "average power",
        colour = NULL, linetype = NULL) +
   my_theme +
   theme(legend.position = "right")
@@ -171,10 +171,10 @@ k_DC <- max(DV, k_SC)
 
 df_rt1e_loc <- data.frame(mu_D = seq(-90, -10, length.out = 100)) |>
   mutate(
-    Conditional = condPower(mu_D, 0, k_DC) / condPower(mu_D, 0, k_SC),
-    Average     = avgPower(mu_D, sigma_A2, 0, k_DC) / avgPower(mu_D,  sigma_A2, 0, k_SC)
+    `conditional` = condPower(mu_D, 0, k_DC) / condPower(mu_D, 0, k_SC),
+    `average`     = avgPower(mu_D, sigma_A2, 0, k_DC) / avgPower(mu_D,  sigma_A2, 0, k_SC)
   ) |>
-  pivot_longer(cols = c(Conditional, Average), names_to = "Metric", values_to = "Ratio")
+  pivot_longer(cols = c(`conditional`, `average`), names_to = "Metric", values_to = "Ratio")
 
 df_t1e_abs <- data.frame(mu_D = seq(-90, -10, length.out = 100)) |>
   mutate(
@@ -187,8 +187,8 @@ pr1a <- ggplot(df_rt1e_loc, aes(mu_D, Ratio, color = Metric)) +
   geom_line(size = 1.2) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
   geom_vline(xintercept = mu_A, linetype = "dotted", color = "gray", linewidth = 0.8) +
-  scale_color_manual(values = c("Average" = col_avg, "Conditional" = col_cond)) +
-  labs(x = expression("True Control Mean (" * mu["D,C"] * ")"),
+  scale_color_manual(values = c("average" = col_avg, "conditional" = col_cond)) +
+  labs(x = expression("True control mean (" * mu["D,C"] * ")"),
        y = "T1E ratio (DC / SC)") + my_theme
 
 pr1b <- ggplot(df_t1e_abs, aes(mu_D, avgT1E, color = Criterion)) +
@@ -196,8 +196,8 @@ pr1b <- ggplot(df_t1e_abs, aes(mu_D, avgT1E, color = Criterion)) +
   geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", linewidth = 0.4) +
   geom_vline(xintercept = mu_A, linetype = "dotted", color = "gray", linewidth = 0.8) +
   scale_color_manual(values = c("DC" = col_dc, "SC" = col_sc)) +
-  labs(x = expression("True Control Mean (" * mu["D,C"] * ")"),
-       y = "Average T1E") + my_theme
+  labs(x = expression("True control mean (" * mu["D,C"] * ")"),
+       y = "average T1E") + my_theme
 
 grid.arrange(pr1a, pr1b, ncol = 2)
 
@@ -207,10 +207,10 @@ grid.arrange(pr1a, pr1b, ncol = 2)
 # =============================================================================
 df_pow_dc <- data.frame(delta = seq(0, 100, length.out = 100)) |>
   mutate(
-    `Conditional Power` = condPower(mu_A, delta, k_DC),
-    `Average Power`     = avgPower(mu_A, sigma_A2, delta, k_DC)
+    `conditional power` = condPower(mu_A, delta, k_DC),
+    `average power`     = avgPower(mu_A, sigma_A2, delta, k_DC)
   ) |>
-  pivot_longer(cols = c(`Conditional Power`, `Average Power`),
+  pivot_longer(cols = c(`conditional power`, `average power`),
                names_to = "Metric", values_to = "Value")
 
 df_pow_abs <- data.frame(delta = seq(0, 100, length.out = 100)) |>
@@ -223,14 +223,14 @@ df_pow_abs <- data.frame(delta = seq(0, 100, length.out = 100)) |>
 pr2a <- ggplot(df_pow_dc, aes(delta, Value, color = Metric)) +
   geom_line(size = 1) +
   geom_vline(xintercept = DV, linetype = "dotted", color = "gray", linewidth = 0.8) +
-  scale_color_manual(values = c("Average Power" = col_avg, "Conditional Power" = col_cond)) +
-  labs(x = expression("True Effect (" * delta * ")"), y = "Power (DC)") + my_theme
+  scale_color_manual(values = c("average power" = col_avg, "conditional power" = col_cond)) +
+  labs(x = expression("True effect (" * delta * ")"), y = "Power (DC)") + my_theme
 
 pr2b <- ggplot(df_pow_abs, aes(delta, avgPower, color = Criterion)) +
   geom_line(size = 1) +
   geom_vline(xintercept = DV, linetype = "dotted", color = "gray", linewidth = 0.8) +
   scale_color_manual(values = c("DC" = col_dc, "SC" = col_sc)) +
-  labs(x = expression("True Effect (" * delta * ")"), y = "Average Power") + my_theme
+  labs(x = expression("True effect (" * delta * ")"), y = "average power") + my_theme
 
 grid.arrange(pr2a, pr2b, ncol = 2)
 
@@ -253,7 +253,7 @@ p3a <- ggplot(df_euii_loc, aes(x = delta, y = Value, color = Metric)) +
   scale_color_manual(values = c("Avg_EUII" = col_avg, "Cond_EUII" = col_cond),
                      labels = c("Avg_EUII"  = expression(EUII[avg]),
                                 "Cond_EUII" = expression(EUII[cond]))) +
-  labs(x = expression("True Effect (" * delta * ")"), y = "EUII") + my_theme
+  labs(x = expression("True effect (" * delta * ")"), y = "EUII") + my_theme
 
 p3b <- ggplot(df_euii_scale, aes(x = sigma_D, y = Avg_EUII)) +
   geom_line(color = col_avg, size = 1.2) +
@@ -270,12 +270,12 @@ grid.arrange(p3a, p3b, ncol = 2)
 # =============================================================================
 df_reuii_loc <- data.frame(delta = seq(50, 100, length.out = 100)) |>
   mutate(
-    Conditional = calc_EUII(condPower(mu_A, delta, k_DC), condPower(mu_A, 0, k_DC), N_total) /
+    `conditional` = calc_EUII(condPower(mu_A, delta, k_DC), condPower(mu_A, 0, k_DC), N_total) /
                   calc_EUII(condPower(mu_A, delta, k_SC), condPower(mu_A, 0, k_SC), N_total),
-    Average     = calc_EUII(avgPower(mu_A, sigma_A2, delta, k_DC), avgPower(mu_A, sigma_A2, 0, k_DC), N_total) /
+    `average`     = calc_EUII(avgPower(mu_A, sigma_A2, delta, k_DC), avgPower(mu_A, sigma_A2, 0, k_DC), N_total) /
                   calc_EUII(avgPower(mu_A, sigma_A2, delta, k_SC), avgPower(mu_A, sigma_A2, 0, k_SC), N_total)
   ) |>
-  pivot_longer(cols = c(Conditional, Average), names_to = "Metric", values_to = "Ratio")
+  pivot_longer(cols = c(`conditional`, `average`), names_to = "Metric", values_to = "Ratio")
 
 df_euii_abs <- data.frame(delta = seq(50, 100, length.out = 100)) |>
   mutate(
@@ -287,14 +287,14 @@ df_euii_abs <- data.frame(delta = seq(50, 100, length.out = 100)) |>
 pr3a <- ggplot(df_reuii_loc, aes(delta, Ratio, color = Metric)) +
   geom_line(size = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
-  scale_color_manual(values = c("Average" = col_avg, "Conditional" = col_cond)) +
-  labs(x = expression("True Effect (" * delta * ")"), y = "EUII ratio (DC / SC)") + my_theme
+  scale_color_manual(values = c("average" = col_avg, "conditional" = col_cond)) +
+  labs(x = expression("True effect (" * delta * ")"), y = "EUII ratio (DC / SC)") + my_theme
 
 pr3b <- ggplot(df_euii_abs, aes(delta, avgEUII, color = Criterion)) +
   geom_line(size = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
   scale_color_manual(values = c("DC" = col_dc, "SC" = col_sc)) +
-  labs(x = expression("True Effect (" * delta * ")"), y = "EUII") + my_theme
+  labs(x = expression("True effect (" * delta * ")"), y = "EUII") + my_theme
 
 grid.arrange(pr3a, pr3b, ncol = 2)
 
@@ -320,7 +320,7 @@ p_left <- ggplot(df_asym, aes(delta, EUII, color = Criterion)) +
   geom_line(linewidth = 1.1) +
   geom_vline(xintercept = DV_a, linetype = "dotted", color = "gray", linewidth = 0.8) +
   scale_color_manual(values = cols_euii) +
-  labs(x = expression("True Effect (" * delta * ")"),
+  labs(x = expression("True effect (" * delta * ")"),
        y = "Asymptotic EUII" ) + my_theme
 
 ## --- Right panel: finite-n EUII vs n_C at delta = 60, with asymptotes ---

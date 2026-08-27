@@ -1,0 +1,188 @@
+\chapter{Introduction}
+
+\section{Background}
+
+Randomized Controlled Trials (RCTs) remain the gold standard for evaluating the efficacy and safety of novel therapeutic interventions. 
+However, the clinical development sector is increasingly constrained by rising operational costs, strict time limitations, and complex 
+ethical considerations \citep{dimasi_innovation_2016}. For instance, recruiting a sufficient number of patients, particularly in case of 
+rare diseases, poses a major obstacle to the development of new treatments. Furthermore, patients are sometimes randomized to a placebo arm rather than to an 
+active control arm, which raises significant ethical concerns regarding patient welfare when other effective treatments already exist \citep{freedman_scientific_1987, world_medical_association_world_2025}.
+
+Historically, the dominant statistical paradigm in the design of RCTs has been the frequentist approach. This framework evaluates long-run operating 
+characteristics, relying heavily on strict Type I Error (T1E rate) control. A fundamental limitation of this paradigm is that it treats every trial 
+in isolation, ignoring pre-existing information such as data from previous clinical phases or historical control arms that could otherwise 
+help the current study. 
+
+Conversely, Bayesian statistical frameworks offer a mathematically rigorous solution to this challenge by incorporating external evidence 
+through informative prior distributions. Integrating background knowledge during the planning phase can lead to highly efficient designs, 
+accelerating trial execution, reducing operational waste, and limiting the number of concurrent patients required for the control arm.
+
+This not only decreases the overall sample size but also makes the trial more attractive to potential participants, who face a lower 
+probability of being assigned to a placebo group. As noted by O'Hagan et al., \textit{"the design of a trial 
+is ultimately the sponsor’s decision and its outcome is the sponsor’s risk; therefore, the design should incorporate all available information to 
+maximize the probability of a satisfactory outcome"} \citep{ohagan_assurance_2005}.
+Recognizing these practical benefits, regulatory bodies are increasingly supportive of these methods, as 
+evidenced by recent guidance on the use of Bayesian methodology in clinical trials \citep{fda_bayesian_2026}.
+
+ 
+
+\section{Bayesian Designs}
+The Bayesian framework formally incorporates historical information into the design through prior distributions, that can be placed either directly 
+on the treatment effect or on one (or both) arms:
+
+\begin{itemize}
+        \item \textbf{Borrowing on the Control Group:} when recruiting patients for a standard-of-care or placebo arm is ethically challenging or 
+    operationally slow, historical data can be used to inform the control parameters. Designs that supplement a smaller concurrent control group
+    with historical information are formally referred to in the literature as \textit{hybrid-control} trials \citep[e.g.,][]{gravestock2017adaptive, gravestock2019power, li2022hybrid, fu2023covariate, kopp2024simulating}.
+
+
+    \item \textbf{Borrowing on the Treatment Effect:} When the primary goal is to use existing efficacy data to support a new indication or
+    demographic, such as leveraging adult data to pediatric cohorts, the prior can be placed on the treatment contrast directly \citep{psioda_bayesian_2019}.
+\end{itemize}
+
+
+
+
+
+Evaluating the operating characteristics of Bayesian designs requires particular care. Traditional frequentist designs rely on
+conditional power, the probability of success under a single, fixed treatment effect. The Bayesian framework instead shifts the focus
+to unconditional power, or \textit{assurance}, the expected power averaged over a prior distribution for the unknown treatment effect.
+Integrating over a prior gives a more realistic assessment of the predictive probability of a
+statistically significant result \citep{spiegelhalter1993bayesian, ohagan_assurance_2005}. It is also known as the probability of study success \citep{wang_evaluating_2013}
+or Bayesian \textit{predictive power} \citep{spiegelhalter_monitoring_1986}.
+
+This thesis focuses on borrowing historical information on the control arm. In this setting, traditional \textit{assurance} is not the relevant metric, since
+it averages over uncertainty in the treatment effect, not over the control parameter. Evaluating such designs instead requires metrics 
+that account for uncertainty in the control arm. The classical frequentist T1E rate, while commonly used, cannot be strictly
+controlled once external information is borrowed \citep{viele_use_2014, kopp2024simulating}. This is acknowledged in regulatory guidance: when a
+frequentist T1E rate is not applicable to a Bayesian design that borrows external information, alternative trial characteristics should be
+considered \citep{fda_bayesian_2026}. To address this, \citet{best_beyond_2025}
+propose the average T1E rate, which integrates the conditional T1E rate over a design prior on the control parameter rather than
+ evaluating it at a single point. This reformulation is attractive because it restores the
+guarantee that borrowing removes: when the design prior is aligned with the analysis prior, the average T1E rate is
+controlled exactly at the nominal level.
+
+
+\section{Dynamic Borrowing and Prior-Data Conflict}
+\label{subsec:info-borrowing}
+
+While borrowing historical data presents clear advantages, it is not without risk. Historical and current trial data may be heterogeneous
+due to shifts in demographics, standard of care, or measurement techniques \citep{evans_checking_2006}. If a model forces the combination
+of historical and concurrent data when such a discrepancy exists, it can lead to biased estimates and inflated error rates.
+
+Recognizing these dangers, \citet{pocock_combination_1976} proposed the first formal criteria for combining historical and concurrent
+controls in a randomized design: the historical trial should be comparable in patient population, treatment regimen, and endpoint
+definition, and conducted under sufficiently similar conditions. Several Bayesian frameworks have since been developed to achieve a more
+principled form of discounting, in which historical information is downweighted in proportion to heterogeneity.  The common goal of all
+these \textit{dynamic borrowing} methods is to borrow strength when historical data align with the current trial
+while discounting when a true discrepancy, commonly called \textit{drift} \citep{viele_use_2014}, is present. Examples include
+\textit{power priors} \citep{ibrahim_power_2000}, which discount historical data via a scalar power parameter $a_0 \in [0,1]$, and \textit{commensurate priors} \citep{hobbs_2011}, which link historical and current parameters through a shared commensurability model.
+
+Other than those, the \textit{meta-analytic-predictive} (MAP) approach \citep{neuenschwander2010summarizing} derives the prior for the control arm
+from a hierarchical meta-analysis of historical trials, treating the trial-specific control data as exchangeable. The MAP prior is
+not available in closed form but can be approximated by a mixture of conjugate distributions using simulation methods. However, standard 
+MAP prior can still react too slowly when historical and current data disagree. Therefore, it is possible to augment the mixture with a weakly informative
+component whose weight $\omega$ encodes the prior probability that the new trial is not exchangeable with the historical controls.
+This \textit{robust MAP} prior responds more rapidly to \textit{prior-data conflict}, shifting posterior weight toward the vague component as
+divergence between historical and current data grows. This thesis focuses primarily on the MAP framework and its robust extension,
+an approach that is genuinely used in practice. A scoping review of Phase II trials identified 37 studies applying robust
+Bayesian borrowing, of which $56.8\%$ borrowed in order to supplement the control arm, and roughly a fifth of those
+borrowing from external sources did so through robust mixture priors \citep{weru2026uptake}. Recent examples include
+\citet{richeldi2022trial} and \citet{chen2024efficacy}. That same review also found that the parameters governing the
+degree of borrowing are poorly reported, with only a third of the trials applying a fixed downweighting explaining how
+the weight had been chosen, which motivates a systematic study of how that weight shapes the operating characteristics.
+
+
+
+\section{Dual Criterion} 
+\label{subsec:dual_criterion_intro}
+
+A limitation of standard trial designs is that success is defined by a single statistical threshold: a significant $p$-value or a posterior probability. While this guarantees sufficient evidence against the null hypothesis, 
+it says nothing about whether the effect is large enough to be clinically meaningful, since a statistically significant result can arise from a modest, practically unimportant treatment difference.
+
+The dual criterion responds to this by requiring two conditions rather than one. Developed for proof of concept
+trials, where the decision is whether to continue development \citep{gsponer_practical_2014, fisch2015bayesian}, it
+answers two distinct questions. The first asks whether the drug works at all, and demands high posterior confidence that the effect
+is superior to placebo. The second asks whether the drug has a relevant clinical effect, and demands only moderate
+posterior confidence (usually 50\%) that the effect exceeds a target difference, the threshold below which a treatment is not worth developing further. 
+
+The two conditions together admit four outcomes. Both holding
+gives a GO and neither gives a NO-GO, while the two mixed cases are indeterminate and call for different
+responses. Evidence of a relevant effect that misses the significance threshold often suggests expanding the trial, whereas an
+effect that is significant but marginal may suggests reconsidering the target population.
+
+
+\citet{fisch2015bayesian} further show that an informative prior built from historical placebo data can substitute for a
+large part of the trial, with a design of twelve treated and six control patients performing comparably to one of forty
+patients split evenly. 
+
+
+\citet{roychoudhury_beyond_2018} later formalise this as the \textit{dual criterion} (DC) design, in which trial success requires both a statistical criterion and a clinical criterion: the estimated effect must reach a pre-specified Decision Value (DV), 
+the minimum clinically meaningful improvement elicited from domain experts. power at the DV is approximately $50\%$ 
+by construction, meaning the sample size must be chosen to achieve adequate power for effects meaningfully above the DV.
+
+
+
+
+\section{Sequential Designs}
+\label{subsec:sequential_intro}
+
+A classical fixed design decides in advance for a single analysis at a final predetermined sample size. Interim analyses relax this constraint and allow the trial to stop earlier. The motivation is both ethical and financial. Stopping early for efficacy makes a working
+treatment available sooner and saves patients from an inferior arm, while stopping early for futility avoids exposing further patients to an ineffective one and saves resources for other research.
+
+Historically, interim analyses have been applied predominantly within the frequentist framework,
+where taking multiple looks at the data inflates the T1E rate beyond its nominal level. Because the frequentist test statistic depends only 
+on the difference between the two arms, its behaviour across looks can be represented as a discretely observed Brownian 
+motion \citep{jennison_group_1999}. Various methods to define boundaries to control the T1E rate have been developed, including Pocock's constant threshold 
+\citep{pocock_group_1977}, O'Brien and Fleming's boundaries \citep{obrien_multiple_1979}, and the alpha-spending function \citep{lan_demets_discrete_1983}.
+
+Bayesian group sequential designs replace the frequentist test statistic with the posterior probability that the treatment is superior, 
+stopping early for efficacy once this probability is high enough, and for futility using posterior or predictive probability. Traditionally, 
+frequentist operating characteristics are obtained using simulation approaches \citep{berry2010bayesian}.
+Whether these thresholds should be adjusted for the planning of interim analyses to guarantee frequentist T1E control is itself debated, 
+and we refer the reader to \citet{zhou_ji_2024} for a complete overview. \citet{ryan2020we} give an empirical answer: efficacy 
+stopping inflates the T1E rate as more looks are added unless the thresholds are adjusted, while futility stopping alone does not, 
+since it can only remove trials that would have failed regardless.
+
+\citet{zhu2017bayesian} propose an algorithm to calibrate the Bayesian thresholds to a target T1E rate, and \citet{shi2019control} 
+generalize this method to other design types and add a theoretical shortcut that avoids simulation under a simple conjugate prior. 
+
+An interim analysis can also be used to assess \textit{prior-data conflict}. If external information does not agree with the current trial,
+more patients may be randomized to the control arm after the interim, or the randomization ratio may be adjusted \citep{schmidli_robust_2014}.
+
+
+\section{The Experimental Unit Information Index}
+\label{subsec:euii_intro}
+Comparing designs is not straightforward when they differ in sample size, power, and T1E rate simultaneously, especially when
+the design is adaptive, i.e. the sample size is random. \citet{held2025balancing} address this with the Experimental Unit
+Information Index (EUII), which normalizes the \textit{diagnostic odds ratio} (DOR) by the number of patients a design needs, making
+designs with different stopping rules comparable on a common, per-patient scale.
+
+
+\section{Objectives \note{TO DO}}
+\note{This section is built up progressively as the thesis is revised. Add an objective here once the corresponding chapter is settled.}
+
+The objectives of this thesis are the following.
+
+\begin{itemize}
+    \item Extend the Bayesian fixed design metrics to group sequential designs with robust mixture priors. This covers the
+    average T1E rate of \citet{best_beyond_2025} together with an analogous average power. The latter replaces
+    \textit{assurance}, which averages over uncertainty in the treatment effect rather than over the control parameter and
+    is therefore not the relevant quantity when historical information is borrowed on the control arm.
+
+    \item Use the EUII to evaluate whether the sequential framework delivers higher evidentiary value per unit than the
+    fixed design framework.
+\end{itemize}
+
+
+Look at the discussion of the paper: Beyond Randomized Clinical Trials: Use of External Controls
+Quite nice
+
+The remainder of the thesis is organized as follows. Chapter~\ref{sec:methodology} develops the methodology: the MAP prior, the average metrics with their closed forms under Normal priors, the extension of the EUII to the borrowing framework, the \textit{dual criterion}, and group sequential designs. Chapter~\ref{sec:Applications} applies the framework to a case study in Crohn's disease, evaluating fixed and sequential designs under aligned and misspecified design priors. Chapter~\ref{sec:conclusion} concludes with a discussion of the findings and directions for future work.
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "../MasterThesisSfS"
+%%% End: 

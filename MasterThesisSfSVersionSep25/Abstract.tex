@@ -1,0 +1,37 @@
+\newpage
+\subsection*{Abstract}
+
+\note{TO DO: draft written from the thesis content, revise the wording and the
+claims of the last paragraph once the calibrated comparison is finished.}
+
+Comparing clinical trial designs is not straightforward when they differ in sample size,
+power and type one error at the same time, and it becomes harder still when the design is
+adaptive and the sample size is itself random. This thesis studies Bayesian two arm designs
+with a Normal endpoint that borrow historical information on the control arm, and evaluates
+them on a common per patient scale.
+
+Borrowing is carried out with meta analytic predictive priors and their robust mixture
+extensions. Designs are assessed through average operating characteristics, which separate
+the analysis prior used to form the posterior from the design prior used to describe the
+plausible true states of nature. Closed form expressions for the average type one error and
+the average power are derived under Normal priors, together with three properties of the
+averaged metrics. Average metrics lie closer to one half than their conditional
+counterparts, the average type one error is controlled exactly at the nominal level when the
+design and analysis priors coincide, and it degenerates to one half when the design prior
+becomes vague while borrowing remains active.
+
+Designs are then compared through the experimental unit information index, which normalises
+the diagnostic odds ratio by the number of patients a design requires and therefore places
+designs of different size on the same footing. The framework is developed for fixed designs
+under both a single criterion and a dual criterion, and is then extended to group sequential
+designs with one and with two interim analyses. Thresholds and sample sizes are calibrated
+by simulation, using common random numbers so that the average type one error becomes a
+smooth monotone function of the threshold and can be inverted by root finding, with the
+threshold recalibrated at every candidate sample size.
+
+The methods are illustrated throughout on a running example in Crohn's disease.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "MasterThesisSfS"
+%%% End: 

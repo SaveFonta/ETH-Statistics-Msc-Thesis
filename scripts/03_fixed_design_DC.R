@@ -167,7 +167,7 @@ cat("EUII ratio saved to", file.path(out_dir, "vs_SC_euii.RDS"), "\n")
 # --- manuscript.Rnw chunk: plot_cond_both -------------------------------
 p_cond_T1E <- ggplot(df_cond,
                      aes(x = theta_C, y = T1E,
-                         color = Prior, linetype = Prior == "Vague")) +
+                         color = Prior, linetype = Prior == "vague")) +
   geom_line(linewidth = 1.2) +
   geom_hline(yintercept = 0.05, linetype = "dashed",
              color = "black", linewidth = 0.6) +
@@ -176,19 +176,19 @@ p_cond_T1E <- ggplot(df_cond,
   scale_linetype_vague() +
   scale_color_prior() +
   labs(x = expression("True Control Mean (" * theta[C] * ")"),
-       y = "Conditional Type I Error") +
+       y = "conditional type I error") +
   my_theme
 
 p_cond_Power <- ggplot(df_cond,
                        aes(x = theta_C, y = Power,
-                           color = Prior, linetype = Prior == "Vague")) +
+                           color = Prior, linetype = Prior == "vague")) +
   geom_line(linewidth = 1.2) +
   geom_vline(xintercept = mu_A, linetype = "dotted",
              color = "gray", linewidth = 0.8) +
   scale_linetype_vague() +
   scale_color_prior() +
   labs(x = expression("True Control Mean (" * theta[C] * ")"),
-       y = bquote("Conditional Power (" * delta * " = 60)")) +
+       y = bquote("conditional power (" * delta * " = 60)")) +
   my_theme
 
 grid.arrange(p_cond_T1E, p_cond_Power, ncol = 2)
@@ -198,26 +198,26 @@ grid.arrange(p_cond_T1E, p_cond_Power, ncol = 2)
 p_avg_T1E <- ggplot(df_avg,
                     aes(x = Design_Prior, y = avgT1E,
                         color = Analysis_Prior, group = Analysis_Prior,
-                        linetype = Analysis_Prior == "Vague")) +
+                        linetype = Analysis_Prior == "vague")) +
   geom_point(size = 2.5) +
   geom_line(linewidth = 1.0) +
   geom_hline(yintercept = 0.05, linetype = "dashed",
              color = "black", linewidth = 0.6) +
   scale_linetype_vague() +
   scale_color_prior() +
-  labs(x = "Design Prior", y = "Average Type I Error") +
+  labs(x = "Design Prior", y = "average type I error") +
   my_theme
 
 p_avg_Power <- ggplot(filter(df_avg, delta == delta_MCID),
                       aes(x = Design_Prior, y = avgPower,
                           color = Analysis_Prior, group = Analysis_Prior,
-                          linetype = Analysis_Prior == "Vague")) +
+                          linetype = Analysis_Prior == "vague")) +
   geom_point(size = 2.5) +
   geom_line(linewidth = 1.0) +
   scale_linetype_vague() +
   scale_color_prior() +
   labs(x = "Design Prior",
-       y = bquote("Average Power (" * delta * " = 60)")) +
+       y = bquote("average power (" * delta * " = 60)")) +
   my_theme
 
 grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
@@ -227,7 +227,7 @@ grid.arrange(p_avg_T1E, p_avg_Power, ncol = 2)
 df_euii_60 <- filter(df_euii, delta == 60)
 
 euii_vague_60 <- df_euii_60 |>
-  filter(Analysis_Prior == "Vague") |>
+  filter(Analysis_Prior == "vague") |>
   pull(EUII) |>
   unique()
 
@@ -249,7 +249,7 @@ print(p_EUII_omega)
 p_EUII_delta <- ggplot(df_euii,
                        aes(x = delta, y = EUII,
                            color = Analysis_Prior,
-                           linetype = Analysis_Prior == "Vague")) +
+                           linetype = Analysis_Prior == "vague")) +
   geom_line(linewidth = 1.2) +
   facet_wrap(~Design_Prior, nrow = 1) +
   geom_hline(yintercept = 1, linetype = "dashed",
@@ -285,7 +285,7 @@ print(p_ratio_omega)
 p_ratio_delta <- ggplot(df_ratio,
                         aes(x = delta, y = EUII_ratio,
                             color = Analysis_Prior,
-                            linetype = Analysis_Prior == "Vague")) +
+                            linetype = Analysis_Prior == "vague")) +
   geom_line(linewidth = 1.2) +
   facet_wrap(~Design_Prior, nrow = 1) +
   geom_hline(yintercept = 1, linetype = "dashed",

@@ -580,7 +580,7 @@ value_band <- function(df, value_col, group_cols, ph1_ref = 0.5) {
 #
 # Find the common posterior probability threshold p, 
 # such that the avgT1E of the sequential design equals a target. 
-# decision_builder(p) handles the parameter p. By default p is like Pocock constant way
+# decision_builder(p) handles the parameter p. By default p is build as Pocock way
 #
 # To use uniroot, every evaluation reuses the same seed, so 
 # T1E(p) is a monotone function of p (decreasing with p)

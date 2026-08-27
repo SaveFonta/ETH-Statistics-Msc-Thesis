@@ -1,0 +1,1099 @@
+\chapter{Application to a PoC study in Crohn's disease}
+\label{sec:Applications}
+<<load.functions, include=FALSE, cache=FALSE>>=
+source("../scripts/00_shared_setup.R")   # prior_names, dprior_names, my_theme, scale_color_prior(),
+                                          # scale_linetype_vague(), design_labels, crit_cols, crit_ltys, ph1_ref
+source("../scripts/00_functions.R")
+library(xtable)
+library(knitr)
+library(kableExtra)
+library(RBesT)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+@  
+ 
+\section{Design Framework}
+\label{sec:application1}
+
+We evaluate the design of a Proof-of-Concept (PoC) study in Crohn’s disease, an inflammatory bowel disease. This is the trial behind the Running Example used throughout Chapter~\ref{sec:methodology} to illustrate the closed form results. The primary endpoint is the change from baseline to week 6 in the Crohn’s Disease Activity Index (CDAI), a
+continuous measure where lower scores indicate clinical improvement.
+
+The original trial evaluated the efficacy of secukinumab against a placebo \citep{hueber2012secukinumab}. 
+Let $\theta_C$ and $\theta_T$ be the true underlying mean changes for the control and treatment arms, so that the treatment effect is $\delta = \theta_C - \theta_T$, with $\delta > 0$ representing a treatment benefit.
+
+
+To improve trial efficiency, an informative analysis prior ($\pi_A$) for the placebo arm was derived from 671
+historical placebo patients across six previous Crohn’s disease trials via a \textit{meta-analytic-predictive} (MAP) approach.
+See Section~\ref{subsec:formulating_priors} for more details.
+
+This subsection evaluates the designs proposed for this application in the literature at their original thresholds. Section~\ref{sec:calibrated_comparison} then compares designs calibrated to common error rates.
+
+
+
+\paragraph{Decision Rules}
+At any given analysis, a successful terminal decision requires both strong evidence of a positive treatment effect and sufficient evidence of a clinically relevant 
+effect size:
+$$
+\Pr(\delta > 0 \mid \mathcal{D}, \pi_A) \ge 0.95 \quad \text{and} \quad \Pr(\delta > 50 \mid \mathcal{D}, \pi_A) \ge 0.50,
+$$
+
+where $\mathcal{D}$ denotes the observed data up to that point. Furthermore, sequential designs in this application incorporate a Bayesian futility criterion. 
+The trial can be stopped for futility if it is highly probable that the treatment effect is less than 40:
+
+$$
+\Pr(\delta < 40 \mid \mathcal{D}, \pi_A) \ge 0.90.
+ $$
+
+
+
+\paragraph{Design Variations and Evaluation Strategy}
+The literature presents varying implementations of this trial. The original protocol \citep{hueber2012secukinumab} planned two interim analyses, occurring when 17 and 41 patients, 
+respectively, reached the 6 week evaluation time point. Conversely, \citet{gsponer_practical_2014} modified this into a two stage group sequential design with a 1:2 allocation 
+ratio (10 placebo and 20 experimental patients per stage). Taking a simpler approach, \citet{best_beyond_2025} evaluated the trial as a fixed design using 20 and 40 
+individuals for the control and treatment arms, omitting the dual success criterion. Another cause of divergence is terminal decision: while \citet{gsponer_practical_2014} 
+allowed a final "indeterminate" result by evaluating futility at the final analysis, we follow the original formulation, which restricts the final stage to a 
+binary decision (success or failure) by removing the terminal futility check.
+
+
+
+Therefore, we will compute $\avgTIE$, $\avgPow$, and $\EUII$ across three design variations of this trial:
+ \begin{enumerate}
+  \item \textbf{Fixed Design:} A single-stage design (analogous to the evaluation by \citet{best_beyond_2025}). \footnote{\citet{best_beyond_2025} originally used a threshold of $0.975$. We adopt $0.95$ throughout for consistency with the other Design Variations.}
+  
+  \item \textbf{One Interim Analysis:} An evaluation of the two stage group-sequential design proposed by \citet{gsponer_practical_2014}.
+  \item \textbf{Two Interim Analyses:} An evaluation of the original three-stage trial protocol \citep{hueber2012secukinumab}.
+
+\end{enumerate}
+
+
+
+
+
+
+ 
+\paragraph{Analysis Priors ($\pi_A$)}
+The analysis prior $\pi_A(\theta_C)$ determines the degree of historical information incorporated into the final posterior decision:
+\begin{enumerate}
+  \item \textbf{Normal MAP:} A single-component Normal prior obtained using the MAP approach on historical data: $\pi_{\text{MAP},1}(\theta_C) \sim \mathcal{N}(-50,\, 88^2/20)$. This is the prior used for the closed form Running Example of Chapter~\ref{sec:methodology}. It is not evaluated separately in the Monte Carlo comparisons of this section.
+  \item \textbf{3 component MAP:} A mixture of three Normals obtained using the MAP approach:
+  $\pi_{\text{MAP},3}(\theta_C) = 0.48\,\mathcal{N}(-52.5,\,21.2^2) + 0.46\,\mathcal{N}(-47.5,\,7.8^2) + 0.06\,\mathcal{N}(-50.4,\,48.2^2)$
+  \item \textbf{\textit{robust MAP} ($\omega \in \{0.2, 0.35, 0.5\}$):} Three robust mixture priors constructed by assigning a weight $\omega$ to a non-informative component and $(1-\omega)$ to the MAP 3-component prior. 
+  The mean of the vague component is set to $-50$ to be consistent with the historical data, and its standard deviation is set to $\sigma = 88$, to be approximately equivalent to one subject's 
+  worth of information. The value of $\omega$ reflects our prior belief about the possibility of non-exchangeability between the placebo effect from the historical studies and the 
+  placebo effect in the new study.
+  \item \textbf{vague:} A non-informative prior representing a design with no historical borrowing, serving as the frequentist baseline: $\pi_{\text{vague}}(\theta_C) = \mathcal{N}(-50,\,8800^2)$. 
+  This is the same vague prior adopted by \citet{best_beyond_2025}. The standard deviation is set to $8800 = 100\,\sigma$, so the prior carries an \textit{effective sample size} of $\sigma^2/8800^2 = 10^{-4}$, that is, negligible information. 
+  The design therefore effectively reduces to the frequentist no-borrowing baseline. 
+\end{enumerate} 
+
+ 
+
+\paragraph{Design Priors ($\pi_D$)}
+The design prior $\pi_D(\theta_C)$ represents the assumed true data generating process for the control arm ($\theta_C$):
+\begin{enumerate}
+  \item \textbf{Dirac:} A Dirac measure at $\theta_C^* = -50$, which recovers the classical conditional T1E rate and power.
+  \item \textbf{3 component MAP:} A design prior exactly matching the corresponding 3 component MAP analysis prior.
+  \item \textbf{skeptical:} Following the terminology of \citet{best_beyond_2025}, this prior corresponds to the posterior distribution of a stand-alone analysis of the historical study with the “most extreme” placebo effect ($\bar{y} = -90$, $n = 25$, so $\sigma/\sqrt{n} = 88/5 = 17.6$): $\pi_{\text{skep}}(\theta_C) = \mathcal{N}(-90,\,17.6^2)$. Because the placebo is exceptionally effective, this scenario is highly "skeptical" of the experimental treatment's ability to demonstrate superiority.
+  \item \textbf{misspecified:} A hypothetical \textit{prior-data conflict} scenario where the true control arm performs much worse than historically predicted: $\pi_{\text{miss}}(\theta_C) = \mathcal{N}(-10,\,25^2)$.
+\end{enumerate}
+
+
+
+\subsection{Fixed Design}
+\label{sec:fixed_design}
+Following \citet{best_beyond_2025}, we fix the sample size at $n_C = 20$ and $n_T = 40$ and we analyze the \textit{single criterion} (SC) and the \textit{dual criterion} (DC) designs.
+Because no closed form exists for the mixture case, the conditional metrics are computed numerically using \texttt{RBesT::oc2S} and the average metrics with a numerical integration routine.
+
+\paragraph{Conditional metrics}
+  
+Figure~\ref{fig:plot_cond_both} shows the conditional T1E rate ($\delta = 0$, top row) and the conditional power at $\delta = 60$ (bottom row) as functions of the true control mean $\theta_C^*$, with the SC design in the left column and the DC design in the right column. 
+
+The vague prior borrows nothing so its curves are flat: the T1E rate is exactly $0.05$ for the SC at every $\theta_C^*$ (and lower for the DC), while power depends only on the sample size. It is the frequentist reference against which the borrowing priors are compared.
+The informative priors shrink the control estimate toward the prior mean $\mu_{A,C} = -50$, and the consequence depends on where the truth lies. When the true control mean is far below the prior mean ($\theta_C^* \ll -50$, the skeptical scenario), the shrinkage makes the 
+control arm look worse than it is, which favors the treatment and inflates T1E rate and power. When the truth is above the prior mean ($\theta_C^* \gg -50$, the misspecified scenario), the opposite happens, and both the T1E rate and the power are suppressed. The
+\textit{robust MAP} priors moderate this behavior: as $\omega$ increases, each curve is pulled monotonically toward the flat vague baseline. 
+
+
+<<plot_cond_both, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=10, dev='cairo_pdf', fig.cap="Conditional metrics for all five analysis priors as a function of the fixed true control mean $\\theta_C^*$, for the SC design (left column) and the DC design (right column). Top row: conditional T1E rate ($\\delta = 0$), with the dashed red line marking $\\alpha = 0.05$. Bottom row: conditional power at $\\delta = 60$. The vague prior (dashed) provides the no borrowing reference. The dotted vertical line marks the prior mean $\\mu_{A,C} = -50$.">>=
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+
+df_sc <- readRDS("../Output/02_fixed_design_SC/cond.RDS")$df_cond |>
+  dplyr::mutate(Prior = factor(Prior, levels = prior_names))
+df_dc <- readRDS("../Output/03_fixed_design_DC/cond.RDS")$df_cond |>
+  dplyr::mutate(Prior = factor(Prior, levels = prior_names))
+
+# rows carry one metric each, so the two designs share the y axis of that metric
+t1e_lim <- range(c(df_sc$T1E, df_dc$T1E))
+pow_lim <- range(c(df_sc$Power, df_dc$Power))
+
+# Each panel is wrapped in a one level facet carrying the design name, and the
+# strip background is switched back on, so every column gets a framed header.
+cond_panel <- function(df, design, yvar, ylab, ylim, red_line = FALSE) {
+  p <- ggplot(dplyr::mutate(df, Design = design),
+              aes(x = theta_C, y = .data[[yvar]],
+                  color = Prior, linetype = Prior == "vague")) +
+    geom_line(linewidth = 1.1) +
+    geom_vline(xintercept = mu_A, linetype = "dotted",
+               color = "gray", linewidth = 0.8) +
+    facet_wrap(~Design) +
+    scale_linetype_vague() +
+    scale_color_prior() +
+    coord_cartesian(ylim = ylim) +
+    labs(x = expression("True control mean (" * theta[C]^"*" * ")"), y = ylab) +
+    my_theme +
+    theme(strip.background = element_rect(fill = "grey92", color = "grey55",
+                                          linewidth = 0.4),
+          strip.text = element_text(face = "bold", size = 11))
+  if (red_line) p <- p + geom_hline(yintercept = 0.05, linetype = "dashed",
+                                    color = "red", linewidth = 0.6)
+  p
+}
+
+drop_x <- theme(axis.title.x = element_blank(), axis.text.x = element_blank())
+drop_y <- theme(axis.title.y = element_blank(), axis.text.y = element_blank())
+
+# columns are the designs, rows are the metrics
+no_strip <- theme(strip.background = element_blank(), strip.text = element_blank())
+
+p11 <- cond_panel(df_sc, "SC", "T1E",   "conditional T1E rate",   t1e_lim, red_line = TRUE) + drop_x
+p12 <- cond_panel(df_dc, "DC", "T1E",   NULL,                t1e_lim, red_line = TRUE) + drop_x + drop_y
+p21 <- cond_panel(df_sc, "SC", "Power", "conditional power", pow_lim) + no_strip
+p22 <- cond_panel(df_dc, "DC", "Power", NULL,                pow_lim) + no_strip + drop_y
+
+((p11 | p12) / (p21 | p22)) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+@
+
+ 
+\paragraph{Average metrics}
+ 
+By marginalizing the conditional curves over a design prior $\pi_D(\theta_C)$, we obtain the avgT1E and avgPower for each of the 20 analysis$\times$design prior combinations.
+Figure~\ref{fig:plot_avg_both} displays on the $x$-axis the design priors and each line as a given analysis prior, with the SC design in the left column and the DC design in the right column.
+For the SC, when the analysis and design prior are aligned (both MAP), avgT1E is at the nominal $0.05$, consistent with the theory. Under the skeptical design prior ($\mu_{D,C} = -90$), 
+more informative analysis priors lead to avgT1E and avgPower inflation. The misspecified prior ($\mu_{D,C} = -10$) drives the opposite effect: more informative prior overcorrects the control mean downward, 
+suppressing both avgT1E and avgPower simultaneously, making the trial conservative but underpowered.
+
+The DC column mirrors this structure at a lower level: avgT1E still inflates under the skeptical design prior and is suppressed under the misspecified one, but the DC keeps the avgT1E far below the nominal $0.05$ in almost every scenario. 
+This supports the use of \textit{dual criterion} designs in PoC phase II trials, where the cost of a false positive is particularly high. The avgPower at $\delta = 60$ follows the avgT1E structure in both columns: high under the skeptical prior, 
+moderate under the aligned and Dirac priors, low under the misspecified prior, and progressively closer to the vague baseline as $\omega \to 1$.
+
+<<plot_avg_both, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=10, dev='cairo_pdf', fig.cap="avgT1E (top row) and avgPower at $\\delta = 60$ (bottom row) for all 20 analysis$\\times$design prior combinations, for the SC design (left column) and the DC design (right column). The dashed red line marks $\\alpha = 0.05$. The vague prior (dashed line) is the no borrowing reference.">>=
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+
+to_factors <- function(df) df |>
+  dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+                Design_Prior   = factor(Design_Prior,   levels = dprior_names))
+
+df_sc <- to_factors(readRDS("../Output/02_fixed_design_SC/euii.RDS")$df_euii)
+df_dc <- to_factors(readRDS("../Output/03_fixed_design_DC/avg.RDS")$df_avg)
+
+# rows carry one metric each, so the two designs share the y axis of that metric
+t1e_lim <- range(c(df_sc$avgT1E, df_dc$avgT1E))
+pow_lim <- range(c(dplyr::filter(df_sc, delta == 60)$avgPower,
+                   dplyr::filter(df_dc, delta == 60)$avgPower))
+
+# Each panel is wrapped in a one level facet carrying the design name, so every
+# column gets the same grey strip header as the other faceted figures.
+avg_panel <- function(df, design, dlt, yvar, ylab, ylim, red_line = FALSE) {
+  p <- ggplot(dplyr::filter(df, delta == dlt) |> dplyr::mutate(Design = design),
+              aes(x = Design_Prior, y = .data[[yvar]],
+                  color = Analysis_Prior, group = Analysis_Prior,
+                  linetype = Analysis_Prior == "vague")) +
+    geom_point(size = 2.3) +
+    geom_line(linewidth = 1.0) +
+    facet_wrap(~Design) +
+    scale_linetype_vague() +
+    scale_color_prior() +
+    coord_cartesian(ylim = ylim) +
+    labs(x = "Design Prior", y = ylab) +
+    my_theme +
+    theme(strip.background = element_rect(fill = "grey92", color = "grey55",
+                                          linewidth = 0.4),
+          strip.text = element_text(face = "bold", size = 11))
+  if (red_line) p <- p + geom_hline(yintercept = 0.05, linetype = "dashed",
+                                    color = "red", linewidth = 0.6)
+  p
+}
+
+drop_x   <- theme(axis.title.x = element_blank(), axis.text.x = element_blank())
+drop_y   <- theme(axis.title.y = element_blank(), axis.text.y = element_blank())
+no_strip <- theme(strip.background = element_blank(), strip.text = element_blank())
+angle_x  <- theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+# columns are the designs, with a strip header on the top row only
+p11 <- avg_panel(df_sc, "SC", 0,  "avgT1E",   "average T1E",   t1e_lim, red_line = TRUE) + drop_x
+p12 <- avg_panel(df_dc, "DC", 0,  "avgT1E",   NULL,            t1e_lim, red_line = TRUE) + drop_x + drop_y
+p21 <- avg_panel(df_sc, "SC", 60, "avgPower", "average power", pow_lim) + angle_x + no_strip
+p22 <- avg_panel(df_dc, "DC", 60, "avgPower", NULL,            pow_lim) + angle_x + no_strip + drop_y
+
+((p11 | p12) / (p21 | p22)) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+@
+
+
+
+
+Figure~\ref{fig:plot_power_delta_both} shows the average power as a function of $\delta$, for $\delta \geq \DV = 50$ with the SC design on the top row and the DC design on the bottom row.
+At $\delta = \DV$ the SC already sits well above $50\%$ under every design prior, while for the DC, at $\delta = \DV$ the power is close to $50\%$ when the analysis prior is the same as the 
+design prior (MAP and Dirac), and for the vague prior in every panel, while prior data conflict shifts it up under the skeptical prior and down under the misspecified prior.
+
+<<plot_power_delta_both, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="Average power as a function of the true treatment effect $\\delta$, faceted by design prior and coloured by analysis prior, for the SC design (top row) and the DC design (bottom row). The red horizontal line marks $50\\%$ power. The vague prior (dashed line) is the no borrowing reference.">>=
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+
+to_factors <- function(df) df |>
+  dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+                Design_Prior   = factor(Design_Prior,   levels = dprior_names))
+
+df_sc <- to_factors(readRDS("../Output/02_fixed_design_SC/euii.RDS")$df_euii)
+df_dc <- to_factors(readRDS("../Output/03_fixed_design_DC/avg.RDS")$df_avg)
+
+# facet_grid puts the framed design prior headers on top and a framed design
+# label (SC or DC) on the right of each row, so the two rows are clearly told apart.
+pow_delta_panel <- function(df, design, ylab) {
+  ggplot(dplyr::mutate(df, Design = design),
+         aes(x = delta, y = avgPower,
+             color = Analysis_Prior,
+             linetype = Analysis_Prior == "vague")) +
+    geom_line(linewidth = 1.1) +
+    facet_grid(Design ~ Design_Prior) +
+    scale_linetype_vague() +
+    scale_color_prior() +
+    coord_cartesian(xlim = c(50, 100), ylim = c(0, 1)) +
+    labs(x = expression("True Treatment Effect (" * delta * ")"), y = ylab) +
+    my_theme +
+    theme(strip.background = element_rect(fill = "grey92", color = "grey55",
+                                          linewidth = 0.4),
+          strip.text = element_text(face = "bold", size = 10))
+}
+  
+# both rows on the same window, from the decision value onward
+p_sc <- pow_delta_panel(dplyr::filter(df_sc, delta >= 50), "SC", "average power") +
+  geom_hline(yintercept = 0.5, color = "red", linewidth = 0.5) +
+  theme(axis.title.x = element_blank(), axis.text.x = element_blank())
+
+# the design prior headers are already shown on the top row
+p_dc <- pow_delta_panel(dplyr::filter(df_dc, delta >= 50), "DC", "average power") +
+  geom_hline(yintercept = 0.5, color = "red", linewidth = 0.5) +
+  theme(strip.text.x = element_blank(), strip.background.x = element_blank())
+
+(p_sc / p_dc) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+@
+ 
+\paragraph{Sample size}
+The closed form of Equation~\eqref{eq:n_c_formula} applies only to a single Normal analysis prior, because it needs a scalar shrinkage weight $W$ and a single posterior variance. For the mixture priors used here the posterior is itself a mixture, no scalar $W$ exists, and the quadratic in $n_C$ cannot be formed. This does not force a simulation. The average power of Equation~\eqref{eq:avgpower_ess} remains available exactly for any Normal mixture, and it is monotone in $n_C$, so the smallest adequate sample size follows from a bisection over the integers. Table~\ref{tab:samplesize_mix} reports it for a target average power of $80\%$ at $\delta = 60$ and allocation ratio $r_T = 2$, with the design prior aligned to the analysis prior in every row.
+
+<<samplesize_mix_tab, echo=FALSE, results='asis', message=FALSE, warning=FALSE, cache=TRUE>>=
+suppressMessages(library(kableExtra))
+ss  <- readRDS("../Output/13_samplesize_mixtures/samplesize.RDS")
+tab <- ss$res
+
+tab_ss <- data.frame(
+  "Analysis prior" = tab$prior,
+  "ESS"            = formatC(tab$ess, format = "f", digits = 1),
+  "$n_C$"          = tab$n_C,
+  "$n_T$"          = tab$n_T,
+  "$N$"            = tab$n_total,
+  "$\\avgPow$"     = formatC(tab$avg_power, format = "f", digits = 3),
+  "Treatment share of $V_\\delta$" = paste0(round(100 * tab$share_T), "\\%"),
+  check.names = FALSE
+)
+
+## values quoted in the surrounding text
+g <- function(p, col) tab[[col]][tab$prior == p]
+nc_closed   <- formatC(ss$n_closed, format = "f", digits = 2)
+nc_norm     <- g("1 component Normal", "n_C")
+ess_norm    <- formatC(g("1 component Normal", "ess"), format = "f", digits = 1)
+nc_map      <- g("MAP", "n_C")
+ess_map     <- formatC(g("MAP", "ess"), format = "f", digits = 1)
+share_map   <- round(100 * g("MAP", "share_T"))
+share_vague <- round(100 * g("vague", "share_T"))
+extra_02    <- g("robust (w=0.2)", "n_C") - nc_map
+extra_05    <- g("robust (w=0.5)", "n_C") - nc_map
+n_map       <- g("MAP", "n_total")
+n_vague     <- g("vague", "n_total")
+
+kable(tab_ss, format = "latex", booktabs = TRUE, escape = FALSE, align = "lcccccc",
+      caption = paste0("Smallest control sample size reaching an average power of ",
+                       round(100 * ss$target), "\\% at $\\delta = ", ss$delta,
+                       "$ with allocation ratio $r_T = ", ss$rT,
+                       "$, for each analysis prior with the design prior aligned to it. ",
+                       "The mixture rows are obtained by numerical inversion, since the closed ",
+                       "form applies only to the single Normal. The last column gives the share ",
+                       "of the variance of the contrast contributed by the treatment arm at the ",
+                       "selected sample size."),
+      label = "samplesize_mix") |>
+  kable_styling(latex_options = "hold_position")
+@
+
+Two features deserve comment. First, the single Normal row agrees with the closed form, which returns $n_C = \Sexpr{nc_closed}$ and therefore \Sexpr{nc_norm} patients. This is a check of Equation~\eqref{eq:n_c_formula} against machinery that never uses it.
+
+Second, borrowing saturates, and the last column shows why. Without borrowing the treatment arm accounts for only \Sexpr{share_vague}\% of the variance of the contrast, since the control arm is the smaller of the two and therefore the binding one. Borrowing reinforces the control arm and moves the constraint across: under the full MAP prior the treatment arm accounts for \Sexpr{share_map}\%. Nothing is borrowed on that arm, so its contribution can be reduced only by enrolling patients. This is why the full MAP prior, carrying an ESS of \Sexpr{ess_map} against \Sexpr{ess_norm} for the single Normal, saves just one control patient. The value of a more informative prior is capped by the arm that carries no prior at all.
+
+Robustification can then be priced in patients. Relative to the full MAP, a weight of $\omega = 0.2$ costs \Sexpr{extra_02} additional control patients and $\omega = 0.5$ costs \Sexpr{extra_05}. In total enrolment the designs run from \Sexpr{n_map} patients under the full MAP to \Sexpr{n_vague} with no borrowing at all.
+\paragraph{Robustness weight}
+\label{subsec:calibrating_omega}
+The sample sizes above price robustification in patients. The complementary question is what it buys, namely how much \textit{drift} the design can absorb before the $\avgTIE$ breaks its cap.
+
+The robustness weight $\omega$ introduced in Section~\ref{subsec:formulating_priors} is normally fixed by convention, and \citet{weru2026uptake} report that only a third of the trials applying a fixed downweighting explain how the value was reached. The metrics of Section~\ref{subsec:metrics_bayesian} allow $\omega$ to be derived rather than assumed, through the same two stage argument already applied to the decision threshold.
+
+For a candidate $\omega$, the threshold $p$ is first calibrated so that $\avgTIE$ meets its nominal target when the design prior is aligned with the analysis prior. Holding that threshold fixed, the design prior mean is then displaced by a \textit{drift} $d$, and the largest $\avgTIE$ over the range of $d$ judged plausible is recorded. The smallest $\omega$ whose worst case respects a stated tolerance is then a derived quantity rather than a convention. The declaration that has to be defended is no longer a prior probability of non exchangeability, which is difficult to audit, but a statement about how far the control mean could have moved since the historical trials were run, which is open to clinical discussion. Table~\ref{tab:omega_calibration} reports the result for the Crohn priors.
+
+<<omega_calib_tab, echo=FALSE, results='asis', message=FALSE, warning=FALSE, cache=TRUE>>=
+suppressMessages(library(kableExtra))
+res_om  <- readRDS("../Output/12_omega_calibration/omega_drift.RDS")
+tau_hat <- readRDS("../Output/11_map_saturation/saturation.RDS")$tau_true
+
+## Largest drift whose avgT1E rate still respects the cap, by linear
+## interpolation between the last safe grid point and the first unsafe one.
+max_drift <- function(w, cap = 0.05) {
+  s <- res_om[abs(res_om$omega - w) < 1e-9 & res_om$drift <= 0, ]
+  s <- s[order(-s$drift), ]
+  if (all(s$avg_t1e <= cap)) return(Inf)
+  i  <- which(s$avg_t1e > cap)[1]
+  x0 <- s$drift[i - 1]; y0 <- s$avg_t1e[i - 1]
+  x1 <- s$drift[i];     y1 <- s$avg_t1e[i]
+  abs(x0 + (cap - y0) * (x1 - x0) / (y1 - y0))
+}
+
+om_grid <- c(0, 0.2, 0.35, 0.5)   # the weights actually studied in this thesis
+md      <- vapply(om_grid, max_drift, numeric(1))
+## A value beyond the swept drift range is reported as a bound rather than a
+## number, and the bound must be expressed in the units of its own column.
+D_max   <- max(abs(res_om$drift))
+fmt     <- function(x, d, bound) ifelse(is.infinite(x),
+                                        paste0("$>", formatC(bound, format = "f", digits = d), "$"),
+                                        formatC(x, format = "f", digits = d))
+tab_om <- data.frame(
+  "$\\omega$"                      = formatC(om_grid, format = "f", digits = 2),
+  "Largest drift protected"        = mapply(fmt, md, 1, D_max),
+  "In units of $\\hat{\\tau}$"     = mapply(fmt, md / tau_hat, 2, D_max / tau_hat),
+  check.names = FALSE
+)
+
+## values quoted in the surrounding text
+md_0   <- round(md[om_grid == 0], 1)
+md_02  <- round(md[om_grid == 0.2], 1)
+md_05  <- round(md[om_grid == 0.5], 1)
+gain   <- round(100 * (md_02 / md_0 - 1))
+p_lo   <- formatC(min(res_om$p_star), format = "f", digits = 4)
+p_hi   <- formatC(max(res_om$p_star), format = "f", digits = 4)
+
+kable(tab_om, format = "latex", booktabs = TRUE, escape = FALSE, align = "ccc",
+      caption = paste0("Largest \\textit{drift} of the design prior mean for which the ",
+                       "$\\avgTIE$ still respects a cap of $0.05$, as a function of the ",
+                       "robustness weight, for the running example with $n_C = 20$ and ",
+                       "$n_T = 40$. The final column expresses the same quantity in units ",
+                       "of the estimated between study standard deviation ",
+                       "$\\hat{\\tau} = ", formatC(tau_hat, format = "f", digits = 1), "$."),
+      label = "omega_calibration") |>
+  kable_styling(latex_options = "hold_position")
+@
+
+Two conclusions follow for the Crohn priors. First, the conventional choice $\omega = 0.2$ tolerates a \textit{drift} of only \Sexpr{md_02} against \Sexpr{md_0} for the unmodified MAP prior, a gain of \Sexpr{gain}\%. The full MAP prior therefore withstands roughly one between study standard deviation of \textit{drift} before the $\avgTIE$ exceeds the cap, and the conventional robustification extends that tolerance only marginally. The largest weight considered here, $\omega = 0.5$, extends the tolerance only to \Sexpr{md_05}, and does so by cutting the ESS of the analysis prior from $40.5$ to $15.3$, a loss of more than half of the borrowed information. Robustification buys protection against \textit{drift} at close to a one for one cost in borrowed information.
+
+Second, the decision threshold is not an instrument for this purpose. Over the whole range $\omega \in [0, 1]$ the calibrated threshold moves only from \Sexpr{p_lo} to \Sexpr{p_hi}, so it cannot compensate for a misspecified analysis prior. This reinforces the separation of roles set out in Section~\ref{subsec:metrics_bayesian}: the threshold controls the $\avgTIE$ under alignment, whereas the robustness weight controls how quickly that guarantee degrades once alignment fails.
+
+\begin{remarkbox}
+\Remark The worst case $\avgTIE$ is monotone in the magnitude of the \textit{drift}, so the calibrated $\omega$ always depends on the range declared plausible and never emerges from the historical data alone. Reporting $\omega$ against that declaration is therefore the honest presentation, and quoting a single calibrated value without it would conceal the assumption doing the work.
+\end{remarkbox}
+
+\paragraph{EUII} 
+
+As mentioned in Section~\ref{subsec:euii}, the average EUII ($\EUII_{avg}$) is denoted simply as EUII throughout the thesis. 
+
+
+Figure~\ref{fig:plot_euii_both} displays on the first two rows the EUII of the
+SC and of the DC designs as functions of $\delta$.
+Under aligned priors (Dirac and MAP) the reading is simple. The EUII
+rises with $\delta$ in both designs, the ordering in $\omega$ is strict, so more
+borrowing always gives a higher EUII, and the Dirac design prior, which fixes the
+truth at the prior mean, is the upper bound.
+Under conflicting priors the EUII curves stay close to the aligned ones, even though the underlying
+avgT1E and avgPower move (Figure~\ref{fig:plot_avg_both}), so this is where the EUII must be read with
+care. It is a ratio of odds, and a design prior that disagrees with the analysis prior shifts the
+avgPower and the avgT1E in the same direction, so the two shifts largely cancel out in the ratio.
+
+The skeptical prior inflates both: in the SC row at $\delta = 60$ under the MAP analysis prior, avgT1E
+rises to about $21\%$ and avgPower to about $97\%$, yet the EUII stays close to the aligned value
+($1.08$ against $1.10$). The misspecified prior deflates both instead: in the same SC row at $\delta =
+60$, avgT1E drops to about $1\%$ and avgPower to about $65\%$ (against $93\%$ aligned), yet again the
+EUII lands close to the aligned value ($1.09$ against $1.10$).
+
+So a design that is badly underpowered (misspecified) and one that is badly optimistic (skeptical) can
+land at nearly the same EUII, and the same pattern holds in both the SC and DC rows.
+
+For this reason, we suggest assessing the sensitivity of a design under prior conflict (and the choice of the
+robustness weight $\omega$) using avgPower and avgT1E. The EUII should be instead used for comparing 
+design choices, such as fixed against different types of sequential, under a correctly 
+specified prior, where the differences between designs are attributable to the designs themselves. 
+
+The bottom row of Figure~\ref{fig:plot_euii_both} shows this comparison through the ratio
+$\EUII^{\DC} / \EUII^{\SC}$. Under the aligned design priors the DC is slightly larger for moderate effects while the SC
+is above for large ones.
+
+<<plot_euii_both, echo=FALSE, warning=FALSE, message=FALSE, fig.height=11, fig.width=12, dev='cairo_pdf', fig.cap="EUII comparison of the two criteria, faceted by design prior and coloured by analysis prior (vague shown dashed). Top row: EUII of the SC design as a function of $\\delta$. Middle row: EUII of the DC design. Bottom row: ratio $\\EUII^{\\DC} / \\EUII^{\\SC}$.">>=
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+
+to_factors <- function(df) df |>
+  dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+                Design_Prior   = factor(Design_Prior,   levels = dprior_names))
+
+df_sc    <- to_factors(readRDS("../Output/02_fixed_design_SC/euii.RDS")$df_euii) |>
+  dplyr::filter(delta >= 50)
+df_dc    <- to_factors(readRDS("../Output/03_fixed_design_DC/euii.RDS")$df_euii) |>
+  dplyr::filter(delta >= 50)   # DC EUII not meaningful below the DV
+df_ratio <- to_factors(readRDS("../Output/03_fixed_design_DC/vs_SC_euii.RDS")$df_ratio) |>
+  dplyr::filter(delta >= 50)
+
+# the two EUII rows share one y axis, so the designs are directly comparable
+euii_lim <- range(c(df_sc$EUII, df_dc$EUII))
+
+row_layout <- function(df, yvar, ylab, ylim = NULL) {
+  p <- ggplot(df, aes(x = delta, y = .data[[yvar]],
+                      color = Analysis_Prior,
+                      linetype = Analysis_Prior == "vague")) +
+    geom_line(linewidth = 1.1) +
+    facet_wrap(~Design_Prior, nrow = 1) +
+    geom_hline(yintercept = 1, linetype = "dashed",
+               color = "black", linewidth = 0.6) +
+    scale_linetype_vague() +
+    scale_color_prior() +
+    labs(x = expression(delta), y = ylab) +
+    my_theme
+  if (!is.null(ylim)) p <- p + coord_cartesian(xlim = c(50, 100), ylim = ylim)
+  else                p <- p + coord_cartesian(xlim = c(50, 100))
+  p
+}
+
+drop_x <- theme(axis.title.x = element_blank(), axis.text.x = element_blank())
+
+p_sc    <- row_layout(df_sc, "EUII", expression(EUII^{SC}), euii_lim) + drop_x
+p_dc    <- row_layout(df_dc, "EUII", expression(EUII^{DC}), euii_lim) + drop_x +
+  theme(strip.text = element_blank())
+p_ratio <- row_layout(df_ratio, "EUII_ratio",
+                      expression(EUII^{DC} / EUII^{SC})) +
+  theme(strip.text = element_blank())
+
+(p_sc / p_dc / p_ratio) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+@
+
+
+\subsection{One Interim Analysis}
+\label{sec:one_interim}
+Following \citet{gsponer_practical_2014}, we can extend the design to allow one interim analysis. The total sample size is the same as the fixed design, $n_T = 40$ and $n_C = 20$, 
+while the interim look takes place after half the patients in each arm, so the trial can stop with $30$ patients or continue to the full $60$. 
+The efficacy criteria are those of the fixed design, evaluated on the cumulative data at both looks. In addition, the trial may stop for futility at the interim look. 
+We evaluate in total 4 sequential designs: $\SC$, $\SC$ with futility, $\DC$, and $\DC$ with futility. Since no analytical formula is available for the average sequential operating characteristics, 
+all metrics are computed by Monte Carlo simulation with $10^6$ replicates per evaluation, drawing one true control mean per simulated trial from the design prior.
+
+<<seq_oc_setup, echo=FALSE, warning=FALSE, message=FALSE>>=
+library(ggplot2)
+library(dplyr)
+
+# facet_grid puts the framed design headers on top and a framed metric label on
+# the right of each row, so the two rows are clearly told apart. df_oc must be
+# assigned in the calling chunk before oc_row() is used.
+oc_row <- function(dlt, metric) {
+  ggplot(dplyr::filter(df_oc, delta == dlt) |> dplyr::mutate(Metric = metric),
+         aes(x = Design_Prior, y = Power,
+             color = Analysis_Prior, group = Analysis_Prior,
+             linetype = Analysis_Prior == "vague")) +
+    geom_point(size = 2.2) +
+    geom_line(linewidth = 0.9) +
+    facet_grid(Metric ~ Criterion) +
+    scale_linetype_vague() +
+    scale_color_prior() +
+    my_theme +
+    theme(strip.background = element_rect(fill = "grey92", color = "grey55",
+                                          linewidth = 0.4),
+          strip.text = element_text(face = "bold", size = 10))
+}
+@
+
+\paragraph{Average T1E rate and power}
+Figure~\ref{fig:plot_seq_oc} reports the average T1E rate and the average power at $\delta = 60$ for the four designs, across all analysis prior and design prior combinations. Noticeably, the design with futility is indistinguishable
+from the design without it: a futility stop can never produce a success, and the trials it removes are almost exclusively the ones that would have failed at the final analysis anyway. Second, $\SC$ and $\DC$ behave similarly to the fixed design:
+the avgT1E of the DC is far below the one of the SC in every scenario, at the price of a lower avgPower at $\delta = 60$.
+
+<<plot_seq_oc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="One interim analysis: avgT1E (top) and avgPower at $\\delta = 60$ (bottom) across all analysis prior and design prior combinations, one panel per design. Color encodes the analysis prior (vague shown dashed). The red line marks the nominal $0.05$.">>=
+library(patchwork)
+
+res_seq  <- readRDS("../Output/05_sequential_one_interim/avg.RDS")
+df_oc    <- res_seq$df_oc
+
+p_t1e <- oc_row(0, "average T1E rate") +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", linewidth = 0.5) +
+  labs(x = NULL, y = NULL) +
+  theme(axis.text.x = element_blank())
+
+p_pow <- oc_row(60, "average power") +
+  labs(x = "Design Prior", y = NULL) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1),
+        strip.text.x = element_blank(), strip.background.x = element_blank())
+
+(p_t1e / p_pow) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+@
+
+\paragraph{Stopping at the interim}
+Figure~\ref{fig:plot_seq_stage} shows the effect of the interim across the analysis and design prior combinations, while Table~\ref{tab:seq_summary} reports the exact values 
+under the aligned MAP prior. At $\delta = 60$ the SC stops early for efficacy with probability $0.78$ out of a total success probability of $0.94$, and the DC with 
+probability $0.66$ out of $0.78$, so about $83\%$ of the successful SC trials and $84\%$ of the successful DC trials conclude at the interim, and the lower curve of the DC in the figure reflects its
+lower overall success rate rather than a later resolution. Under the null the futility rule triggers in $64\%$ of the trials, identically for the two criteria because the
+rule does not depend on the efficacy criterion. At $\delta = 60$ the same rule triggers in only
+$2\%$ of the trials, which explains the small loss of power observed above ($0.935$ against $0.940$).
+
+
+<<plot_seq_stage, echo=FALSE, warning=FALSE, message=FALSE, fig.height=6, fig.width=12, dev='cairo_pdf', fig.cap="Probability of stopping at the interim, one column per design. Top: early efficacy stop at $\\delta = 60$. Bottom: early futility stop at $\\delta = 0$. Color encodes the analysis prior (vague shown dashed).">>=
+library(ggplot2)
+library(dplyr)
+
+res_seq  <- readRDS("../Output/05_sequential_one_interim/avg.RDS")
+df_stage <- res_seq$df_stage
+
+df_stage1 <- bind_rows(
+  df_stage |> dplyr::filter(Stage == 1, delta == 60) |>
+    transmute(Criterion, Analysis_Prior, Design_Prior, Prob = P_Succ,
+              Metric = "Early efficacy stop (delta = 60)"),
+  df_stage |> dplyr::filter(Stage == 1, delta == 0) |>
+    transmute(Criterion, Analysis_Prior, Design_Prior, Prob = P_Fut,
+              Metric = "Early futility stop (delta = 0)")
+)
+
+ggplot(df_stage1,
+       aes(x = Design_Prior, y = Prob,
+           color = Analysis_Prior, group = Analysis_Prior,
+           linetype = Analysis_Prior == "vague")) +
+  geom_point(size = 2.2) +
+  geom_line(linewidth = 0.9) +
+  facet_grid(Metric ~ Criterion) +
+  scale_linetype_vague() +
+  scale_color_prior() +
+  labs(x = "Design Prior", y = "Probability of stopping at the interim") +
+  my_theme +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1),
+        strip.background = element_rect(fill = "grey92", color = "grey55",
+                                        linewidth = 0.4),
+        strip.text = element_text(face = "bold", size = 9))
+@
+
+
+
+<<tab_seq_summary, echo=FALSE, warning=FALSE, message=FALSE, results='asis'>>=
+library(dplyr)
+library(kableExtra)
+
+res_seq  <- readRDS("../Output/05_sequential_one_interim/avg.RDS")
+df_stage <- res_seq$df_stage
+df_oc    <- res_seq$df_oc
+
+tab_stage <- df_stage |>
+  filter(Analysis_Prior == "MAP", Design_Prior == "MAP", delta %in% c(0, 60)) |>
+  group_by(Criterion, delta) |>
+  summarise(
+    P_succ_interim = P_Succ[Stage == 1],
+    P_fut_interim  = P_Fut[Stage == 1],
+    P_succ_final   = P_Succ[Stage == max(Stage)],
+    .groups = "drop"
+  ) |>
+  mutate(Total_succ = P_succ_interim + P_succ_final)
+ 
+tab_designs <- tab_stage |>
+  left_join(df_oc |>
+              filter(Analysis_Prior == "MAP", Design_Prior == "MAP") |>
+              select(Criterion, delta, EN),
+            by = c("Criterion", "delta")) |>
+  arrange(delta, Criterion) |>
+  mutate(EN = round(EN, 1)) |>
+  select(-delta)
+
+kable(tab_designs, format = "latex", booktabs = TRUE, digits = 3, escape = FALSE,
+      caption = "Operating characteristics of the four sequential designs under the aligned MAP prior. $P_{\\text{eff},1}$ and $P_{\\text{fut},1}$ are the probabilities of stopping at the interim for efficacy and futility, $P_{\\text{eff},2}$ the probability of success at the final analysis. Total success equals the avgT1E in the $\\delta = 0$ block and the avgPower in the $\\delta = 60$ block.",
+      label = "seq_summary",
+      col.names = c("Design", "$P_{\\text{eff},1}$", "$P_{\\text{fut},1}$",
+                    "$P_{\\text{eff},2}$", "Total success", "$\\Erw[N]$")) |> 
+  pack_rows("$\\delta = 0$", 1, 4, escape = FALSE) |>
+  pack_rows("$\\delta = 60$", 5, 8, escape = FALSE) |> 
+  kable_styling(latex_options = "hold_position")
+@
+ 
+Taken together, the error rates are almost blind to futility stopping. Its benefit shows up in the expected sample size rather than in avgT1E or avgPower, which is precisely where the EUII becomes informative.
+
+\paragraph{EUII}
+As discussed for the fixed design, the EUII is better suited to compare design choices under aligned priors, so here both the analysis prior and the design prior
+are the MAP prior. Figure~\ref{fig:plot_seq_euii} shows the EUII of the four sequential designs together with their fixed counterparts (top), the ratio of each
+sequential design to its own fixed counterpart (middle), and the \textit{effective sample size} of the two futility designs, $1/\Erw[1/N^+]$ for success and $1/\Erw[1/N^-]$ for non success (bottom). 
+Since the exponents of Equation~\eqref{eq:seq_euii} require a prior probability $\Pr(H_1)$ that the treatment truly works, each panel shows a line at $\Pr(H_1) = 0.5$ together with a band spanning 
+$\Pr(H_1) \in \{0.01, 0.1, 0.5\}$, so that the width of the band reveals how sensitive the metric is to this choice.
+ 
+<<plot_seq_euii, echo=FALSE, warning=FALSE, message=FALSE, fig.height=10, fig.width=8, dev='cairo_pdf', fig.cap="EUII under the aligned MAP prior. Top: EUII of the four sequential designs, with the two fixed designs as dashed references. Middle: ratio of each sequential design to its own fixed counterpart. Bottom: effective sample size of the two futility designs by trial outcome. Lines are drawn at $\\Pr(H_1) = 0.5$ and the bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$.">>=
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+
+res_euii <- readRDS("../Output/05_sequential_one_interim/euii.RDS")
+df_euii  <- res_euii$df_euii
+
+# Colours here follow the document-wide SC/DC palette (col_sc, col_dc, ...),
+# not the script-local crit_cols from 00_shared_setup.R, so they stay local.
+crit_levels <- c(design_labels, "Fixed SC", "Fixed DC")
+crit_cols <- c("SC" = col_sc, "SC + Futility" = col_cond,
+               "DC" = col_dc, "DC + Futility" = col_avg,
+               "Fixed SC" = col_sc, "Fixed DC" = col_dc)
+crit_ltys <- c("SC" = "solid", "SC + Futility" = "solid",
+               "DC" = "solid", "DC + Futility" = "solid",
+               "Fixed SC" = "twodash", "Fixed DC" = "twodash")
+
+euii_band <- function(df, value_col) {
+  df |>
+    mutate(Criterion = factor(as.character(Criterion), levels = crit_levels)) |>
+    group_by(Criterion, Delta) |>
+    summarise(lo  = min(.data[[value_col]]),
+              hi  = max(.data[[value_col]]),
+              mid = .data[[value_col]][prior_H1 == 0.5],
+              .groups = "drop")
+}
+df_band_abs   <- euii_band(df_euii, "EUII") |>
+  dplyr::mutate(Metric = "EUII")
+df_band_ratio <- euii_band(df_euii, "EUII_ratio") |>
+  dplyr::mutate(Metric = "Ratio to fixed")
+
+df_fixed_lines <- df_euii |>
+  distinct(Delta, Base, EUII_fixed) |>
+  transmute(Delta, EUII = EUII_fixed,
+            Criterion = factor(paste("Fixed", Base), levels = crit_levels)) |>
+  dplyr::mutate(Metric = "EUII")
+
+p_abs <- ggplot() +
+  facet_grid(Metric ~ .) +
+  geom_ribbon(data = df_band_abs,
+              aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
+  geom_line(data = df_band_abs,
+            aes(x = Delta, y = mid, color = Criterion, linetype = Criterion),
+            linewidth = 1.2) +
+  geom_line(data = df_fixed_lines,
+            aes(x = Delta, y = EUII, color = Criterion, linetype = Criterion),
+            linewidth = 1.0) +
+  geom_hline(yintercept = 1, linetype = "dotted", color = "black", linewidth = 0.4) +
+  scale_color_manual(values = crit_cols, drop = FALSE) +
+  scale_linetype_manual(values = crit_ltys, drop = FALSE) +
+  scale_fill_manual(values = crit_cols, guide = "none") +
+  guides(color = guide_legend(nrow = 2), linetype = guide_legend(nrow = 2)) +
+  coord_cartesian(xlim = c(DV, 100)) +
+  labs(x = NULL, y = "EUII") +
+  my_theme +
+  theme(axis.text.x = element_blank(),
+        strip.background = element_rect(fill = "grey92", color = "grey55",
+                                        linewidth = 0.4),
+        strip.text = element_text(face = "bold", size = 10))
+
+p_ratio <- ggplot(df_band_ratio) +
+  facet_grid(Metric ~ .) +
+  geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
+  geom_line(aes(x = Delta, y = mid, color = Criterion, linetype = Criterion),
+            linewidth = 1.2) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
+  scale_color_manual(values = crit_cols) +
+  scale_linetype_manual(values = crit_ltys) +
+  scale_fill_manual(values = crit_cols, guide = "none") +
+  guides(color = "none", linetype = "none") +
+  coord_cartesian(xlim = c(DV, 100)) +
+  labs(x = NULL, y = "EUII ratio") +
+  my_theme +
+  theme(axis.text.x = element_blank(),
+        strip.background = element_rect(fill = "grey92", color = "grey55",
+                                        linewidth = 0.4),
+        strip.text = element_text(face = "bold", size = 10))
+
+# Bottom row: effective sample size of the two futility designs, both outcomes
+# in one panel (color = design, linetype = outcome)
+band_N <- df_euii |>
+  dplyr::filter(grepl("Futility", Criterion)) |>
+  select(Delta, prior_H1, Criterion, E_invN_sig, E_invN_nonsig) |>
+  tidyr::pivot_longer(cols = c(E_invN_sig, E_invN_nonsig),
+                      names_to = "E_inv_type", values_to = "E_inv_val") |>
+  mutate(
+    N_eff   = 1 / E_inv_val,
+    Outcome = factor(if_else(E_inv_type == "E_invN_sig", "Success", "Non success"),
+                     levels = c("Success", "Non success"))
+  ) |>
+  group_by(Criterion, Outcome, Delta) |>
+  summarise(lo  = min(N_eff),
+            hi  = max(N_eff),
+            mid = N_eff[prior_H1 == 0.5],
+            .groups = "drop") |>
+  mutate(Metric = "Effective sample size")
+
+p_ess <- ggplot(band_N) +
+  facet_grid(Metric ~ .) +
+  geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion,
+                  group = interaction(Criterion, Outcome)), alpha = 0.30) +
+  geom_line(aes(x = Delta, y = mid, color = Criterion, linetype = Outcome),
+            linewidth = 1.1) +
+  geom_hline(yintercept = 60, linetype = "dashed", color = "black",  linewidth = 0.4) +
+  geom_hline(yintercept = 30, linetype = "dotted", color = "grey40", linewidth = 0.4) +
+  annotate("text", x = DV + 2, y = 60 - 1.3, hjust = 0, size = 3, color = "grey30",
+           label = "without futility (= 60)") +
+  annotate("text", x = DV + 2, y = 30 + 1.1, hjust = 0, size = 3, color = "grey50",
+           label = "interim (= 30)") +
+  scale_color_manual(values = crit_cols, guide = "none") +
+  scale_fill_manual(values = crit_cols, guide = "none") +
+  scale_linetype_manual(values = c("Success" = "solid", "Non success" = "dashed"),
+                        labels = c("Success" = expression(bgroup("(", E*bgroup("[", 1/N^{"+"}, "]"), ")")^{-1}),
+                                   "Non success" = expression(bgroup("(", E*bgroup("[", 1/N^{"-"}, "]"), ")")^{-1})),
+                        guide = guide_legend(title = NULL, keywidth = unit(1.8, "cm"),
+                                             override.aes = list(color = "black"),
+                                             position = "inside")) +
+  coord_cartesian(xlim = c(DV, 100), ylim = c(30, 60)) +
+  labs(x = expression(delta), y = "Effective sample size") +
+  my_theme +
+  theme(strip.background = element_rect(fill = "grey92", color = "grey55",
+                                        linewidth = 0.4),
+        strip.text = element_text(face = "bold", size = 10),
+        legend.position.inside = c(0.98, 0.98),
+        legend.justification.inside = c(1, 1),
+        legend.background = element_rect(fill = scales::alpha("white", 0.7), color = NA))
+
+top_panels <- (p_abs / p_ratio) +
+  patchwork::plot_layout(guides = "collect")
+bottom_panel <- p_ess +
+  patchwork::plot_layout(guides = "keep")
+
+(top_panels / bottom_panel) &
+  theme(legend.position = "bottom")
+@
+
+Every sequential design lies above its fixed counterpart at every $\delta$, so the interim analysis always increases the information per patient and 
+futility stopping increases the EUII above the corresponding design without futility, leaving the avgPower and the avgT1E almost untouched. 
+The bands are narrow, so the choice of $\Pr(H_1)$ is not much influential. 
+Interestingly, futility reverses the ranking of the two efficacy criteria. Without futility the DC has a higher EUII than the SC, consistent with the fixed design comparison.
+With futility the SC overtakes the DC, and the gap widens with $\delta$.
+
+
+ 
+
+
+\subsection{Two Interim Analyses}
+\label{sec:two_interim}
+
+
+Following the original trial protocol \citep{hueber2012secukinumab}, we repeat the analysis with a second interim look: the trial can stop
+when $17$, $41$, or the full $60$ patients have been enrolled. Since these totals are not exact multiples of three under
+the $2$:$1$ allocation, the cumulative arm sizes at the interims are only approximately $2$:$1$, namely $11$:$6$ and $27$:$14$.
+Efficacy is evaluated at every look, futility at both interims, with the same criteria and the same futility rule as before,
+and the same four designs are compared by Monte Carlo simulation with $10^6$ replicates per evaluation.
+
+\paragraph{Average T1E rate and power:}
+Figure~\ref{fig:plot_seq2_oc} reports the avgT1E and the avgPower at $\delta = 60$. As with one interim, futility leaves both error
+rates untouched. The price of an additional interim is clear: under the aligned priors the SC moves from $7.7\%$ with one interim to
+$9.8\%$ with two, and the DC from $2.6\%$ to $5.6\%$.
+
+<<plot_seq2_oc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="Two interim analyses: avgT1E (top) and avgPower at $\\delta = 60$ (bottom) across all analysis prior and design prior combinations, one panel per design. Color encodes the analysis prior (vague shown dashed). The red line marks the nominal $0.05$.">>=
+library(patchwork)
+
+res_seq  <- readRDS("../Output/06_sequential_two_interim/avg.RDS")
+df_oc    <- res_seq$df_oc
+
+p_t1e <- oc_row(0, "average T1E rate") +
+  geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", linewidth = 0.5) +
+  labs(x = NULL, y = NULL) +
+  theme(axis.text.x = element_blank())
+
+p_pow <- oc_row(60, "average power") +
+  labs(x = "Design Prior", y = NULL) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1),
+        strip.text.x = element_blank(), strip.background.x = element_blank())
+
+(p_t1e / p_pow) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+@
+
+\paragraph{Stopping at the interims:}
+Figure~\ref{fig:plot_seq2_stage} displays the stopping probabilities by interim, and Table~\ref{tab:seq2_summary} reports the exact
+values under the aligned MAP prior. At $\delta = 60$, the SC concludes for efficacy in about $61\%$ of the trials at the first look 
+and a further $27\%$ at the second,
+so almost nine trials out of ten never reach the final analysis. Under the null the futility rule triggers in about $50\%$ of the
+trials at the first interim and another $24\%$ at the second, about three quarters in total against roughly two thirds with a
+single interim. The expected sample size of the futility designs under the null drops accordingly, from about $39$ to $40$ patients with
+one interim to about $31$ with two.
+
+<<plot_seq2_stage, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="Two interim analyses: probability of stopping at each interim, one column per design. Top block: efficacy stops at the first and second interim ($\\delta = 60$). Bottom block: futility stops at the first and second interim ($\\delta = 0$). Color encodes the analysis prior (vague shown dashed).">>=
+library(ggplot2)
+library(dplyr)
+library(ggh4x)
+
+res_seq  <- readRDS("../Output/06_sequential_two_interim/avg.RDS")
+df_stage <- res_seq$df_stage
+
+df_stage1 <- bind_rows(
+  df_stage |> dplyr::filter(Stage <= 2, delta == 60) |>
+    transmute(Criterion, Analysis_Prior, Design_Prior, Prob = P_Succ,
+              Delta_lab = "delta = 60 (efficacy)",
+              Interim = paste0("Interim ", Stage)),
+  df_stage |> dplyr::filter(Stage <= 2, delta == 0) |>
+    transmute(Criterion, Analysis_Prior, Design_Prior, Prob = P_Fut,
+              Delta_lab = "delta = 0 (futility)",
+              Interim = paste0("Interim ", Stage))
+) |>
+  mutate(Delta_lab = factor(Delta_lab, levels = c("delta = 60 (efficacy)", "delta = 0 (futility)")),
+         Interim    = factor(Interim,    levels = c("Interim 1", "Interim 2")))
+
+ggplot(df_stage1,
+       aes(x = Design_Prior, y = Prob,
+           color = Analysis_Prior, group = Analysis_Prior,
+           linetype = Analysis_Prior == "vague")) +
+  geom_point(size = 2.0) +
+  geom_line(linewidth = 0.8) +
+  facet_nested(Delta_lab + Interim ~ Criterion) +
+  scale_linetype_vague() +
+  scale_color_prior() +
+  labs(x = "Design Prior", y = "Probability of stopping at the interim") +
+  my_theme +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1),
+        strip.background = element_rect(fill = "grey92", color = "grey55",
+                                        linewidth = 0.4),
+        strip.text = element_text(face = "bold", size = 9),
+        strip.text.y = element_text(size = 7))
+@
+
+<<tab_seq2_summary, echo=FALSE, warning=FALSE, message=FALSE, results='asis'>>=
+library(dplyr)
+library(kableExtra)
+
+res_seq2  <- readRDS("../Output/06_sequential_two_interim/avg.RDS")
+df_stage2 <- res_seq2$df_stage
+df_oc2    <- res_seq2$df_oc
+
+tab_stage2 <- df_stage2 |>
+  filter(Analysis_Prior == "MAP", Design_Prior == "MAP", delta %in% c(0, 60)) |>
+  group_by(Criterion, delta) |>
+  summarise(
+    P_succ_int1  = P_Succ[Stage == 1],
+    P_fut_int1   = P_Fut[Stage == 1],
+    P_succ_int2  = P_Succ[Stage == 2],
+    P_fut_int2   = P_Fut[Stage == 2],
+    P_succ_final = P_Succ[Stage == max(Stage)],
+    .groups = "drop"
+  ) |>
+  mutate(Total_succ = P_succ_int1 + P_succ_int2 + P_succ_final)
+
+tab_designs2 <- tab_stage2 |>
+  left_join(df_oc2 |>
+              filter(Analysis_Prior == "MAP", Design_Prior == "MAP") |>
+              select(Criterion, delta, EN),
+            by = c("Criterion", "delta")) |>
+  arrange(delta, Criterion) |>
+  mutate(EN = round(EN, 1)) |>
+  select(-delta)
+
+kable(tab_designs2, format = "latex", booktabs = TRUE, digits = 3, escape = FALSE,
+      caption = "Operating characteristics of the four sequential designs with two interim analyses, under the aligned MAP prior. $P_{\\text{eff},1}$, $P_{\\text{fut},1}$, $P_{\\text{eff},2}$ and $P_{\\text{fut},2}$ are the probabilities of stopping at the first and second interim for efficacy and futility, $P_{\\text{eff},3}$ the probability of success at the final analysis. Total success equals the avgT1E in the $\\delta = 0$ block and the avgPower in the $\\delta = 60$ block.",
+      label = "seq2_summary",
+      col.names = c("Design", "$P_{\\text{eff},1}$", "$P_{\\text{fut},1}$",
+                    "$P_{\\text{eff},2}$", "$P_{\\text{fut},2}$",
+                    "$P_{\\text{eff},3}$", "Total success", "$\\Erw[N]$")) |>
+  pack_rows("$\\delta = 0$", 1, 4, escape = FALSE) |>
+  pack_rows("$\\delta = 60$", 5, 8, escape = FALSE) |>
+  kable_styling(latex_options = "hold_position")
+@
+
+\paragraph{EUII:} 
+Every design gains from the second interim while the futility designs gain the most, since it allows
+a failing trial to exit early, and a second interim gives it one more chance to do so. Figure~\ref{fig:plot_seq2_vs_one}
+shows the two interim designs against their one interim counterparts: the ratio of the two interim EUII to the one
+interim EUII, matched at the same $\Pr(H_1)$ (top), and the \textit{effective sample size} of the futility designs (bottom).  
+
+<<plot_seq2_vs_one, echo=FALSE, warning=FALSE, message=FALSE, fig.height=7, fig.width=8, dev='cairo_pdf', fig.cap="Two interim analyses against one interim, aligned priors. Top: ratio of the EUII with two interims to the EUII with one interim. Bottom: effective sample size of the two futility designs by trial outcome. Lines are drawn at $\\Pr(H_1) = 0.5$, bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$.">>=
+library(ggplot2)
+library(dplyr) 
+library(patchwork)  
+
+df_2int <- readRDS("../Output/06_sequential_two_interim/euii.RDS")$df_euii
+df_1int <- readRDS("../Output/05_sequential_one_interim/euii.RDS")$df_euii
+
+# Top panel: ratio of two interim to one interim EUII, matched at the same Pr(H1)
+df_ratio12 <- df_2int |> 
+  mutate(Criterion = as.character(Criterion)) |>
+  left_join(df_1int |> select(Delta, prior_H1, Criterion, EUII_1int = EUII) |>
+              mutate(Criterion = as.character(Criterion)),
+            by = c("Delta", "prior_H1", "Criterion")) |>
+  mutate(ratio_12 = EUII / EUII_1int,
+         Criterion = factor(Criterion, levels = design_labels)) |>
+  dplyr::mutate(Metric = "Ratio to one interim")
+
+band_ratio12 <- df_ratio12 |>
+  group_by(Criterion, Delta, Metric) |>
+  summarise(lo  = min(ratio_12),
+            hi  = max(ratio_12),
+            mid = ratio_12[prior_H1 == 0.5],
+            .groups = "drop")
+
+p_ratio12 <- ggplot(band_ratio12) +
+  facet_grid(Metric ~ .) +
+  geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion), alpha = 0.30) +
+  geom_line(aes(x = Delta, y = mid, color = Criterion), linewidth = 1.2) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.5) +
+  scale_color_manual(values = crit_cols) +
+  scale_fill_manual(values = crit_cols, guide = "none") +
+  coord_cartesian(xlim = c(DV, 100)) +
+  labs(x = NULL, y = "EUII ratio") +
+  my_theme +
+  theme(axis.text.x = element_blank(),
+        strip.background = element_rect(fill = "grey92", color = "grey55",
+                                        linewidth = 0.4),
+        strip.text = element_text(face = "bold", size = 10))
+
+# Bottom panel: effective sample size of the two interim futility designs by outcome
+band_N2 <- df_2int |>
+  dplyr::filter(grepl("Futility", Criterion)) |>
+  select(Delta, prior_H1, Criterion, E_invN_sig, E_invN_nonsig) |>
+  tidyr::pivot_longer(cols = c(E_invN_sig, E_invN_nonsig),
+                      names_to = "E_inv_type", values_to = "E_inv_val") |>
+  mutate(
+    N_eff   = 1 / E_inv_val,
+    Outcome = factor(if_else(E_inv_type == "E_invN_sig", "Success", "Non success"),
+                     levels = c("Success", "Non success"))
+  ) |>
+  group_by(Criterion, Outcome, Delta) |>
+  summarise(lo  = min(N_eff),
+            hi  = max(N_eff),
+            mid = N_eff[prior_H1 == 0.5],
+            .groups = "drop") |>
+  mutate(Metric = "Effective sample size")
+
+p_ess2 <- ggplot(band_N2) +
+  facet_grid(Metric ~ .) +
+  geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Criterion,
+                  group = interaction(Criterion, Outcome)), alpha = 0.30) +
+  geom_line(aes(x = Delta, y = mid, color = Criterion, linetype = Outcome),
+            linewidth = 1.1) +
+  geom_hline(yintercept = 60, linetype = "dashed", color = "black",  linewidth = 0.4) +
+  geom_hline(yintercept = 41, linetype = "dotted", color = "grey40", linewidth = 0.4) +
+  geom_hline(yintercept = 17, linetype = "dotted", color = "grey40", linewidth = 0.4) +
+  annotate("text", x = DV + 2, y = 60 - 1.5, hjust = 0, size = 3, color = "grey30",
+           label = "without futility (= 60)") +
+  annotate("text", x = DV + 2, y = 41 + 1.3, hjust = 0, size = 3, color = "grey50",
+           label = "second interim (= 41)") +
+  annotate("text", x = DV + 2, y = 17 + 1.3, hjust = 0, size = 3, color = "grey50",
+           label = "first interim (= 17)") +
+  scale_color_manual(values = crit_cols, guide = "none") +
+  scale_fill_manual(values = crit_cols, guide = "none") +
+  scale_linetype_manual(values = c("Success" = "solid", "Non success" = "dashed"),
+                        labels = c("Success" = expression(bgroup("(", E*bgroup("[", 1/N^{"+"}, "]"), ")")^{-1}),
+                                   "Non success" = expression(bgroup("(", E*bgroup("[", 1/N^{"-"}, "]"), ")")^{-1})),
+                        guide = guide_legend(title = NULL, keywidth = unit(1.8, "cm"),
+                                             override.aes = list(color = "black"),
+                                             position = "inside")) +
+  coord_cartesian(xlim = c(DV, 100), ylim = c(17, 60)) +
+  labs(x = expression(delta), y = "Effective sample size") +
+  my_theme +
+  theme(strip.background = element_rect(fill = "grey92", color = "grey55",
+                                        linewidth = 0.4),
+        strip.text = element_text(face = "bold", size = 10),
+        legend.position.inside = c(0.98, 0.98),
+        legend.justification.inside = c(1, 1),
+        legend.background = element_rect(fill = scales::alpha("white", 0.7), color = NA))
+
+top_panel12 <- p_ratio12 +
+  patchwork::plot_layout(guides = "collect")
+bottom_panel2 <- p_ess2 +
+  patchwork::plot_layout(guides = "keep")
+
+(top_panel12 / bottom_panel2) &
+  theme(legend.position = "bottom")
+@
+ 
+\paragraph{Conclusion}
+Adding another interim increases the EUII in every case, but this comes at the cost of an inflated
+avgT1E. For example, the DC arrives at the nominal $5\%$ and loses the conservatism that justified it in the fixed design. 
+Thus, one may argue that the comparison is not fair. For this reason in the next Section, we follow the approach from 
+\citet{held2025balancing}, comparing different designs calibrated at the same avgT1E and avgPower. 
+
+ 
+
+
+
+\section{Comparison at Equal Error Rates \note{TO DO}}
+\label{sec:calibrated_comparison}
+To compare different design types at the same Error Rates, we follow al
+\note{TO DO: polish the opening}
+Since the EUII comparison presupposes designs calibrated to common error rates, and since the decision value caps the attainable avgT1E of the DC below that of the SC, we compare sequential designs within each criterion only: sequential SC designs against the fixed SC design at its error rates, and sequential DC designs against the fixed DC design at its achieved error rates. The two criteria address different claims, so a direct comparison between them is deferred to the ratio analysis of Section~\ref{sec:fixed_design}, which characterizes their division of labor rather than ranking them.
+Write an algorithm box for the procedure. 
+
+ 
+\subsection{Calibrated Designs}
+\label{sec:calibrated_designs}
+
+\paragraph{Calibration Targets}
+\note{TO DO: avgT1E of 0.05 and avgPower of 0.90 at $\delta = 60$ for the SC family. For the DC family the achieved error rates of the fixed DC design. State the attainability policy for the DC here once. Describe the calibration procedure here as well: the common threshold $p$ is found by root finding on the avgT1E with common random numbers, the schedule is scaled proportionally (look fractions and allocation ratio fixed) to the smallest maximum sample size reaching the target avgPower, with $p$ recalibrated at every candidate size. For the DC the attainable avgT1E shrinks with $n$ (the DV cap), so the target may become unattainable. Include the DC then SC hybrid of Section~\ref{sec:one_interim} as an additional contender via a decisions builder, since its unspent type one error should buy a more liberal calibrated threshold.}
+
+\paragraph{Verification}
+\note{TO DO: independent check at a fresh seed. Anchor table with $n_{\max}$, threshold $p$, avgT1E, avgPower and expected sample size for every calibrated design of both families.}
+
+\subsection{Single Criterion: the Effect of the Number of Interim Analyses}
+\label{sec:calibrated_sc}
+
+\paragraph{EUII across Effect Sizes}
+\note{TO DO: main figure, EUII versus $\delta$ with $\Pr(H_1)$ bands, one curve per number of looks.}
+
+\paragraph{Expected Sample Size and Stopping Patterns}
+\note{TO DO: where trials stop under the null and at the MCID, the mechanism behind the EUII ordering.}
+
+\subsection{Dual Criterion: the Effect of the Number of Interim Analyses}
+\label{sec:calibrated_dc}
+
+\paragraph{EUII across Effect Sizes}
+\note{TO DO}
+
+\paragraph{Ratio to the Single Criterion}
+\note{TO DO: sequential division of labor, check whether the crossing at $\delta = \DV$ survives interim looks. Drop this paragraph if not pursued.}
+
+\subsection{Futility Stopping}
+\label{sec:calibrated_futility}
+
+\paragraph{Recalibrated Designs}
+\note{TO DO: futility rule inside the calibration, so the with futility designs meet the common targets. This is the primary comparison.}
+
+\paragraph{Futility Added to a Finished Design}
+\note{TO DO: futility bolted onto the already calibrated designs. Report the shifted error rates honestly next to the EUII and expected sample size.}
+
+\subsection{Boundary Shapes}
+\label{sec:calibrated_shapes}
+
+\paragraph{Shapes Considered}
+\note{TO DO: constant threshold (the Pocock analogue), O'Brien Fleming, power family, Haybittle Peto. Each shape is calibrated as in Section~\ref{sec:calibrated_designs}, tuning a single overall level while the shape fixes the relative strictness across looks.}
+
+\paragraph{Results}
+\note{TO DO: EUII, $n_{\max}$ and expected sample size per shape, with and without futility, and the verdict at the MCID with the full EUII curve shown.}
+
+\subsection{Timing of the Interim Analysis}
+\label{sec:calibrated_timing}
+\note{TO DO: optional. One interim, constant threshold, EUII as a function of the interim fraction (for example 25, 50 and 75 percent). Cut this subsubsection if not pursued.}
+
+
+\section{Sensitivity Analyses}
+\label{sec:sensitivity}
+NON PENSO SIA NECESSARIO
+\paragraph{Misspecified standard deviation}
+\note{TO DO: re evaluate the winning design generating the data with $\sigma$ equal to 70 and 110 while the analysis assumes 88.}
+
+\paragraph{Prior Data Conflict}
+\note{TO DO: the winning design under a shifted design prior, reported through avgT1E and avgPower, not the EUII, consistent with the convention of Section~\ref{sec:fixed_design}.}
+

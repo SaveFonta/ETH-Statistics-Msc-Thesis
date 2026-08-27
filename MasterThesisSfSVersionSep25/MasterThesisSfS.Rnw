@@ -1,0 +1,311 @@
+%%%--- Template for master thesis at SfS
+%%%--- Modified template with more comments and examples -- SG, 11/06/09
+%%%------
+\documentclass[11pt,a4paper,twoside,openright]{report}
+\usepackage[english]{ETHDAsfs}%--> ETHDASA + fancyhdr + ... "umlaute"
+%  + sfs-hyper -> hyperref 
+
+\usepackage{pdfpages}%%to include the confirmation of originality (plagiarism
+\usepackage{amsbsy}%% for \boldsymbol and \pmb{.}
+\usepackage{amssymb}%% calls  amsfonts...
+\usepackage{graphicx}%-- für PostScript-Grafiken (besser als  psfig!)
+%% NOTE: never leave a commented-out graphicx line carrying the "dr" + "aft"
+%% option anywhere in this file. knitr regex-scans the source for graphicx
+%% options and picks them up even out of comments, which would blank every
+%% figure into an empty box showing only its filename.
+%
+\usepackage[round]{natbib}%was {sfsbib}%- Für  Literatur-Referenzen
+%           ^^^^^^^^^^^^^^ 1) "Hampel, Ronchetti, ..,"  2) "Hampel et al"
+% Engineers (and other funny people) want to see [1], [2] 
+% ---> use 'numbers' : \usepackage[longnamesfirst,number]{natbib}
+%
+%
+\usepackage{texab}%- 'tex Abkürzungen' /u/sfs/tex/tex/latex/texab.sty
+        %%- z.B.  \R, \Z, \Q, \Nat für reelle, ganze, rationale, natürl. Zahlen;
+        %%-       \N   (Normalvert.)  \W == Wahrscheinlichkeit .....
+        %%-  \med, \var, \Cov, \....
+        %%-  \abs{x} == |x|   und   \norm{y} ==  || y ||   (aber anständig)
+%% NOTE: texab contains many useful definitions and "shortcuts". It is
+%% worth to open the file and have a look at them. HOWEVER, some
+%% definitions can lead to conflicts with other packages. You
+%% might for example want to comment out the line defininf \IF as an
+%% operator when working with the algorithmic package, or to comment out
+%% the line defining a command \Cite with working with the Biblatex package  
+\usepackage{amsmath}
+%%--- packages required by the migrated manuscript content ---
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{float}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{mdframed}
+\usepackage{tcolorbox}
+\usepackage{pdflscape}
+\usepackage{afterpage}
+\usepackage{doi}
+%\usepackage{mathrsfs}% Raph Smith's Formal Script font --> provides \mathscr
+\usepackage[utf8]{inputenc}% <<------- Unicode, *NOT* iso-latin1 !
+\usepackage{lmodern}
+\usepackage{enumerate}% Fuer selbstdefinierte Nummerierungen
+%--------
+\usepackage{relsize}%-> \smaller (etc) used here
+\usepackage{xcolor} %% to allow coloring in code listings (xcolor: superset of color)
+\usepackage{listings}% Fuer R-code, C-code, ....  and settings for these:
+\definecolor{Mygrey}{gray}{0.75}% for linenumbers only!
+\definecolor{Cgrey}{gray}{0.4}% for comments
+\lstloadlanguages{R}
+%%--- first version of "listings of R"-style : ---------------------------
+% %% using \smaller here: makes R code listings use a *small* font:
+% \lstset{language=R,basicstyle=\smaller[2],commentstyle=\rmfamily\smaller,
+%   showstringspaces=false,xleftmargin=4ex,
+%   literate={<-}{{$\leftarrow$}}1 {~}{{$\sim$}}1}
+% \lstset{escapeinside={(*}{*)}} % for (*\ref{ }*) inside lstlistings (Scode) 
+%\newcommand{\lil}[1]{\lstinline|#1|}
+%%--- newer version of "listings of R"-style : ---------------------------
+\lstset{%% Help, e.g. --> https://en.wikibooks.org/wiki/LaTeX/Source_Code_Listings
+language=R,
+basicstyle=\ttfamily\scriptsize,%%- \small > \footnotesize > \scriptsize > \tiny
+%commentstyle=\ttfamily\color{Cgrey},
+commentstyle=\itshape\color{Cgrey},
+numbers=left,
+numberstyle=\ttfamily\color{Mygrey}\tiny,
+stepnumber=1,
+numbersep=5pt,
+backgroundcolor=\color{white},
+showspaces=false,
+showstringspaces=false,
+showtabs=false,
+frame=single,
+tabsize=2,
+captionpos=b,
+breaklines=true,
+%breakatwhitespace=false,
+keywordstyle={},
+morekeywords={},
+xleftmargin=4ex, 
+literate={<-}{{$\leftarrow$}}1 {~}{{$\sim$}}1}
+\lstset{escapeinside={(*}{*)}} % for (*\ref{ }*) inside lstlistings (Scode) 
+%%----------------------------------------------------------------------------
+
+%%------- Theoreme ---
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{lemma}[definition]{Lemma}
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{Coro}[definition]{Corollary}
+\theoremstyle{definition} 
+\newtheorem{example}[definition]{Example}
+%% \newtheorem*{note}{Note}  <-- removed: \note is the TODO macro, see below
+\newtheorem*{remark}{Remark}
+
+\DeclareMathOperator*{\plim}{plim}
+% \def\MR#1{\href{http://www.ams.org/mathscinet-getitem?mr=#1}{MR#1}}
+
+% \newcommand{\Lecture}[3]{\marginpar{#3.#2.#1}}
+% \newcommand{\Fu}{\mathcal{F}}
+\newcommand{\aatop}[2]{\genfrac{}{}{0pt}{}{#1}{#2}}
+
+%\renewcommand{\theequation}{\arabic{equation}}
+\numberwithin{equation}{chapter}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fix spacing (parskip and amsthm not directly compatible) %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\makeatletter
+% Reduce space before and after theorem
+\def\thm@space@setup{%
+  \thm@preskip=8pt plus 2pt minus 4pt
+  \thm@postskip=\thm@preskip
+}
+
+% Reduce space before proof
+\renewenvironment{proof}[1][\proofname]{\par
+  \pushQED{\qed}%
+  \normalfont
+  \topsep0pt\partopsep0pt % <<--- kills big gap
+  \trivlist
+  \item[\hskip\labelsep
+        \itshape
+    #1\@addpunct{:}]\ignorespaces
+}{%
+  \popQED\endtrivlist\@endpefalse
+}
+\makeatother
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Path for your figures                      %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Set the paths where all figures are taken from:
+\graphicspath{{Pictures/}{figure/}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Define your own commands here             %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\Bruch}[2]{{}^{#1}\!\!/\!_{#2}}
+\renewcommand{\labelenumi}{\roman{enumi}.)}
+
+%%--- macros migrated from the manuscript ---
+\input{newCommands.tex}
+%% TODO marker: renders in red so unfinished passages stay visible
+\newcommand{\note}[1]{\textcolor{red}{#1}}
+
+\begin{document}
+<<setup, include=FALSE>>=
+## knitr runs each child chunk from the CHILD file's own directory, which would
+## break the ../Output and ../scripts paths inside Chapters/. Pinning root.dir to
+## the master's directory makes every chunk resolve them exactly as in Final/.
+knitr::opts_knit$set(root.dir = getwd())
+library(knitr)
+opts_chunk$set(echo = FALSE,
+               message = FALSE,
+               warning = FALSE,
+               cache = TRUE,
+               fig.align = "center",
+               fig.height = 4,
+               dev = 'cairo_pdf' # with this the plots can have greek letters
+               )
+options(scipen = 10)
+
+# Shared colour palette, reused across every figure in the
+# manuscript so that SC/DC and Average/Conditional always match.
+col_sc   <- "#0072B2"
+col_dc   <- "#D55E00"
+col_avg  <- "#E69F00"
+col_cond <- "#56B4E9"
+@
+\bibliographystyle{chicago}% ---> Hampel,F., E.Ronchetti,... W.Stahel(1986) ...
+ %was \bibliographystyle{sfsbib}\citationstyle{dcu} %OR DEFAULT : \citationstyle{agsm}
+
+\pagenumbering{roman}%- roman numbering for first few pages
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Title page                                %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\period{Spring Semester 2026}
+\dasatype{Master Thesis}
+\students{Saverio Fontana}
+\mainreaderprefix{Advisor:}
+\mainreader{Prof.\ Dr.\ Leonhard Held}
+%% ETHDASA.str supplies \alternatereaderprefix{Adviser:} as the English default, so the
+%% label prints even with no co-advisor. Blank it explicitly.
+\alternatereaderprefix{}
+\submissiondate{13 September 2026}
+\title{Balancing Evidentiary Value and Sample Size \\ in Bayesian Group Sequential \\ and Dual-Criterion Designs}
+
+\maketitle%- Titelseite wird abgeschlossen
+\cleardoublepage
+ %%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Insert here acknowledgements and abstract %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Dedication (optional)
+\markright{}
+\vspace*{\stretch{1}}
+\begin{center}
+    %% TODO: dedication, or delete this centred block entirely
+\end{center}
+\vspace*{\stretch{2}}
+
+% Preface (optional)
+\newpage
+%\markboth{Preface}{Preface}
+\include{Preface}
+
+% Abstract should not be longer than one page.
+\newpage
+\markboth{Abstract}{Abstract}
+\include{Abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Table of contents and list of figures and %%%   
+%%% tables (no need to change this usually)   %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Optional: list of figures and tables      %%%
+%%% remove comment signs if needed            %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\listoffigures
+\newpage
+\listoftables
+
+%% Notations and glossary (optional)
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{\protect\numberline{}{Notation}}
+\markboth{Notation}{Notation}
+\include{Notation}
+
+\cleardoublepage
+\pagenumbering{arabic}%--- switch back to standard numbering 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Your text... Either write here directly,  %%%
+%%% or even better: write in separate files   %%%
+%%% that you just have to include here.       %%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Chapters without R code are plain \include.
+%% Chapters with knitr chunks are pulled in as children so they share the
+%% single R session started by the setup chunk above.
+\include{Chapters/Introduction}
+
+<<child='Chapters/Methodology.Rnw'>>=
+@
+
+<<child='Chapters/Applications.Rnw'>>=
+@
+
+\include{Chapters/Summary}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bibliography                              %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addtocontents{toc}{\vspace{.5\baselineskip}}
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{\protect\numberline{}{Bibliography}}
+\bibliography{Thesis.lit.rev}
+%% All books from our library (SfS) are already in a BiBTeX file
+%% 'Assbib.bib' (included here as well), using
+% \bibliography{myReferences,Assbib}
+% ---------------------------------- instead of the above
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Appendices (if needed, e.g. for R code)   %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addtocontents{toc}{\vspace{.5\baselineskip}}
+\appendix
+\include{Chapters/Appendix1}
+\include{Chapters/Appendix2}
+\include{Chapters/Appendix3}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%% Declaration of originality (Do not remove!)%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Instructions:
+%% -------------
+%% fill in the empty document confirmation-originality.pdf electronically
+%% print it out and sign it
+%% scan it in again and save the scan in this directory with name
+%% confirmation-originality-scan.pdf 
+%%
+%% General info on plagiarism:
+%% https://www.ethz.ch/students/en/studies/performance-assessments/plagiarism.html 
+\cleardoublepage
+\includepdf[pages={-}, frame=true,scale=1]{confirmation-originality-scan.pdf}
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "MasterThesisSfS"
+%%% End:

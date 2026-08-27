@@ -1,0 +1,90 @@
+\chapter*{Notation}
+\label{c:Notation}
+
+Throughout, an exponent marks a conversion rather than a category. Lower case $v$ joins $\sigma$ and $\tau$ in denoting
+standard deviations, so that $v_C = \sigma/\sqrt{n_C}$ and the corresponding variances are written $v^2$, $\sigma^2$ and
+$\tau^2$. Upper case $V$ is reserved for the composite variances of the treatment contrast, such as $V_{\delta}$ and
+$V_{\text{samp}}$, which denote variances directly and therefore carry no square.
+
+\section*{Parameters and data}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\theta_C,\ \theta_T$        & true control and treatment means \\
+$\delta$                     & treatment contrast, $\delta = \theta_C - \theta_T$ (lower $y$ is beneficial) \\
+$\bar y_C,\ \bar y_T$        & observed arm means \\
+$\sigma$                     & per patient standard deviation, assumed known \\
+$n_C,\ n_T$                  & control and treatment sample sizes \\
+$n_A$                        & effective sample size of the historical information \\
+$v_C^2 = \sigma^2/n_C$         & sampling variance of $\bar y_C$ \\
+$v_T^2 = \sigma^2/n_T$         & sampling variance of $\bar y_T$ \\
+$r_T = n_T/n_C$              & allocation ratio \\
+$r_A = n_A/n_C$              & historical to control effective sample size ratio \\
+\bottomrule
+\end{tabular}
+
+\section*{Priors}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\pi_A(\theta_C)$                       & analysis prior, used to form the posterior \\
+$\pi_D(\theta_C)$                       & design prior, used to average operating characteristics \\
+$\mu_{A,C},\ \sigma_{A,C}^2$            & mean and variance of the analysis prior \\
+$\mu_{D,C},\ \sigma_{D,C}^2$            & mean and variance of the design prior \\
+$W = \sigma_{A,C}^2/(\sigma_{A,C}^2+v_C^2)$ & weight the data carries in the control estimate \\
+$1-W$                                   & weight the historical prior carries \\
+$\omega$                                & weight of the vague component in a robust mixture prior \\
+MAP                                     & meta analytic predictive \\
+UIP                                     & unit information prior \\
+ESS                                     & effective sample size \\
+\bottomrule
+\end{tabular}
+
+\section*{Posterior and decision quantities}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\mu_{\text{post}},\ \sigma_{\text{post}}^2$ & mean and variance of the control posterior \\
+$\hat\delta$                                 & posterior mean of the contrast \\
+$V_\delta$                                   & posterior variance of the contrast \\
+$V_{\text{samp}}$                            & sampling variance of $\hat\delta$ at a fixed $\theta_C$ \\
+$V_{\text{marg}}$                            & marginal variance of $\hat\delta$ under the design prior \\
+$p$                                          & posterior probability threshold for success \\
+$z_p = \Phi^{-1}(p)$                         & corresponding standard Normal quantile \\
+$q$                                          & reference value in the success criterion \\
+$\DV$                                        & decision value of the dual criterion \\
+$k = q + z_p\sqrt{V_\delta}$                 & success threshold on the $\hat\delta$ scale \\
+$K$                                          & total number of analyses, interims plus final \\
+$t_k$                                        & information fraction at look $k$ \\
+\bottomrule
+\end{tabular}
+
+\section*{Operating characteristics and metrics}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\alpha$                & nominal significance level, $\alpha = 1-p$ \\
+$\TIE(\theta_C)$        & conditional type one error at a fixed $\theta_C$ \\
+$\avgTIE$               & average type one error, integrated over $\pi_D$ \\
+$\Pow(\theta_C,\delta)$ & conditional power \\
+$\avgPow(\delta)$       & average power at effect $\delta$, integrated over $\pi_D$ \\
+$\DOR$                  & diagnostic odds ratio \\
+$\EUII$                 & experimental unit information index, $\DOR^{1/n_{\text{trial}}}$ \\
+$\Pr(H_1)$              & prior probability of the alternative, used in the EUII bands \\
+$\SC$                   & single criterion \\
+$\DC$                   & dual criterion \\
+\bottomrule
+\end{tabular}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "MasterThesisSfS"
+%%% End: 

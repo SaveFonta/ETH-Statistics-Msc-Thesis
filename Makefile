@@ -1,54 +1,64 @@
-.PHONY: all clean help reports final manuscript appendix
+.PHONY: all thesis pull-output push-scripts archive-manuscript appendix clean clean-all help
 
-# Default target
-all: reports final
+# Default target: build the thesis
+all: thesis
 
-# Build all reports
-reports: reports/First_report.pdf reports/How.RBesT.works.inside.pdf reports/Bayesian_group.pdf
+# ---------------------------------------------------------------------------
+# The ETH SfS thesis (MasterThesisSfSVersionSep25/). This is the live document.
+# ---------------------------------------------------------------------------
+# Two stages on purpose: knit2pdf runs LaTeX too few times to populate the
+# table of contents, list of figures and list of tables, so knitr and latexmk
+# are invoked separately and latexmk iterates until the references settle.
+thesis:
+	cd MasterThesisSfSVersionSep25 && \
+	Rscript -e "knitr::knit('MasterThesisSfS.Rnw')" && \
+	latexmk -pdf -interaction=nonstopmode MasterThesisSfS.tex
 
-# Build final manuscript
-final: Final/manuscript.pdf
+# ---------------------------------------------------------------------------
+# Remote results. All simulation and MCMC work runs on doksum, but the knitr
+# chunks read ../Output/*.RDS, so those results must be present locally for
+# "make thesis" to compile here. Run pull-output after any script is rerun
+# remotely, otherwise the local build fails on a missing RDS or silently uses
+# a stale one.
+# ---------------------------------------------------------------------------
+REMOTE := doksum:~/Thesis-EUII
 
-# Individual report targets
-reports/First_report.pdf: reports/First_report.Rnw
-	cd reports && Rscript -e "knitr::knit2pdf('First_report.Rnw')" && cd ..
+pull-output:
+	rsync -av $(REMOTE)/Output/ Output/
 
-reports/How.RBesT.works.inside.pdf: reports/How.RBesT.works.inside.Rnw
-	cd reports && Rscript -e "knitr::knit2pdf('How.RBesT.works.inside.Rnw')" && cd ..
+push-scripts:
+	rsync -av scripts/ $(REMOTE)/scripts/
 
-reports/Bayesian_group.pdf: reports/Bayesian_group.Rnw
-	cd reports && Rscript -e "knitr::knit2pdf('Bayesian_group.Rnw')" && cd ..
+# ---------------------------------------------------------------------------
+# Superseded article version, kept for reference only (archive/).
+# Its content has been migrated into the thesis; do not develop it further.
+# ---------------------------------------------------------------------------
+archive-manuscript:
+	cd archive/manuscript-article && \
+	Rscript -e "knitr::knit2pdf('manuscript.Rnw')"
 
-# Manuscript target (incremental: rebuilds when the Rnw or any \input'd file changes)
-Final/manuscript.pdf: Final/manuscript.Rnw Final/newCommands.tex Final/appendix.tex Final/Thesis.lit.rev.bib
-	cd Final && Rscript -e "knitr::knit2pdf('manuscript.Rnw')" && cd ..
-
-# Force a full recompile, even when make thinks nothing is out of date
-manuscript:
-	$(MAKE) -B Final/manuscript.pdf
-
-# Compile only the appendix (fast, standalone; no knitr, no main manuscript)
+# Compile only the old standalone appendix (fast, no knitr)
 appendix:
-	cd Final && Rscript -e "tinytex::latexmk('appendix_only.tex')"
+	cd archive/manuscript-article && Rscript -e "tinytex::latexmk('appendix_only.tex')"
 
-# Clean build artifacts (but keep PDFs for reference)
+# ---------------------------------------------------------------------------
 clean:
-	cd reports && rm -f *.tex *.log *.aux *.out *.toc *.synctex.gz
-	cd Final && rm -f *.tex *.log *.aux *.out *.toc *.synctex.gz
+	cd MasterThesisSfSVersionSep25 && rm -f *.aux *.log *.out *.toc *.lof *.lot \
+	    *.bbl *.blg *.fls *.fdb_latexmk *.synctex.gz MasterThesisSfS.tex \
+	    Chapters/*.aux Chapters/*.log Chapters/Methodology.tex Chapters/Applications.tex
+	-@cd archive/manuscript-article 2>/dev/null && rm -f *.aux *.log *.out *.toc *.synctex.gz manuscript.tex
 
-# Clean everything including PDFs
 clean-all: clean
-	cd reports && rm -f *.pdf
-	cd Final && rm -f *.pdf
+	cd MasterThesisSfSVersionSep25 && rm -rf figure cache MasterThesisSfS.pdf
+	-@cd archive/manuscript-article 2>/dev/null && rm -rf figure cache manuscript.pdf
 
-# Help target
 help:
-	@echo "Thesis Build Targets:"
-	@echo "  make all              - Build all reports and manuscript (default)"
-	@echo "  make reports          - Build all reports in reports/"
-	@echo "  make final            - Build manuscript in Final/"
-	@echo "  make manuscript       - Force a full recompile of the manuscript"
-	@echo "  make appendix         - Compile only the appendix (standalone, fast)"
-	@echo "  make clean            - Remove build artifacts (keeps PDFs)"
-	@echo "  make clean-all        - Remove all build artifacts including PDFs"
-	@echo "  make help             - Show this help message"
+	@echo "Thesis build targets:"
+	@echo "  make thesis             - Build the ETH SfS thesis (knitr + latexmk)"
+	@echo "  make pull-output        - Fetch Output/*.RDS from doksum (needed to build)"
+	@echo "  make push-scripts       - Send scripts/ to doksum before running them"
+	@echo "  make archive-manuscript - Rebuild the superseded article version"
+	@echo "  make appendix           - Compile the old standalone appendix"
+	@echo "  make clean              - Remove build artifacts (keeps PDFs)"
+	@echo "  make clean-all          - Remove build artifacts including PDFs"
+	@echo "  make help               - Show this message"

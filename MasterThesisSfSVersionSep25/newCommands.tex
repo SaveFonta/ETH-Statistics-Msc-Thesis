@@ -1,0 +1,62 @@
+%% Macros migrated from Final/newCommands.tex.
+%% Three adaptations were needed because texab.sty (loaded by ETHDAsfs) already
+%% defines \E, \Var and \logit:
+%%   \Var and \logit  : texab's definitions are identical, so the duplicates here
+%%                      were removed and texab's are used.
+%%   \E               : NOT redefined. texab reserves \E for a calligraphic
+%%                      symbol and provides \Erw (bold E) as its expectation
+%%                      operator, so the content uses \Erw directly.
+\DeclareMathOperator{\CV}{CV}
+\DeclareMathOperator{\Lodd}{L}        % L(x) = logit Phi(x)
+\DeclareMathOperator{\Mills}{M}       % Mills ratio M(x) = (1-Phi(x))/phi(x)
+% --- operating-characteristic operators ---
+\DeclareMathOperator{\Pow}{Power}
+\DeclareMathOperator{\condPow}{condPower}
+\DeclareMathOperator{\TIE}{T1E}
+\DeclareMathOperator{\avgPow}{avgPower}
+\DeclareMathOperator{\avgTIE}{avgT1E}
+\DeclareMathOperator{\DOR}{DOR}
+\DeclareMathOperator{\Odds}{Odds}
+\DeclareMathOperator{\EUII}{EUII}
+\newcommand{\DV}{\ensuremath{\mathrm{DV}}}
+\newcommand{\SC}{\ensuremath{\mathrm{SC}}}
+\newcommand{\DC}{\ensuremath{\mathrm{DC}}}
+% --- inline run-in remark label ---
+\newcommand{\Remark}{\textit{Remark:} }
+
+%% ---------------------------------------------------------------------------
+%% Visual breaks for the two recurring asides. Deliberately greyscale and
+%% unframed, to stay close to the ETH layout.
+%%
+%% \runexample opens a running example with a rule and a run-in title. It is a
+%% command rather than an environment on purpose: every running example in the
+%% thesis contains figure floats, and a float cannot be placed inside a box.
+%% \begin{remarkbox} wraps a remark in a light grey panel. Remarks are short and
+%% never contain floats, so a panel is safe there.
+%% ---------------------------------------------------------------------------
+\newcommand{\runexample}{%
+  \par\addvspace{\bigskipamount}%
+  \noindent\rule{\linewidth}{0.4pt}%
+  \par\nobreak\vspace{0.45em}%
+  \noindent\textbf{Running example.}\enspace\ignorespaces}
+
+\newmdenv[
+  hidealllines     = true,
+  backgroundcolor  = black!5,
+  innerleftmargin  = 10pt,
+  innerrightmargin = 10pt,
+  innertopmargin   = 7pt,
+  innerbottommargin= 7pt,
+  skipabove        = \medskipamount,
+  skipbelow        = \medskipamount
+]{remarkbox}
+
+%% ---------------------------------------------------------------------------
+%% \given is for conditioning that appears alongside an = sign, where \mid would
+%% put two competing relations in one formula. \mid is \mathrel{|}, so TeX pads it
+%% with \thickmuskip = 5mu plus 5mu: stretchable glue that widens when a justified
+%% line is stretched, which makes the same formula look different line to line.
+%% \vert is an ordinary symbol and \, is a fixed 3mu space, so this never stretches.
+%% Keep \mid inside \Pr(...), where the wide relation spacing is conventional.
+%% ---------------------------------------------------------------------------
+\newcommand{\given}{\,\vert\,}
