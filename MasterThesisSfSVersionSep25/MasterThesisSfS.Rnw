@@ -48,6 +48,7 @@
 %\usepackage{mathrsfs}% Raph Smith's Formal Script font --> provides \mathscr
 \usepackage[utf8]{inputenc}% <<------- Unicode, *NOT* iso-latin1 !
 \usepackage{lmodern}
+\usepackage{xspace}% so \SC, \DC, \DV keep the space that follows them in text
 \usepackage{enumerate}% Fuer selbstdefinierte Nummerierungen
 %--------
 \usepackage{relsize}%-> \smaller (etc) used here
@@ -159,10 +160,16 @@ literate={<-}{{$\leftarrow$}}1 {~}{{$\sim$}}1}
 ## the master's directory makes every chunk resolve them exactly as in Final/.
 knitr::opts_knit$set(root.dir = getwd())
 library(knitr)
+## cache is off by default on purpose. knitr keys its cache on the chunk code
+## alone, so a cached chunk that reads ../Output/*.RDS keeps showing the old
+## numbers after a script is rerun, with no warning and a clean build. Almost
+## every chunk here reads an RDS, and they are cheap. Caching is switched back
+## on only for the gMAP chunks of the Methodology, which are genuinely
+## expensive and read no results file, so their cache cannot go stale.
 opts_chunk$set(echo = FALSE,
                message = FALSE,
                warning = FALSE,
-               cache = TRUE,
+               cache = FALSE,
                fig.align = "center",
                fig.height = 4,
                dev = 'cairo_pdf' # with this the plots can have greek letters

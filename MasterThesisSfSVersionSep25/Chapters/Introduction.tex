@@ -156,27 +156,41 @@ more patients may be randomized to the control arm after the interim, or the ran
 Comparing designs is not straightforward when they differ in sample size, power, and T1E rate simultaneously, especially when
 the design is adaptive, i.e. the sample size is random. \citet{held2025balancing} address this with the Experimental Unit
 Information Index (EUII), which normalizes the \textit{diagnostic odds ratio} (DOR) by the number of patients a design needs, making
-designs with different stopping rules comparable on a common, per-patient scale.
+designs with different stopping rules comparable on a common scale, per patient.
 
 
-\section{Objectives \note{TO DO}}
-\note{This section is built up progressively as the thesis is revised. Add an objective here once the corresponding chapter is settled.}
+\section{Objectives}
 
-The objectives of this thesis are the following.
+This thesis asks how to balance the evidentiary value a trial design produces against the number of
+patients it requires, when historical information is borrowed on the control arm. The objectives are
+the following.
 
 \begin{itemize}
-    \item Extend the Bayesian fixed design metrics to group sequential designs with robust mixture priors. This covers the
-    average T1E rate of \citet{best_beyond_2025} together with an analogous average power. The latter replaces
-    \textit{assurance}, which averages over uncertainty in the treatment effect rather than over the control parameter and
-    is therefore not the relevant quantity when historical information is borrowed on the control arm.
+    \item Complete the set of average operating characteristics for control arm borrowing. This
+    covers the average T1E rate of \citet{best_beyond_2025} together with an analogous average power.
+    The latter replaces \textit{assurance}, which averages over uncertainty in the treatment effect
+    rather than over the control parameter and is therefore not the relevant quantity when historical
+    information is borrowed on the control arm. Closed form expressions and the properties of both
+    metrics are derived under Normal priors, together with the sample size computation they imply,
+    which for mixture analysis priors admits no closed form.
 
-    \item Use the EUII to evaluate whether the sequential framework delivers higher evidentiary value per unit than the
-    fixed design framework.
+    \item Extend these metrics, and the EUII built from them, from fixed designs to group sequential
+    designs with robust mixture priors, covering both a single criterion and a \textit{dual criterion}
+    and allowing stopping for efficacy and for futility.
+
+    \item Establish what the EUII does and does not measure. In particular, determine whether it can
+    be read as a summary of design quality when the design prior conflicts with the analysis prior,
+    and delimit the setting in which the index is informative.
+
+    \item Use the EUII to evaluate whether the sequential framework delivers higher evidentiary value
+    per patient than the fixed design framework, comparing designs calibrated to a common average T1E
+    rate and average power rather than to a common threshold, following \citet{held2025balancing}.
+
+    \item Quantify how much \textit{drift} a given robustness weight tolerates, by perturbing the
+    design prior through switching, shifting and scaling, and thereby give the choice of that weight
+    an empirical basis rather than a conventional one.
 \end{itemize}
 
-
-Look at the discussion of the paper: Beyond Randomized Clinical Trials: Use of External Controls
-Quite nice
 
 The remainder of the thesis is organized as follows. Chapter~\ref{sec:methodology} develops the methodology: the MAP prior, the average metrics with their closed forms under Normal priors, the extension of the EUII to the borrowing framework, the \textit{dual criterion}, and group sequential designs. Chapter~\ref{sec:Applications} applies the framework to a case study in Crohn's disease, evaluating fixed and sequential designs under aligned and misspecified design priors. Chapter~\ref{sec:conclusion} concludes with a discussion of the findings and directions for future work.
 

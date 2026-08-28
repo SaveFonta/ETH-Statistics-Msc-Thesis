@@ -1,8 +1,8 @@
 \newpage
 \subsection*{Abstract}
 
-\note{TO DO: draft written from the thesis content, revise the wording and the
-claims of the last paragraph once the calibrated comparison is finished.}
+\note{TO DO: the final paragraph states the result of the calibrated comparison and is written once
+Section~\ref{sec:calibrated_comparison} has been read.}
 
 Comparing clinical trial designs is not straightforward when they differ in sample size,
 power and type one error at the same time, and it becomes harder still when the design is
@@ -13,12 +13,16 @@ them on a common per patient scale.
 Borrowing is carried out with meta analytic predictive priors and their robust mixture
 extensions. Designs are assessed through average operating characteristics, which separate
 the analysis prior used to form the posterior from the design prior used to describe the
-plausible true states of nature. Closed form expressions for the average type one error and
-the average power are derived under Normal priors, together with three properties of the
-averaged metrics. Average metrics lie closer to one half than their conditional
+plausible true states of nature. Alongside the average type one error, we define an average
+power, the counterpart appropriate to control arm borrowing, since classical assurance averages
+over uncertainty in the treatment effect rather than over the control parameter. Closed form
+expressions for both metrics are derived under Normal priors, together with three properties of
+the averaged quantities. Average metrics lie closer to one half than their conditional
 counterparts, the average type one error is controlled exactly at the nominal level when the
 design and analysis priors coincide, and it degenerates to one half when the design prior
-becomes vague while borrowing remains active.
+becomes vague while borrowing remains active. Sample sizes are obtained in closed form for a
+single Normal analysis prior and by numerical inversion for mixtures, where no closed form
+exists.
 
 Designs are then compared through the experimental unit information index, which normalises
 the diagnostic odds ratio by the number of patients a design requires and therefore places
@@ -29,9 +33,24 @@ by simulation, using common random numbers so that the average type one error be
 smooth monotone function of the threshold and can be inverted by root finding, with the
 threshold recalibrated at every candidate sample size.
 
+Two findings delimit how the index should be used. Under a design prior that conflicts with the
+analysis prior, the index barely moves even though power and type one error move substantially,
+because it is a ratio of odds and the two shifts largely cancel. A design that is badly optimistic
+and one that is badly underpowered can therefore reach nearly the same value, so sensitivity to
+prior conflict is better assessed through the average operating characteristics themselves. Under
+correctly specified priors the index does discriminate. Every sequential design considered lies
+above its fixed counterpart, futility stopping raises it further while leaving the error rates
+almost untouched, and the two criteria cross, with the dual criterion ahead for effects moderately
+above the decision value and the single criterion ahead for large ones. Adding interim analyses
+raises the index but inflates the average type one error, which is why designs are finally compared
+after calibration to common error rates rather than to a common threshold.
+
+\note{TO DO: one closing paragraph reporting what the calibrated comparison shows, and the resulting
+recommendation.}
+
 The methods are illustrated throughout on a running example in Crohn's disease.
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "MasterThesisSfS"
-%%% End: 
+%%% End:
