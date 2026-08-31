@@ -1,11 +1,11 @@
 # =============================================================================
 # STEP 1 - Calibrate different boundary shapes to a common avgPower and avgT1E
 # =============================================================================
-# Fixes the number of looks (one interim + final, K = 2) and instead varies
+# Fixes the number of looks (two interims + final, K = 3) and instead varies
 # the *shape* of the boundary across that fixed schedule: Flat (Pocock-style
 # constant threshold, calibrate_design's default), O'Brien-Fleming,
 # Haybittle-Peto, a power-family spending shape, and the Shi & Yin (2019)
-# interpolation style. All builders live in 00_functions_examples.R.
+# interpolation style. All builders live in 00_boundary_builders.R.
 #
 # Every shape is calibrated so that
 #   avgT1E   = target_t1e                (via the shape's own parameter)
@@ -22,9 +22,9 @@
 # The EUII comparison across delta is done later, in 10_boundary_shapes_euii_comparison.R.
 # =============================================================================
 
-library(dplyr)
 source("scripts/00_shared_setup.R")            # sigma, p_MAP, p_vague, delta_MCID, DV
-source("scripts/00_functions_examples.R")      # sources 00_functions.R too, plus the builders
+source("scripts/00_functions.R")               # loads dplyr itself
+source("scripts/00_boundary_builders.R")       # OBF, Haybittle-Peto, power family, Shi & Yin builders
 
 out_dir <- "Output/09_calibrate_boundary_shapes"
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
@@ -36,15 +36,19 @@ dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 target_t1e   <- 0.05
 target_power <- 0.90
 
-n_sim_calib <- 5e4    # sims per evaluation inside the calibration search
-n_sim_check <- 2e5    # sims for the final verification of each design
+n_sim_calib <- 1e6    # sims per evaluation inside the calibration search
+n_sim_check <- 2e6    # sims for the final verification of each design
 mc_seed     <- 123
-cores       <- 6      # each shape's calibration is independent, run them in parallel
+cores       <- 12     # each shape's calibration is independent, run them in parallel
 
-base_schedule <- list(n1 = c(20, 40), n2 = c(10, 20))   # one interim, same as 07's "One interim"
+base_schedule <- list(n1 = c(13, 27, 40), n2 = c(7, 13, 20))   # two interims, same as 07's "Two interims"
+# Cumulative totals at the three looks are 20, 40 and 60, so the information
+# fractions are exactly 1/3, 2/3 and 1, which is what the builders below assume.
+# One interim leaves a shape only a single threshold to set, so the shapes come
+# out nearly indistinguishable; two interims give each shape room to differ.
 
 # Shi & Yin's parameter u lives on a different scale than the other builders'
-# posterior probability p, see 00_functions_examples.R section 7. Two
+# posterior probability p, see 00_boundary_builders.R section 7. Two
 # adjustments on top of the generic builder_sy_1int (which assumes a raw
 # nominal alpha = 0.025, half our target_t1e):
 #   - build the nominal boundary at alpha = target_t1e directly, so u = 0
@@ -57,13 +61,13 @@ base_schedule <- list(n1 = c(20, 40), n2 = c(10, 20))   # one interim, same as 0
 #     must allow u < 0 (loosening below the nominal boundary) to attain
 #     target_t1e = 0.05, and must stop short of u = 1 (threshold = 1 is a
 #     degenerate, unsolvable decision boundary).
-builder_sy_matched <- make_builder_sy_obf(c(1 / 2, 1), alpha = target_t1e)
+builder_sy_matched <- make_builder_sy_obf(c(1 / 3, 2 / 3, 1), alpha = target_t1e)
 
 shapes <- list(
   "Flat"           = list(builder = NULL,               p_interval = c(0.6, 0.999)),
-  "OBF"            = list(builder = builder_obf_1int,    p_interval = c(0.6, 0.999)),
-  "Haybittle-Peto" = list(builder = builder_hp_1int,     p_interval = c(0.6, 0.999)),
-  "Power-family"   = list(builder = builder_pow_1int,    p_interval = c(0.6, 0.999)),
+  "OBF"            = list(builder = builder_obf_2int,    p_interval = c(0.6, 0.999)),
+  "Haybittle-Peto" = list(builder = builder_hp_2int,     p_interval = c(0.6, 0.999)),
+  "Power-family"   = list(builder = builder_pow_2int,    p_interval = c(0.6, 0.999)),
   "Shi & Yin"      = list(builder = builder_sy_matched,  p_interval = c(-5, 0.999))
 )
 shape_names <- names(shapes)
@@ -73,7 +77,7 @@ shape_names <- names(shapes)
 # Joint calibration, every shape
 # ---------------------------------------------------------------------------
 cat("=============================================================\n")
-cat("Joint (n, p) calibration, every boundary shape, K = 2 fixed\n")
+cat("Joint (n, p) calibration, every boundary shape, K = 3 fixed\n")
 cat("=============================================================\n")
 cat(length(shapes), "shapes, cores =", if (.Platform$OS.type != "unix") 1L else cores, "\n")
 

@@ -15,8 +15,8 @@ library(patchwork)
 library(ggh4x)
 @  
  
-\section{Trial Setup and Original Designs}
-\label{sec:application1}
+\section{Trial Setup}
+\label{sec:trial_setup}
 
 We evaluate the design of a Proof of Concept (PoC) study in Crohn’s disease, an inflammatory bowel disease. This is the trial behind the Running Example used throughout Chapter~\ref{sec:methodology} to illustrate the closed form results. The primary endpoint is the change from baseline to week 6 in the Crohn’s Disease Activity Index (CDAI), a
 continuous measure where lower scores indicate clinical improvement.
@@ -76,10 +76,10 @@ Therefore, we will compute $\avgTIE$, $\avgPow$, and $\EUII$ across three design
 \paragraph{Analysis Priors ($\pi_A$)}
 The analysis prior $\pi_A(\theta_C)$ determines the degree of historical information incorporated into the final posterior decision:
 \begin{enumerate}
-  \item \textbf{Normal MAP:} A single component Normal prior obtained using the MAP approach on historical data: 
+  \item \textbf{Normal MAP:} A single component normal prior obtained using the MAP approach on historical data: 
   $$\pi_{\text{MAP},1}(\theta_C) \sim \mathcal{N}(-50,\, 88^2/20).$$
    This is the prior used for the closed form Running Example of Chapter~\ref{sec:methodology}. It is not evaluated separately in the Monte Carlo comparisons of this section.
-  \item \textbf{3 components MAP:} A mixture of three Normals obtained using the MAP approach:
+  \item \textbf{3 components MAP:} A mixture of three normals obtained using the MAP approach:
   $$\pi_{\text{MAP},3}(\theta_C) = 0.48\,\mathcal{N}(-52.5,\,21.2^2) + 0.46\,\mathcal{N}(-47.5,\,7.8^2) + 0.06\,\mathcal{N}(-50.4,\,48.2^2).$$
   \item \textbf{\textit{Robust MAP} ($\omega \in \{0.2, 0.35, 0.5\}$):} Three robust mixture priors constructed by assigning a weight $\omega$ to a noninformative component and $(1-\omega)$ to the 3 components MAP prior:
   $$\pi_{\text{robust}}(\theta_C) = (1 - \omega)\,\pi_{\text{MAP},3}(\theta_C) + \omega\,\mathcal{N}(\theta_C;\,-50,\,88^2).$$
@@ -107,6 +107,9 @@ The design prior $\pi_D(\theta_C)$ represents the assumed true data generating p
 \end{enumerate}
 
 
+
+\section{Original Designs}
+\label{sec:application1}
 
 \subsection{Fixed Design}
 \label{sec:fixed_design}
@@ -290,9 +293,9 @@ p_dc <- pow_delta_panel(dplyr::filter(df_dc, delta >= 50), "DC", "average power"
 @
  
 \paragraph{Sample size computation}
-The closed form of Equation~\eqref{eq:n_c_formula} applies only to a single Normal analysis prior:
+The closed form of Equation~\eqref{eq:n_c_formula} applies only to a single normal analysis prior:
 for the mixture priors used here the posterior is itself a mixture, and the quadratic in $n_C$ cannot be obtained.
-The average power is nonetheless computable for any Normal mixture by numerical integration (see Appendix~\ref{app:computational_framework}
+The average power is nonetheless computable for any normal mixture by numerical integration (see Appendix~\ref{app:computational_framework}
 for details), and it is monotone in $n_C$, so the smallest adequate
 sample size follows from a bisection over the integers. Table~\ref{tab:samplesize_mix} reports it for a
 target average power of $80\%$ at $\delta = 60$ and allocation ratio $r_T = 2$, with the design prior
@@ -317,7 +320,7 @@ tab_ss <- data.frame(
 ## values quoted in the surrounding text
 g <- function(p, col) tab[[col]][tab$prior == p]
 nc_closed   <- formatC(ss$n_closed, format = "f", digits = 2)
-nc_norm     <- g("1 component Normal", "n_C")
+nc_norm     <- g("1 component normal", "n_C")
 nc_map      <- g("MAP", "n_C")
 extra_02    <- g("robust (w=0.2)", "n_C") - nc_map
 extra_05    <- g("robust (w=0.5)", "n_C") - nc_map
@@ -345,10 +348,10 @@ it once in the analysis and once in the plan.
 \end{comment}
 
 
-The single Normal closed form of Equation~\eqref{eq:n_c_formula}, obtained in Section~\ref{subsec:samplesize_closedform}, 
+The single normal closed form of Equation~\eqref{eq:n_c_formula}, obtained in Section~\ref{subsec:samplesize_closedform}, 
 assumes exact alignment of the priors resulting in 
-$n_C \approx \Sexpr{nc_closed}$, hence \Sexpr{nc_norm} patients. The single Normal row of Table~\ref{tab:samplesize_mix} is instead 
-computed under $\pi_D = \pi_{\text{MAP}}$, like every other row, and the two agree because the single Normal 
+$n_C \approx \Sexpr{nc_closed}$, hence \Sexpr{nc_norm} patients. The single normal row of Table~\ref{tab:samplesize_mix} is instead 
+computed under $\pi_D = \pi_{\text{MAP}}$, like every other row, and the two agree because the single normal 
 is itself fit to approximate $\pi_{\text{MAP}}$, so aligning with it or with $\pi_{\text{MAP}}$ gives the same 
 integer sample size.
 
@@ -358,7 +361,7 @@ and the well known exact control result applies \citep{best_beyond_2025}. The va
 the design reduces to the frequentist test whose T1E rate is $1-p$ whatever the design prior. The remaining
 rows fall below nominal for a common reason: whenever the analysis prior $\pi_A$ is wider than the design
 prior $\pi_{\text{MAP}}$, that extra width raises the decision
-threshold, making success harder to declare under both hypotesis. This is marginal for the single Normal, whose spread ($\text{sd} \approx 19.7$)
+threshold, making success harder to declare under both hypotesis. This is marginal for the single normal, whose spread ($\text{sd} \approx 19.7$)
 is only slightly wider than $\pi_{\text{MAP}}$'s ($19.5$), and substantial for the wider robust rows. Robustification therefore never costs 
 $\avgTIE$ and can be priced in patients: 
 relative to the full MAP, a weight of $\omega = 0.2$ costs
@@ -378,7 +381,7 @@ and as we will do again for the sequential designs in Sections~\ref{sec:one_inte
 \textit{misspecified} scenarios, in place of $\pi_{\text{MAP}}$.
 
 Beyond switching, Figure~\ref{fig:plot_t1e} already presents two ways to change the design prior in order to create conflict with the analysis
-prior in the single Normal closed form: a \textit{location shift} ($\mu_{A,C} \neq \mu_{D,C}$) and a \textit{scale shift}
+prior in the single normal closed form: a \textit{location shift} ($\mu_{A,C} \neq \mu_{D,C}$) and a \textit{scale shift}
 ($\sigma_{A,C} \neq \sigma_{D,C}$). Table~\ref{tab:switch_vs_shift} extends both to the MAP mixture: \textit{shifting}
 slides every mean component of $\pi_{\text{MAP}}$ by $d$ while the weights and
 component variances stay fixed, and \textit{scaling} multiplies by a factor $s$ every component $sd$ while the means and weights stay fixed. 
@@ -437,7 +440,7 @@ Scaling behaves differently. Tripling $\pi_{\text{MAP}}$'s $sd$ reaches only $\a
 $\omega = 0$, below even the mildest drift considered, $\Sexpr{d15_0}$ at $d = -15$. 
 Thus, being wrong about how uncertain $\theta_C$ is costs less than being wrong about where it is.
 
-As we increase the robustification (the $\omega$ weight), the avgT1E rate decreases: going from $\omega = 0$ to
+As we increase the robustification (the $\omega$ weight), the avgT1E decreases: going from $\omega = 0$ to
 $\omega = 0.50$ the \textit{skeptical} column 
 halves from \Sexpr{skept_0} to \Sexpr{skept_05}, the $d = -30$ column falls from \Sexpr{d30_0} to \Sexpr{d30_05}, 
 and the $s = 3$ column from \Sexpr{s3_0} to \Sexpr{s3_05}. 
@@ -463,23 +466,23 @@ rises with $\delta$ in both designs, the ordering in $\omega$ is strict, so more
 borrowing always gives a higher EUII, and the Dirac design prior, which fixes the
 truth at the prior mean, is the upper bound.
 Under conflicting priors the EUII curves stay close to the aligned ones, even though the underlying
-avgT1E and avgPower move (Figure~\ref{fig:plot_avg_both}), so this is where the EUII must be read with
+avgT1E and avgPower move (Figure~\ref{fig:plot_avg_both}), so this is where the EUII must be interpreted with
 care. It is a ratio of odds, and a design prior that disagrees with the analysis prior shifts the
 avgPower and the avgT1E in the same direction, so the two shifts largely cancel out in the ratio.
 
-The skeptical prior inflates both: in the \SC row at $\delta = 60$ under the MAP analysis prior, avgT1E
+The skeptical prior also inflates both: in the \SC row at $\delta = 60$ under the MAP analysis prior, avgT1E
 rises to about $21\%$ and avgPower to about $97\%$, yet the EUII stays close to the aligned value
 ($1.08$ against $1.10$). The misspecified prior deflates both instead: in the same \SC row at $\delta =
 60$, avgT1E drops to about $1\%$ and avgPower to about $65\%$ (against $93\%$ aligned), yet again the
 EUII lands close to the aligned value ($1.09$ against $1.10$).
 
 So a design that is badly underpowered (misspecified) and one that is badly optimistic (skeptical) can
-land at nearly the same EUII, and the same pattern holds in both the \SC and \DC rows.
+lead to nearly the same EUII, and the same pattern holds in both the \SC and \DC rows.
 
 For this reason, we suggest assessing the sensitivity of a design under prior conflict (and the choice of the
 robustness weight $\omega$) using avgPower and avgT1E. The EUII should be instead used for comparing 
-design choices, such as fixed against different types of sequential, under a correctly 
-specified prior, where the differences between designs are attributable to the designs themselves. 
+design choices, such as fixed against different types of sequential, under aligned design and analysis prior, 
+where the differences between designs are attributable to the designs themselves. 
 
 The bottom row of Figure~\ref{fig:plot_euii_both} shows this comparison through the ratio
 $\EUII^{\DC} / \EUII^{\SC}$. Under the aligned design priors the \DC is slightly larger for moderate effects while the \SC
@@ -880,8 +883,8 @@ en2    <- round(go2_v("SC + Futility", 0, "EN"))
 @
 
 Figure~\ref{fig:plot_seq2_oc} reports the avgT1E and the avgPower at $\delta = 60$. As with one interim, futility leaves both error
-rates untouched. The price of an additional interim is clear: under the aligned priors the \SC moves from $\Sexpr{t1e1_sc}\%$ with one interim to
-$\Sexpr{t1e2_sc}\%$ with two, and the \DC from $\Sexpr{t1e1_dc}\%$ to $\Sexpr{t1e2_dc}\%$.
+rates untouched. Adding a second interim raises the avgT1E under the aligned priors, from $\Sexpr{t1e1_sc}\%$ to
+$\Sexpr{t1e2_sc}\%$ for the \SC and from $\Sexpr{t1e1_dc}\%$ to $\Sexpr{t1e2_dc}\%$ for the \DC.
 
 <<plot_seq2_oc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="Two interim analyses: avgT1E (top) and avgPower at $\\delta = 60$ (bottom) across all analysis prior and design prior combinations, one panel per design. Color encodes the analysis prior (vague shown dashed). The red line marks the nominal $0.05$.">>=
 
@@ -1092,7 +1095,7 @@ bottom_panel2 <- p_ess2 +
  
 \paragraph{Conclusion}
 Adding another interim increases the EUII in every case, but this comes at the cost of an inflated
-avgT1E. For example, the DC arrives at the nominal $5\%$ and loses the conservatism that justified it in the fixed design. 
+avgT1E. For example, the avgT1E of the \DC rises to the nominal $5\%$, losing the conservatism that justified it in the fixed design.
 Thus, one may argue that the comparison is not fair. For this reason in the next Section, we follow the approach from 
 \citet{held2025balancing}, comparing different designs calibrated at the same avgT1E and avgPower. 
 
@@ -1102,68 +1105,419 @@ Thus, one may argue that the comparison is not fair. For this reason in the next
 
 \section{Comparison at Equal Error Rates \note{TO DO}}
 \label{sec:calibrated_comparison}
-To compare different design types at the same Error Rates, we follow al
+The comparisons of Section~\ref{sec:one_interim} and Section~\ref{sec:two_interim} hold the decision
+threshold fixed at its nominal value and let the error rates move, so the designs they compare do not
+sit at the same avgT1E. A design that spends more type one error buys avgPower with it, and the EUII
+rewards that purchase, so the ordering observed there confounds the stopping structure with the error
+rate it is spending. This Section removes the confounding by recalibrating every design to a common
+avgT1E and a common avgPower before its EUII is read, following \citet{held2025balancing}.
 \note{TO DO: polish the opening}
-Since the EUII comparison presupposes designs calibrated to common error rates, and since the decision value caps the attainable avgT1E of the DC below that of the SC, we compare sequential designs within each criterion only: sequential SC designs against the fixed SC design at its error rates, and sequential DC designs against the fixed DC design at its achieved error rates. The two criteria address different claims, so a direct comparison between them is deferred to the ratio analysis of Section~\ref{sec:fixed_design}, which characterizes their division of labor rather than ranking them.
-Write an algorithm box for the procedure. 
 
- 
+We vary two aspects of the design in turn, each with the other held fixed. Section~\ref{sec:calibrated_sc}
+varies the number of interim analyses at a fixed boundary shape, and Section~\ref{sec:calibrated_shapes}
+varies the shape of the boundary at a fixed number of looks. Section~\ref{sec:calibrated_futility} then
+takes the calibrated designs as they stand and adds a futility rule on top, without recalibrating.
+Throughout, the analysis prior and the design prior are both $\pi_{\text{MAP}}$, so the calibration
+happens under alignment, and we restrict the comparison to the \SC. The same procedure applies to the
+\DC and to a robust analysis prior: calibrate avgT1E not to a fixed nominal value but to the value
+already achieved by the fixed design of that family, and avgPower to the same target as here. We do
+not pursue this further.
+\note{TO DO: write an algorithm box for the calibration procedure.}
+
+
 \subsection{Calibrated Designs}
 \label{sec:calibrated_designs}
 
 \paragraph{Calibration Targets}
-\note{TO DO: avgT1E of 0.05 and avgPower of 0.90 at $\delta = 60$ for the SC family. For the DC family the achieved error rates of the fixed DC design. State the attainability policy for the DC here once. Describe the calibration procedure here as well: the common threshold $p$ is found by root finding on the avgT1E with common random numbers, the schedule is scaled proportionally (look fractions and allocation ratio fixed) to the smallest maximum sample size reaching the target avgPower, with $p$ recalibrated at every candidate size. For the DC the attainable avgT1E shrinks with $n$ (the DV cap), so the target may become unattainable. Include the DC then SC hybrid of Section~\ref{sec:one_interim} as an additional contender via a decisions builder, since its unspent type one error should buy a more liberal calibrated threshold.}
+\note{TO DO: avgT1E of 0.05 and avgPower of 0.90 at $\delta = 60$. Describe the calibration procedure here: the common threshold $p$ is found by root finding on the avgT1E with common random numbers, the schedule is scaled proportionally (look fractions and allocation ratio fixed) to the smallest maximum sample size reaching the target avgPower, with $p$ recalibrated at every candidate size.}
+
+<<cal_setup, include=FALSE>>=
+cal_des <- readRDS("../Output/07_calibrate_designs/designs.RDS")
+cal_euii <- readRDS("../Output/08_calibrated_euii_comparison/euii.RDS")
+
+cal_t1e_tgt <- formatC(cal_des$target_t1e,   format = "f", digits = 2)
+cal_pow_tgt <- formatC(cal_des$target_power, format = "f", digits = 2)
+
+gcal <- function(nm, what) {
+  d <- cal_des$designs_cal[[nm]]
+  switch(what,
+         n    = max(d$n1_seq) + max(d$n2_seq),
+         p    = d$p,
+         t1e  = d$achieved_t1e,
+         pow  = d$achieved_power)
+}
+@
 
 \paragraph{Verification}
-\note{TO DO: independent check at a fresh seed. Anchor table with $n_{\max}$, threshold $p$, avgT1E, avgPower and expected sample size for every calibrated design of both families.}
+Every calibration is re-evaluated at a fresh seed and at a higher simulation size than the search
+itself uses, so that the accepted design is confirmed independently of the draws that selected it.
+Table~\ref{tab:calibrated_sc} reports the result for the \SC family. The three designs sit at the
+common targets to within Monte Carlo error, so the EUII differences that follow are attributable to
+the stopping structure alone.
+
+<<tab_calibrated_sc, echo=FALSE, results='asis', message=FALSE, warning=FALSE>>=
+sc_looks <- c("Fixed", "One interim", "Two interims")
+sc_nms   <- paste(sc_looks, "SC", sep = " | ")
+
+oc_sc <- as.data.frame(cal_euii$df_euii)
+oc_sc <- oc_sc[oc_sc$prior_H1 == 0.5 & oc_sc$Criterion == "SC", ]
+en_at <- function(nm, dl) {
+  ov <- cal_euii$res_cal[[nm]][[paste0("delta.", dl)]]$Overall
+  ov[["EN_t"]] + ov[["EN_c"]]
+}
+euii_at <- function(nm, dl) oc_sc$EUII[oc_sc$Design == nm & oc_sc$Delta == dl]
+
+## The operating characteristics are read from the evaluation sweep rather than
+## from the calibration search: the search evaluates one delta at a time while
+## the sweep does the whole grid in one call, so the two consume the random
+## stream differently and disagree in the fourth decimal. Quoting the sweep
+## keeps this table consistent with Table~\ref{tab:calibrated_futility}, which
+## has the same designs in its first rows.
+oc_col <- function(nm, dl, col) oc_sc[[col]][oc_sc$Design == nm & oc_sc$Delta == dl]
+
+tab_sc <- data.frame(
+  "Design"                         = sc_looks,
+  "$n_{\\max}$"                    = vapply(sc_nms, gcal, numeric(1), "n"),
+  "$p$"                            = formatC(vapply(sc_nms, gcal, numeric(1), "p"),      format = "f", digits = 4),
+  "$\\avgTIE$"                     = formatC(vapply(sc_nms, oc_col, numeric(1), 0,  "T1E"),   format = "f", digits = 4),
+  "$\\avgPow$"                     = formatC(vapply(sc_nms, oc_col, numeric(1), 60, "Power"), format = "f", digits = 4),
+  "$\\Erw[N]$"                     = formatC(vapply(sc_nms, en_at, numeric(1), 60),      format = "f", digits = 1),
+  "EUII"                           = formatC(vapply(sc_nms, euii_at, numeric(1), 60),    format = "f", digits = 4),
+  check.names = FALSE
+)
+
+kable(tab_sc, format = "latex", booktabs = TRUE, escape = FALSE, align = "lcccccc",
+      row.names = FALSE,
+      caption = paste0("Calibrated \\SC designs. Every design is tuned to $\\avgTIE = ",
+                       cal_t1e_tgt, "$ and $\\avgPow = ", cal_pow_tgt,
+                       "$ at $\\delta = 60$, so they differ only in the number of looks. ",
+                       "$\\Erw[N]$ and the EUII are quoted at $\\delta = 60$, the latter at ",
+                       "$\\Pr(H_1) = 0.5$."),
+      label = "calibrated_sc") |>
+  kable_styling(latex_options = "hold_position")
+@
 
 \subsection{Single Criterion: the Effect of the Number of Interim Analyses}
 \label{sec:calibrated_sc}
 
 \paragraph{EUII across Effect Sizes}
-\note{TO DO: main figure, EUII versus $\delta$ with $\Pr(H_1)$ bands, one curve per number of looks.}
+
+<<sc_euii_vals, include=FALSE>>=
+eu_fix <- formatC(euii_at("Fixed | SC", 60),        format = "f", digits = 3)
+eu_1   <- formatC(euii_at("One interim | SC", 60),  format = "f", digits = 3)
+eu_2   <- formatC(euii_at("Two interims | SC", 60), format = "f", digits = 3)
+eu_spread_looks <- euii_at("Two interims | SC", 60) - euii_at("Fixed | SC", 60)
+eu_spread_looks_f <- formatC(eu_spread_looks, format = "f", digits = 3)
+
+pow_fix_cal <- formatC(oc_col("Fixed | SC", 60, "Power"), format = "f", digits = 3)
+en_fix60 <- formatC(en_at("Fixed | SC", 60),        format = "f", digits = 1)
+en_1_60  <- formatC(en_at("One interim | SC", 60),  format = "f", digits = 1)
+en_2_60  <- formatC(en_at("Two interims | SC", 60), format = "f", digits = 1)
+en_1_0   <- formatC(en_at("One interim | SC", 0),   format = "f", digits = 1)
+en_2_0   <- formatC(en_at("Two interims | SC", 0),  format = "f", digits = 1)
+@
+
+Figure~\ref{fig:plot_cal_sc} shows the EUII of the three calibrated \SC designs as a function of
+$\delta$, with a band spanning $\Pr(H_1) \in \{0.01, 0.1, 0.5\}$. The ordering is monotone in the
+number of looks at every effect size: at $\delta = 60$ the fixed design reaches $\Sexpr{eu_fix}$, one
+interim $\Sexpr{eu_1}$ and two interims $\Sexpr{eu_2}$. Since the three designs now sit at the same
+avgT1E and the same avgPower, their $\DOR$ at the calibration point coincides, so this ordering is
+entirely a statement about the number of patients each design spends to buy that evidence.
+
+The comparison is if anything conservative towards the fixed design. The integer sample size search
+leaves it slightly above the power target, at $\Sexpr{pow_fix_cal}$ against $\Sexpr{cal_pow_tgt}$ for
+the other two, which inflates its $\DOR$ relative to theirs, and it still ranks last.
+
+<<plot_cal_sc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=5, fig.width=9, dev='cairo_pdf', fig.cap="EUII of the calibrated SC designs across $\\delta$, one curve per number of looks. Lines are drawn at $\\Pr(H_1) = 0.5$ and the bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$. All three designs share the same avgT1E and the same avgPower at $\\delta = 60$.">>=
+band_sc <- cal_euii$band |>
+  dplyr::filter(Criterion == "SC") |>
+  dplyr::mutate(Looks = factor(Looks, levels = sc_looks))
+
+looks_cols <- c("Fixed" = col_cond, "One interim" = col_sc, "Two interims" = col_dc)
+
+ggplot(band_sc) +
+  geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Looks), alpha = 0.25) +
+  geom_line(aes(x = Delta, y = mid, color = Looks), linewidth = 1.1) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.4) +
+  geom_vline(xintercept = 60, linetype = "dotted", color = "grey40", linewidth = 0.4) +
+  scale_color_manual(values = looks_cols) +
+  scale_fill_manual(values = looks_cols, guide = "none") +
+  labs(x = expression(delta), y = "EUII") +
+  my_theme
+@
 
 \paragraph{Expected Sample Size and Stopping Patterns}
-\note{TO DO: where trials stop under the null and at the MCID, the mechanism behind the EUII ordering.}
+The mechanism behind the ordering is visible in the expected sample size. At $\delta = 60$ the fixed
+design always enrolls its full $\Sexpr{en_fix60}$ patients, while one interim expects
+$\Sexpr{en_1_60}$ and two interims $\Sexpr{en_2_60}$, because a treatment that works is often
+recognised at an early look and the trial stops there. The saving is what the EUII prices.
 
-\subsection{Dual Criterion: the Effect of the Number of Interim Analyses}
-\label{sec:calibrated_dc}
-
-\paragraph{EUII across Effect Sizes}
-\note{TO DO}
-
-\paragraph{Ratio to the Single Criterion}
-\note{TO DO: sequential division of labor, check whether the crossing at $\delta = \DV$ survives interim looks. Drop this paragraph if not pursued.}
-
-\subsection{Futility Stopping}
-\label{sec:calibrated_futility}
-
-\paragraph{Recalibrated Designs}
-\note{TO DO: futility rule inside the calibration, so the with futility designs meet the common targets. This is the primary comparison.}
-
-\paragraph{Futility Added to a Finished Design}
-\note{TO DO: futility bolted onto the already calibrated designs. Report the shifted error rates honestly next to the EUII and expected sample size.}
+Under the null the picture reverses. Without a futility rule an efficacy boundary is almost never
+crossed when the treatment does not work, so the trial runs to its full size: the same two designs
+expect $\Sexpr{en_1_0}$ and $\Sexpr{en_2_0}$ patients at $\delta = 0$, close to their respective
+$n_{\max}$. An efficacy only sequential design therefore saves patients when the treatment works and
+saves none when it does not, which is precisely the asymmetry that Section~\ref{sec:calibrated_futility}
+addresses.
 
 \subsection{Boundary Shapes}
 \label{sec:calibrated_shapes}
 
 \paragraph{Shapes Considered}
-\note{TO DO: constant threshold (the Pocock analogue), O'Brien Fleming, power family, Haybittle Peto. Each shape is calibrated as in Section~\ref{sec:calibrated_designs}, tuning a single overall level while the shape fixes the relative strictness across looks.}
+Section~\ref{sec:calibrated_sc} varies the number of looks while holding the boundary flat, so the
+threshold is the same at every look. Here the number of looks is held fixed and the shape of the
+boundary is varied instead. Five shapes are compared: the flat threshold of the previous Section,
+which is the analogue of \citet{pocock_group_1977}, the \citet{obrien_multiple_1979} boundary, the
+Haybittle Peto boundary, a power family spending shape, and the interpolation of
+\citet{shi2019control}. Each shape fixes the relative strictness across looks and leaves one scalar
+free, and that scalar is calibrated exactly as in Section~\ref{sec:calibrated_designs}. Holding the
+number of looks fixed here and the shape fixed there keeps the two comparisons from being confounded
+with one another.
+
+The comparison is run at $K = 3$, two interims and the final analysis, with cumulative totals of
+$20$, $40$ and $60$ patients so that the information fractions are $1/3$, $2/3$ and $1$. This is the
+number of looks actually used throughout Section~\ref{sec:two_interim}, following the original trial
+protocol, so it is the schedule the thesis has already committed to rather than one chosen for this
+comparison alone. It also gives the shapes room to differ in the first place: with a single interim
+the design is barely distinguishable from the fixed one, since there is only one look at which a
+boundary can act at all, so every shape would reduce to the same single threshold and none of them
+would have any room to express its own logic. Two interims give each shape a boundary it can
+genuinely express.
 
 \paragraph{Results}
-\note{TO DO: EUII, $n_{\max}$ and expected sample size per shape, with and without futility, and the verdict at the MCID with the full EUII curve shown.}
 
-\subsection{Timing of the Interim Analysis}
-\label{sec:calibrated_timing}
-\note{TO DO: optional. One interim, constant threshold, EUII as a function of the interim fraction (for example 25, 50 and 75 percent). Cut this subsubsection if not pursued.}
+<<shape_vals, include=FALSE>>=
+sh_des  <- readRDS("../Output/09_calibrate_boundary_shapes/designs.RDS")
+sh_euii <- readRDS("../Output/10_boundary_shapes_euii_comparison/euii.RDS")
+sh_nms  <- sh_des$shape_names
 
+gsh <- function(nm, what) {
+  d <- sh_des$designs_cal[[nm]]
+  switch(what,
+         n   = max(d$n1_seq) + max(d$n2_seq),
+         t1e = d$achieved_t1e,
+         pow = d$achieved_power)
+}
+sh_en   <- function(nm) {
+  ov <- sh_euii$res_cal[[nm]][[paste0("delta.", sh_des$delta_MCID)]]$Overall
+  ov[["EN_t"]] + ov[["EN_c"]]
+}
+sh_eu   <- function(nm) {
+  b <- sh_euii$band
+  b$mid[as.character(b$Shape) == nm & b$Delta == sh_des$delta_MCID]
+}
+## as in Table~\ref{tab:calibrated_sc}, quote the evaluation sweep and not the
+## calibration search, so the error rates match the EUII column beside them
+sh_oc_df <- as.data.frame(sh_euii$df_euii)
+sh_oc_df <- sh_oc_df[sh_oc_df$prior_H1 == 0.5, ]
+sh_oc <- function(nm, dl, col) {
+  sh_oc_df[[col]][as.character(sh_oc_df$Shape) == nm & sh_oc_df$Delta == dl]
+}
 
-\section{Sensitivity Analyses}
-\label{sec:sensitivity}
-NON PENSO SIA NECESSARIO
-\paragraph{Misspecified standard deviation}
-\note{TO DO: re evaluate the winning design generating the data with $\sigma$ equal to 70 and 110 while the analysis assumes 88.}
+## number of looks the shape comparison is run at, read from the schedule
+## rather than hardcoded, so the caption cannot go stale if 09 is rerun at a
+## different K
+K_sh <- length(sh_des$designs_cal[[sh_nms[1]]]$n2_seq)
 
-\paragraph{Prior Data Conflict}
-\note{TO DO: the winning design under a shifted design prior, reported through avgT1E and avgPower, not the EUII, consistent with the convention of Section~\ref{sec:fixed_design}.}
+sh_eu_all <- vapply(sh_nms, sh_eu, numeric(1))
+sh_best   <- names(which.max(sh_eu_all))
+sh_worst  <- names(which.min(sh_eu_all))
+sh_spread <- max(sh_eu_all) - min(sh_eu_all)
+
+sh_spread_f <- formatC(sh_spread, format = "f", digits = 3)
+sh_ratio_f  <- formatC(eu_spread_looks / sh_spread, format = "f", digits = 1)
+
+## the EUII ordering tracks the expected sample size almost exactly, which is
+## the mechanism the paragraph below reports
+sh_en_all  <- vapply(sh_nms, sh_en, numeric(1))
+sh_corr_f  <- formatC(cor(sh_eu_all, sh_en_all), format = "f", digits = 2)
+
+hp_en_f    <- formatC(sh_en("Haybittle-Peto"), format = "f", digits = 1)
+flat_en_f  <- formatC(sh_en("Flat"),           format = "f", digits = 1)
+hp_eu_f    <- formatC(sh_eu("Haybittle-Peto"), format = "f", digits = 3)
+flat_eu_f  <- formatC(sh_eu("Flat"),           format = "f", digits = 3)
+obf_eu_f   <- formatC(sh_eu("OBF"),            format = "f", digits = 3)
+pow_eu_f   <- formatC(sh_eu("Power-family"),   format = "f", digits = 3)
+
+## the flat boundary buys its lower expected size with a larger maximum
+flat_nmax  <- gsh("Flat", "n")
+obf_nmax   <- gsh("OBF",  "n")
+nmax_gap   <- flat_nmax - obf_nmax
+@
+
+Table~\ref{tab:calibrated_shapes} reports the five calibrated shapes. All of them meet the common
+targets, so as before the EUII differences reflect the patients spent rather than the error rates.
+
+<<tab_calibrated_shapes, echo=FALSE, results='asis', message=FALSE, warning=FALSE>>=
+## escape=FALSE below, so the ampersand in "Shi & Yin" must be escaped by hand
+## or LaTeX reads it as a column separator
+tab_sh <- data.frame(
+  "Shape"        = gsub("&", "\\\\&", sh_nms),
+  "$n_{\\max}$"  = vapply(sh_nms, gsh, numeric(1), "n"),
+  "$\\avgTIE$"   = formatC(vapply(sh_nms, sh_oc, numeric(1), 0,  "T1E"),   format = "f", digits = 4),
+  "$\\avgPow$"   = formatC(vapply(sh_nms, sh_oc, numeric(1), 60, "Power"), format = "f", digits = 4),
+  "$\\Erw[N]$"   = formatC(vapply(sh_nms, sh_en, numeric(1)),      format = "f", digits = 1),
+  "EUII"         = formatC(sh_eu_all,                              format = "f", digits = 4),
+  check.names = FALSE
+)
+
+kable(tab_sh, format = "latex", booktabs = TRUE, escape = FALSE, align = "lccccc",
+      row.names = FALSE,
+      caption = paste0("Calibrated boundary shapes at $K = ", K_sh, "$. Every shape is tuned to ",
+                       "$\\avgTIE = ", cal_t1e_tgt, "$ and $\\avgPow = ", cal_pow_tgt,
+                       "$ at $\\delta = 60$. $\\Erw[N]$ and the EUII are quoted at $\\delta = 60$, ",
+                       "the latter at $\\Pr(H_1) = 0.5$."),
+      label = "calibrated_shapes") |>
+  kable_styling(latex_options = "hold_position")
+@
+
+The shapes separate clearly, and in a single ordering. The flat boundary is highest at
+$\Sexpr{flat_eu_f}$, followed by the power family at $\Sexpr{pow_eu_f}$, then the
+\citet{obrien_multiple_1979} and \citet{shi2019control} boundaries together at
+$\Sexpr{obf_eu_f}$, and the Haybittle Peto boundary last at $\Sexpr{hp_eu_f}$.
+
+The ordering is explained almost entirely by the expected sample size, with which the EUII correlates
+at $\Sexpr{sh_corr_f}$ across the five shapes. This is what one should expect once the error rates are
+held in common: the $\DOR$ is then shared, so all that remains to distinguish the designs is how many
+patients each spends, and the shape of the boundary is precisely what decides how readily a trial is
+allowed to stop early. The flat boundary is the most permissive at the interims and expects
+$\Sexpr{flat_en_f}$ patients. The Haybittle Peto boundary sets a near impossible threshold at every
+interim, so it almost never stops early and expects $\Sexpr{hp_en_f}$, roughly thirteen patients more
+for the same evidence, because it barely uses the interims it has scheduled.
+
+The flat boundary reaches that lower expected size by accepting a larger maximum. It requires
+$n_{\max} = \Sexpr{flat_nmax}$ against $\Sexpr{obf_nmax}$ for the other four shapes, so it commits to
+$\Sexpr{nmax_gap}$ more patients in the worst case in order to save more than that in expectation.
+This is the classical trade between a Pocock style and an O'Brien Fleming style boundary, and on a per
+patient scale the EUII comes down in favour of the more permissive one.
+
+The comparison with Section~\ref{sec:calibrated_sc} places this in proportion. The full spread across
+shapes is $\Sexpr{sh_spread_f}$, against $\Sexpr{eu_spread_looks_f}$ across the number of looks, so
+the number of looks remains the larger effect, by a factor of about $\Sexpr{sh_ratio_f}$. The two
+choices are nonetheless of the same order, and the shape is not a detail that can be settled by
+convention alone. A boundary that schedules interims but forbids stopping at them recovers little of
+what the interims were introduced to provide.
+
+<<plot_cal_shapes, echo=FALSE, warning=FALSE, message=FALSE, fig.height=5, fig.width=9, dev='cairo_pdf', fig.cap=paste0("EUII of the five calibrated boundary shapes across $\\delta$, at $K = ", K_sh, "$. Lines are drawn at $\\Pr(H_1) = 0.5$ and the bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$. All five shapes share the same avgT1E and the same avgPower at $\\delta = 60$.")>>=
+shape_cols <- c("Flat" = "#000000", "OBF" = col_sc, "Haybittle-Peto" = col_dc,
+                "Power-family" = "#009E73", "Shi & Yin" = "#CC79A7")
+
+ggplot(sh_euii$band) +
+  geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Shape), alpha = 0.22) +
+  geom_line(aes(x = Delta, y = mid, color = Shape), linewidth = 1.1) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.4) +
+  geom_vline(xintercept = 60, linetype = "dotted", color = "grey40", linewidth = 0.4) +
+  scale_color_manual(values = shape_cols) +
+  scale_fill_manual(values = shape_cols, guide = "none") +
+  labs(x = expression(delta), y = "EUII") +
+  my_theme
+@
+
+\subsection{Futility Stopping}
+\label{sec:calibrated_futility}
+
+\paragraph{Futility Added to a Finished Design}
+The designs of Section~\ref{sec:calibrated_sc} stop only for efficacy, and as noted there they
+therefore save no patients under the null. We now take those calibrated designs exactly as they stand,
+leaving $n_{\max}$ and the efficacy threshold untouched, and add the futility rule of
+Section~\ref{sec:one_interim} at every interim look but never at the final analysis. Nothing is
+recalibrated.
+
+This is deliberately not a comparison at equal error rates. A futility rule can only remove trials, so
+it lowers both $\avgTIE$ and $\avgPow$ relative to the calibrated targets, and those shifts are
+reported in Table~\ref{tab:calibrated_futility} next to the EUII rather than tuned away. The question
+addressed here is not which design is best in the abstract, but what a sponsor gains by adding a
+futility rule to a design that has already been agreed.
+
+<<fut_vals, include=FALSE>>=
+fut_res <- readRDS("../Output/11_futility_on_calibrated/futility.RDS")
+fa <- fut_res$anchor
+
+gfut <- function(looks, futility, col) {
+  fa[[col]][fa$Looks == looks & fa$Futility == futility]
+}
+f3 <- function(x) formatC(x, format = "f", digits = 3)
+f1 <- function(x) formatC(x, format = "f", digits = 1)
+
+## expected sample size under the null, with and without the futility rule
+en0_1_no  <- gfut("One interim",  "no futility", "EN_null")
+en0_1_fut <- gfut("One interim",  "futility",    "EN_null")
+en0_2_no  <- gfut("Two interims", "no futility", "EN_null")
+en0_2_fut <- gfut("Two interims", "futility",    "EN_null")
+cut_1 <- round(100 * (1 - en0_1_fut / en0_1_no))
+cut_2 <- round(100 * (1 - en0_2_fut / en0_2_no))
+
+## the headline crossing: one interim with futility against two interims without
+eu_1_fut  <- gfut("One interim",  "futility",    "EUII")
+eu_2_no   <- gfut("Two interims", "no futility", "EUII")
+eu_2_fut  <- gfut("Two interims", "futility",    "EUII")
+
+t1e_1_fut <- gfut("One interim",  "futility", "avgT1E")
+t1e_2_fut <- gfut("Two interims", "futility", "avgT1E")
+pow_1_fut <- gfut("One interim",  "futility", "avgPower")
+pow_2_fut <- gfut("Two interims", "futility", "avgPower")
+@
+
+<<tab_calibrated_futility, echo=FALSE, results='asis', message=FALSE, warning=FALSE>>=
+tab_fut <- data.frame(
+  "Design"       = fa$Looks,
+  "Futility"     = fa$Futility,
+  "$n_{\\max}$"  = fa$n_max,
+  "$\\avgTIE$"   = formatC(fa$avgT1E,   format = "f", digits = 4),
+  "$\\avgPow$"   = formatC(fa$avgPower, format = "f", digits = 4),
+  "$\\Erw[N]$ ($\\delta = 0$)"  = formatC(fa$EN_null, format = "f", digits = 1),
+  "$\\Erw[N]$ ($\\delta = 60$)" = formatC(fa$EN_MCID, format = "f", digits = 1),
+  "EUII"         = formatC(fa$EUII,     format = "f", digits = 4),
+  check.names = FALSE
+)
+
+kable(tab_fut, format = "latex", booktabs = TRUE, escape = FALSE, align = "llcccccc",
+      row.names = FALSE,
+      caption = paste0("Futility added to the calibrated \\SC designs of ",
+                       "Table~\\ref{tab:calibrated_sc}, with $n_{\\max}$ and the efficacy threshold ",
+                       "left as calibrated. The error rates therefore no longer sit exactly at the ",
+                       "targets. The EUII is quoted at $\\delta = 60$ and $\\Pr(H_1) = 0.5$."),
+      label = "calibrated_futility") |>
+  kable_styling(latex_options = "hold_position")
+@
+
+The error rates barely move. Adding futility takes $\avgTIE$ from $\Sexpr{cal_t1e_tgt}$ to
+$\Sexpr{f3(t1e_1_fut)}$ with one interim and $\Sexpr{f3(t1e_2_fut)}$ with two, and $\avgPow$ from
+$\Sexpr{cal_pow_tgt}$ to $\Sexpr{f3(pow_1_fut)}$ and $\Sexpr{f3(pow_2_fut)}$. What moves is the
+expected sample size under the null, which falls from $\Sexpr{f1(en0_1_no)}$ to
+$\Sexpr{f1(en0_1_fut)}$ patients with one interim and from $\Sexpr{f1(en0_2_no)}$ to
+$\Sexpr{f1(en0_2_fut)}$ with two, reductions of about $\Sexpr{cut_1}\%$ and $\Sexpr{cut_2}\%$. A
+futility rule costs a fraction of a percentage point of power and returns roughly a third of the
+patients whenever the treatment does not work.
+
+The EUII prices that trade directly, and the resulting ordering carries a practical message. One
+interim with futility reaches $\Sexpr{f3(eu_1_fut)}$, which is above the $\Sexpr{f3(eu_2_no)}$ of two
+interims without futility. Adding a futility rule to a design that looks once buys more evidentiary
+value per patient than adding a second efficacy look. Two interims with futility remain the best of
+the designs considered, at $\Sexpr{f3(eu_2_fut)}$.
+
+This is also the clearest illustration of what the index adds. Judged on $\avgTIE$ and $\avgPow$ alone
+the five designs in Table~\ref{tab:calibrated_futility} are nearly indistinguishable, and the benefit
+of futility is invisible, exactly as observed at the nominal thresholds in
+Section~\ref{sec:one_interim}. The benefit lives entirely in the sample size distribution, which is
+what the EUII is built to price.
+
+<<plot_cal_futility, echo=FALSE, warning=FALSE, message=FALSE, fig.height=5, fig.width=9, dev='cairo_pdf', fig.cap="EUII of the calibrated SC designs with and without a futility rule bolted on, across $\\delta$. Colour encodes the number of looks, linetype whether futility is present. Lines are drawn at $\\Pr(H_1) = 0.5$ and the bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$.">>=
+band_fut <- fut_res$band |>
+  dplyr::mutate(Looks    = factor(Looks, levels = sc_looks),
+                Futility = factor(Futility, levels = c("no futility", "futility")))
+
+ggplot(band_fut) +
+  geom_ribbon(aes(x = Delta, ymin = lo, ymax = hi, fill = Looks,
+                  group = interaction(Looks, Futility)), alpha = 0.20) +
+  geom_line(aes(x = Delta, y = mid, color = Looks, linetype = Futility),
+            linewidth = 1.1) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black", linewidth = 0.4) +
+  geom_vline(xintercept = 60, linetype = "dotted", color = "grey40", linewidth = 0.4) +
+  scale_color_manual(values = looks_cols) +
+  scale_fill_manual(values = looks_cols, guide = "none") +
+  scale_linetype_manual(values = c("no futility" = "dashed", "futility" = "solid")) +
+  labs(x = expression(delta), y = "EUII") +
+  my_theme
+@
+
 

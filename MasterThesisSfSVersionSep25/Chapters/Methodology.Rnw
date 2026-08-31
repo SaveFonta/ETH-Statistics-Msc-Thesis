@@ -1,6 +1,6 @@
 \chapter{Methodology}
 \label{sec:methodology}
-For the remainder of the thesis, we focus on two sample clinical trials with a continuous Normal endpoint and known standard deviations $\sigma_C$ and $\sigma_T$. 
+For the remainder of the thesis, we focus on two sample clinical trials with a continuous normal endpoint and known standard deviations $\sigma_C$ and $\sigma_T$. 
 Let $\theta_T$ and $\theta_C$ denote the true parameters of the treatment and control groups, respectively. The treatment contrast is defined as $\delta = \theta_C - \theta_T$,
 where we assume without loss of generality that lower values of $\theta$ represent a better clinical response, thus $\delta > 0$ indicates a treatment benefit. 
  
@@ -55,13 +55,13 @@ p\!\left(\theta_C \mid \bar{y}_1,\ldots,\bar{y}_{H_{\text{hist}}}\right)
     p(\mu)\,p(\tau)\; d\mu\; d\tau.
 \end{equation*}
 This integral is often not available in closed form and is evaluated via MCMC. The resulting posterior samples of $\theta_C$ are
-then used to fit a $K$-component mixture of Normal distributions:
+then used to fit a $K$-component mixture of normal distributions:
 \begin{equation*}
     \pi_{\mathrm{MAP}}(\theta_C) = \sum_{k=1}^{K} w_k\,\mathcal{N}(\theta_C;\,\mu_k,\,\sigma_k^2),
 \end{equation*}
 chosen to minimize the Kullback Leibler divergence from the exact MAP prior to the mixture \citep{schmidli_robust_2014}. Minimizing that divergence amounts to maximizing $\int \log\{\pi_{\mathrm{MAP}}(\theta_C)\}\, p(\theta_C \given \bar{y}_1,\ldots,\bar{y}_{H_{\text{hist}}})\, d\theta_C$, and a Monte Carlo estimate of this integral over the posterior sample is identical to the log likelihood of that sample under the mixture. The weights and component parameters are therefore obtained as maximum likelihood estimates, which \texttt{RBesT} computes with the EM algorithm, selecting $K$ by AIC. This conjugate mixture
 approximation enables closed-form Bayesian updating: given the current trial mean $\bar{y}_C \sim \mathcal{N}(\theta_C, v_C^2)$, each
-Normal component is updated independently via the standard Normal Normal formula, and the posterior is again a Normal mixture with adjusted weights.
+normal component is updated independently via the standard normal normal formula, and the posterior is again a normal mixture with adjusted weights.
 
 \subsection{Robust MAP prior}
 The \textit{robust MAP} prior augments $\pi_{\mathrm{MAP}}$ with a weakly informative component to protect against \textit{prior data conflict}:
@@ -76,7 +76,7 @@ The borrowing is dynamic because the mixture weights are themselves updated by t
     \tilde{\omega} = \frac{\omega\, m_R(\bar{y}_C)}{\omega\, m_R(\bar{y}_C) + (1 - \omega)\, m_{\mathrm{MAP}}(\bar{y}_C)},
 \end{equation*}
 where $m_j(\bar{y}_C) = \int \pi_j(\theta_C)\, f(\bar{y}_C \mid \theta_C)\, d\theta_C$, for $j \in \{\mathrm{MAP},\, R\}$, is the marginal likelihood of the data under each component. Under \textit{prior data conflict} the vague component explains the observed data better, $m_R(\bar{y}_C) > m_{\mathrm{MAP}}(\bar{y}_C)$, so $\tilde{\omega} > \omega$ and the posterior downweights the historical component. The design therefore borrows most when prior and data agree and least when they conflict, limiting the influence of misleading historical information.
-Following \citet{schmidli_robust_2014}, throughout this thesis we set the robust component to a \textit{unit information} prior (UIP): a Normal with variance $\sigma_R^2 = \sigma^2$ and $\mu_R$ equal to the historical mean, which is weakly informative yet proper.
+Following \citet{schmidli_robust_2014}, throughout this thesis we set the robust component to a \textit{unit information} prior (UIP): a normal with variance $\sigma_R^2 = \sigma^2$ and $\mu_R$ equal to the historical mean, which is weakly informative yet proper.
 
 The specification of $\omega$, $\mu_R$ and $\sigma_R^2$ is not trivial in general:
 \citet{ratta2026interplay} show that Lindley's paradox\footnote{a very dispersed robust component can receive an implausibly high posterior weight purely because it is diffuse, not because it fits the data better} and asymptotic T1E inflation can be avoided only when $\omega$ and $\sigma_R^2$
@@ -107,9 +107,9 @@ Only then does an ESS behave like a count of observations, adding up as observat
 
 Several methods have been proposed for the nonconjugate case:
 \begin{itemize}
-    \item The \textit{moments} method matches the mean and standard deviation of the mixture to a single conjugate Normal
-    and reads off the sample size of that Normal. It is simple but conservative, because collapsing a mixture onto one
-    Normal discards the structure that makes the prior informative.
+    \item The \textit{moments} method matches the mean and standard deviation of the mixture to a single conjugate normal
+    and reads off the sample size of that normal. It is simple but conservative, because collapsing a mixture onto one
+    normal discards the structure that makes the prior informative.
     \item The method of \citet{morita2008determining} matches the curvature of the prior, at its mode, to that of a hypothetical sample of size $m$ drawn from a much more dispersed prior with the same mean. As implemented in \texttt{RBesT}, following \citet{neuenschwander2020predictively}, $m$ is obtained directly from this curvature match rather than by minimising a distance over integer sample sizes.
     The method tends to be liberal, particularly when the mixture carries many components.
     \item The \textit{expected local information ratio} (ELIR) of \citet{neuenschwander2020predictively} takes the expectation, under the prior, of 
@@ -143,7 +143,7 @@ map_mcmc <- gMAP(cbind(y, y.se) ~ 1 | study,
   beta.prior = cbind(0, crohn_sigma),
   tau.dist = "HalfNormal", tau.prior = cbind(0, crohn_sigma / 2)
 )
-map_fit_1 <- automixfit(map_mcmc, Nc = 1)   # single Normal
+map_fit_1 <- automixfit(map_mcmc, Nc = 1)   # single normal
 map_fit_3 <- automixfit(map_mcmc)            # full mixture: selected by AIC
 ess_map_1 <- round(ess(map_fit_1))
 ess_map_3 <- round(ess(map_fit_3))
@@ -153,13 +153,13 @@ ess_map_rob <- round(ess(map_robust))
 
 @
 To obtain the MAP prior, we follow the worked example at \url{https://opensource.nibr.com/RBesT/articles/introduction_normal.html}.
-Particularly, we fit the hierarchical model via MCMC by assuming a weakly informative Normal on $\mu$ centred at zero with scale $\sigma$, and a
-HalfNormal on $\tau$ with scale $\sigma/2$, a weakly informative choice that places most prior mass on small between trial heterogeneity. Then, the \texttt{RBesT} package exploits the EM algorithm to select the number of components $K$ using AIC.
+Particularly, we fit the hierarchical model via MCMC by assuming a weakly informative normal on $\mu$ centred at zero with scale $\sigma$, and a
+Halfnormal on $\tau$ with scale $\sigma/2$, a weakly informative choice that places most prior mass on small between trial heterogeneity. Then, the \texttt{RBesT} package exploits the EM algorithm to select the number of components $K$ using AIC.
 
 
-Applying these steps to the six historical placebo arms yields the hierarchical model fit shown in Figure~\ref{fig:map_forest}, and Figure~\ref{fig:map_robust_plot} compares the resulting single component Normal approximation with the 3 component mixture selected by AIC and its robustified version.
-Because the ESS depends on the shape of the approximating prior, the single Normal, the mixture and the robust mixture summarise the same MAP prior with different values (respectively $\Sexpr{ess_map_1}$, $\Sexpr{ess_map_3}$ and $\Sexpr{ess_map_rob}$).
-Throughout this chapter we adopt the single component Normal as the analysis prior of the running example, which allows us to obtain closed form results. The full 3 component mixture and its robust extension are inspected in the Application in Chapter~\ref{sec:Applications}.
+Applying these steps to the six historical placebo arms yields the hierarchical model fit shown in Figure~\ref{fig:map_forest}, and Figure~\ref{fig:map_robust_plot} compares the resulting single component normal approximation with the 3 component mixture selected by AIC and its robustified version.
+Because the ESS depends on the shape of the approximating prior, the single normal, the mixture and the robust mixture summarise the same MAP prior with different values (respectively $\Sexpr{ess_map_1}$, $\Sexpr{ess_map_3}$ and $\Sexpr{ess_map_rob}$).
+Throughout this chapter we adopt the single component normal as the analysis prior of the running example, which allows us to obtain closed form results. The full 3 component mixture and its robust extension are inspected in the Application in Chapter~\ref{sec:Applications}.
 
 <<map_forest, echo=FALSE, cache=TRUE, message=FALSE, warning=FALSE, fig.height=4, fig.width=8, dev='cairo_pdf', fig.cap="Forest plot of the hierarchical meta-analysis fit. For each historical placebo arm, the observed control mean $\\bar{y}_{C,h}$ with 95\\% confidence interval is shown alongside the posterior median and 95\\% credible interval of $\\theta_h$. The bottom row (\\textit{MAP}) is the posterior predictive for the new trial's $\\theta_C$.">>=
 forest_plot(
@@ -183,7 +183,7 @@ forest_plot(
 
 @
 
-<<map_robust_plot, echo=FALSE, cache=TRUE, message=FALSE, warning=FALSE, fig.height=4, fig.width=8, dev='cairo_pdf', fig.cap=paste0("MAP prior approximations and robust extension. The 1-component Normal (ESS $= ", ess_map_1, "$, used in the running example) and the 3-component mixture selected by AIC (ESS $= ", ess_map_3, "$) both approximate $\\pi_{\\mathrm{MAP}}$. Adding a weakly informative UIP component with weight $\\omega = 0.2$ yields the Robust MAP (ESS $= ", ess_map_rob, "$).")>>=
+<<map_robust_plot, echo=FALSE, cache=TRUE, message=FALSE, warning=FALSE, fig.height=4, fig.width=8, dev='cairo_pdf', fig.cap=paste0("MAP prior approximations and robust extension. The 1-component normal (ESS $= ", ess_map_1, "$, used in the running example) and the 3-component mixture selected by AIC (ESS $= ", ess_map_3, "$) both approximate $\\pi_{\\mathrm{MAP}}$. Adding a weakly informative UIP component with weight $\\omega = 0.2$ yields the Robust MAP (ESS $= ", ess_map_rob, "$).")>>=
 theta_grid <- seq(-300, 180, length.out = 600)
 labels <- c("1-component MAP", "3-component MAP", "Robust MAP")
 # legend labels as plotmath so that omega renders as the symbol
@@ -285,22 +285,22 @@ $\delta$ and integrates solely over the control parameter space $\pi_D(\theta_C)
 %% denoted as $\Theta_C$. Then this restricted maximum T1E rate is expressed as:
 %% $$\max_{\theta_C \in \Theta_C} \Pr\left(\text{Success} \mid \theta_C, \theta_T = \theta_C - \delta\right)$$
 
-\subsection{Closed Forms under Normal Priors}
+\subsection{Closed Forms under normal Priors}
 \label{subsec:closedforms_normal}
 
-Assuming Normal distributions for both the historical analysis prior ($\pi_A$) and the design prior ($\pi_D$), it is possible to derive closed form solutions for Equation~\eqref{eq:avg-power} and~\eqref{eq:avg-type1-error}. 
+Assuming normal distributions for both the historical analysis prior ($\pi_A$) and the design prior ($\pi_D$), it is possible to derive closed form solutions for Equation~\eqref{eq:avg-power} and~\eqref{eq:avg-type1-error}. 
 Complete proofs are reported in Appendix~\ref{sec:appendix_normal_priors}. 
 
 Let the observed sample means for the control and treatment arms be normally distributed as $\bar{y}_C \mid \theta_C \sim \mathcal{N}(\theta_C, v_C^2)$ and $\bar{y}_T \mid \theta_T \sim \mathcal{N}(\theta_T, v_T^2)$, respectively, with $v_{\bullet}^{2} = \sigma_{\bullet}^{2}/n_{\bullet}$. 
 We incorporate an informative historical analysis prior for the control arm, $\pi_A(\theta_C) \sim \mathcal{N}(\mu_{A,C}, \sigma_{A,C}^2)$, where $\mu_{A,C}$ represents the historical mean of the control group and $\sigma_{A,C}^2$ quantifies the prior uncertainty. We assume a noninformative analysis prior for the treatment arm.
 The Bayesian trial is declared a success if $\Pr(\delta > q \mid \bar{y}_C, \bar{y}_T) > p$, consistent with Equation~\eqref{eq:an_prior}.
 
-Let $\hat{\delta}$ denote the posterior mean of the treatment contrast ($\delta$). By Normal Normal conjugacy, the posterior mean of the control arm is a convex combination of the historical prior mean and the current control data,
+Let $\hat{\delta}$ denote the posterior mean of the treatment contrast ($\delta$). By normal normal conjugacy, the posterior mean of the control arm is a convex combination of the historical prior mean and the current control data,
 $$
     \mu_{\text{post}} = (1 - W)\,\mu_{A,C} + W\,\bar{y}_C,
     \qquad W = \frac{\sigma_{A,C}^2}{\sigma_{A,C}^2 + v_C^2},
 $$
-so that $1 - W$ is the weight carried by the historical prior and $W$ the weight carried by the observed control mean. Because the two arms are independent, the posterior of the contrast is Normal,
+so that $1 - W$ is the weight carried by the historical prior and $W$ the weight carried by the observed control mean. Because the two arms are independent, the posterior of the contrast is normal,
 $$
     \delta \mid \bar{y}_C, \bar{y}_T \sim \mathcal{N}(\hat{\delta},\, V_{\delta}),
     \qquad \hat{\delta} = \mu_{\text{post}} - \bar{y}_T,
@@ -308,11 +308,11 @@ $$
 $$
 its mean the difference of the two posterior means and its variance the sum of the two posterior variances, with $\sigma_{\text{post}}^2 = \sigma_{A,C}^2 v_C^2 / (\sigma_{A,C}^2 + v_C^2)$.
 
-Because this posterior is Normal, the success probability standardises to
+Because this posterior is normal, the success probability standardises to
 $$
     \Pr(\delta > q \mid \bar{y}_C, \bar{y}_T) = 1 - \Phi\!\left( \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} \right),
 $$
-which exceeds $p$ exactly when $(q - \hat{\delta})/\sqrt{V_{\delta}} < -z_p$, writing $z_p = \Phi^{-1}(p)$ for the Normal quantile of the required posterior probability. Rearranging gives the success condition in the form: 
+which exceeds $p$ exactly when $(q - \hat{\delta})/\sqrt{V_{\delta}} < -z_p$, writing $z_p = \Phi^{-1}(p)$ for the normal quantile of the required posterior probability. Rearranging gives the success condition in the form: 
 
 \begin{equation} \label{eq:threshold_k}
     \hat{\delta} > k \qquad \text{with } k = q + z_p \sqrt{V_{\delta}},
@@ -338,7 +338,7 @@ $$
     \Erw[\hat{\delta} \given \theta_C, \delta] = \delta + (1 - W)(\mu_{A,C} - \theta_C),
     \qquad \Var(\hat{\delta} \given \theta_C, \delta) = W^2 v_C^2 + v_T^2 =: V_{\text{samp}},
 $$
-so that $\hat{\delta} \mid \theta_C, \delta \sim \mathcal{N}\big(\delta + (1 - W)(\mu_{A,C} - \theta_C),\, V_{\text{samp}}\big)$, being a linear combination of the two independent Normal arm means.
+so that $\hat{\delta} \mid \theta_C, \delta \sim \mathcal{N}\big(\delta + (1 - W)(\mu_{A,C} - \theta_C),\, V_{\text{samp}}\big)$, being a linear combination of the two independent normal arm means.
 Borrowing introduces a bias $(1 - W)(\mu_{A,C} - \theta_C)$, which vanishes when the historical prior is correct ($\mu_{A,C} = \theta_C$) or when nothing is borrowed ($W = 1$). The sampling variance $V_{\text{samp}}$ is distinct from the posterior variance $V_{\delta}$, which enters only through the decision threshold $z_p\sqrt{V_{\delta}}$. The conditional power, evaluated at a specific true control rate $\theta_C^*$ and true effect size $\delta$, is given by:
 \begin{equation} \label{eq:power_closed_form}
     \Pow(\theta_C^*, \delta) = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}} - \big[(1 - W)(\mu_{A,C} - \theta_C^*) + \delta\big]}{\sqrt{V_{\text{samp}}}} \right).
@@ -355,7 +355,7 @@ Note that as $W \to 1$ (a noninformative analysis prior) and under a common per 
 \paragraph{Average metrics}
  When using a design prior $\pi_D(\theta_C) \sim \mathcal{N}(\mu_{D,C}, \sigma_{D,C}^2)$, we apply the laws of total expectation and total variance to marginalize out the unknown parameter $\theta_C$. 
 
-Marginalizing over $\pi_D$ inflates the estimator's variance to the marginal variance $V_{\text{marg}} = W^2 v_C^2 + v_T^2 + (1 - W)^2 \sigma_{D,C}^2 = V_{\text{samp}} + (1 - W)^2 \sigma_{D,C}^2$, which reduces to $V_{\text{samp}}$ when $\sigma_{D,C} \to 0$ (the conditional, or Dirac, case). The marginal distribution is again Normal, $\hat{\delta} \mid \delta \sim \mathcal{N}\big(\delta + (1 - W)(\mu_{A,C} - \mu_{D,C}),\, V_{\text{marg}}\big)$. The closed form solution for the avgPower is:
+Marginalizing over $\pi_D$ inflates the estimator's variance to the marginal variance $V_{\text{marg}} = W^2 v_C^2 + v_T^2 + (1 - W)^2 \sigma_{D,C}^2 = V_{\text{samp}} + (1 - W)^2 \sigma_{D,C}^2$, which reduces to $V_{\text{samp}}$ when $\sigma_{D,C} \to 0$ (the conditional, or Dirac, case). The marginal distribution is again normal, $\hat{\delta} \mid \delta \sim \mathcal{N}\big(\delta + (1 - W)(\mu_{A,C} - \mu_{D,C}),\, V_{\text{marg}}\big)$. The closed form solution for the avgPower is:
 \begin{equation} \label{eq:avgpower_closed_form}
     \avgPow(\delta) = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}} - \big[(1 - W)(\mu_{A,C} - \mu_{D,C}) + \delta\big]}{\sqrt{V_{\text{marg}}}} \right).
 \end{equation}
@@ -374,7 +374,7 @@ Consistent with the degenerate-prior view above, the conditional formulas of Equ
           \avgPow(\delta) &= 1 - \Phi\left( \frac{z_p \sqrt{V_{\delta}} - \delta}{\sqrt{V_{\delta}}} \right) \\
           &= 1 - \Phi\left( z_p - \frac{\delta}{\sqrt{V_{\delta}}} \right),
      \end{align*} 
-     thus, setting $\delta = 0$ yields $\avgTIE = 1 - \Phi(z_p) = 1 - p$, since $z_p = \Phi^{-1}(p)$, so the average T1E rate is controlled exactly at the nominal level, aligning with the literature \citep{best_beyond_2025}. This proof covers only the single Normal analysis prior. \citet{best_beyond_2025} show empirically, rather than prove, that the same control also holds for Normal mixture analysis priors under alignment, which is the case exploited for the MAP prior in Chapter~\ref{sec:Applications}.
+     thus, setting $\delta = 0$ yields $\avgTIE = 1 - \Phi(z_p) = 1 - p$, since $z_p = \Phi^{-1}(p)$, so the average T1E rate is controlled exactly at the nominal level, aligning with the literature \citep{best_beyond_2025}. This proof covers only the single normal analysis prior. \citet{best_beyond_2025} show empirically, rather than prove, that the same control also holds for normal mixture analysis priors under alignment, which is the case exploited for the MAP prior in Chapter~\ref{sec:Applications}.
     \item As already noted for the conditional metrics, $W \to 1$ collapses this formulation to the frequentist two sample Z test as well (Equation~\eqref{eq:ztest_power}).
     \item \citet{best_beyond_2025} evaluate the case of a completely vague design prior. This leads the marginal variance in the denominator to diverge to infinity. Consequently, both the avgPower
     and the avgT1E converge to $\Phi(0) = 0.5$, no matter the choice of the analysis prior.
@@ -506,7 +506,7 @@ The quantity being determined here is $n_C$, the number of concurrent control pa
 through the allocation ratio. The historical ESS $n_A$
 is not a design variable: it is fixed by the historical trials already conducted and by the prior chosen to
 summarise them, so it enters the calculation as an input rather than as an unknown. Throughout this section the
-analysis prior is a single Normal, which is what makes the closed form below possible.
+analysis prior is a single normal, which is what makes the closed form below possible.
 
 How much historical information to admit is a separate question of prior specification, governed by the
 robustness weight $\omega$ of Section~\ref{subsec:formulating_priors}. That choice, together with the sample
@@ -648,10 +648,10 @@ and a clinical relevance criterion against a decision value $\DV > q$, requiring
     \Pr(\delta > \DV \mid \mathcal{D},\, \pi_A) \ge 0.5.
 \end{equation}
 
-\subsection{Analytical Results under Normal Priors for the Dual Criterion}
-Under the assumption of Normality for both analysis and design priors, the \textit{dual criterion} (DC) reduces to a single condition on the posterior mean $\hat{\delta}$: the significance criterion~\eqref{eq:dc_general} is, 
+\subsection{Analytical Results under normal Priors for the Dual Criterion}
+Under the assumption of normality for both analysis and design priors, the \textit{dual criterion} (DC) reduces to a single condition on the posterior mean $\hat{\delta}$: the significance criterion~\eqref{eq:dc_general} is, 
 as in Equation~\eqref{eq:threshold_k}, equivalent to $\hat{\delta} > q + z_p \sqrt{V_{\delta}}$, while the clinical criterion~\eqref{eq:dc_general_clin} is equivalent 
-to $\hat{\delta} \ge \DV$, since the relevance threshold in Equation~\eqref{eq:dc_general_clin} is set to $0.5$ and the Normal posterior median equals its mean. Combining the two,
+to $\hat{\delta} \ge \DV$, since the relevance threshold in Equation~\eqref{eq:dc_general_clin} is set to $0.5$ and the normal posterior median equals its mean. Combining the two,
 \begin{equation} \label{eq:k_dc}
     \hat{\delta} > k_{\DC}, \qquad k_{\DC} = \max\!\left(\DV, \; q + z_p \sqrt{V_{\delta}}\right) = \max(\DV, k).
 \end{equation}
@@ -699,7 +699,7 @@ identical to Equation~\eqref{eq:n_c_formula} under the replacement $K \mapsto M$
 Setting $z_{1-\beta} = 0$ means targeting a $50\%$ power, so requiring the two thresholds to coincide is the same as requiring $50\%$ power at $\delta = \DV$. This result, well known for the conditional power \citep{roychoudhury_beyond_2018}, thus extends also to the average power under aligned priors.
 Without borrowing ($n_A \to 0$) the square root collapses and Equation~\eqref{eq:dc_nmin_general} reduces to $n_{C,\min} = M(1 + 1/r_T)$, so that Equation~\eqref{eq:dc_nmin_total} becomes $n_{\min} = M(1 + r_T)^2 / r_T$. For a balanced design ($r_T = 1$) this is $n_{C,\min} = n_{T,\min} = 2M$, and the total minimum sample size is therefore:
 $$ n_{\min} = n_{C,\min} + n_{T,\min} = 2M + 2M = \frac{4\, z_p^2\, \sigma^2}{(\DV-q)^2}, $$
-which recovers the DC formula of \citet{roychoudhury_beyond_2018} for a Normal endpoint, where the treatment effect estimate $\hat{\delta}$ in a balanced trial has variance $4\sigma^2/n_{\min}$, since each arm then holds $n_{\min}/2$ patients.
+which recovers the DC formula of \citet{roychoudhury_beyond_2018} for a normal endpoint, where the treatment effect estimate $\hat{\delta}$ in a balanced trial has variance $4\sigma^2/n_{\min}$, since each arm then holds $n_{\min}/2$ patients.
 
  
 \runexample
@@ -795,7 +795,7 @@ A group sequential design (GSD) extends the fixed design by allowing the trial t
 
 Let $K$ denote the total number of stages, with $K - 1$ interim analyses followed by a final analysis. Patients are recruited in $K$ cohorts. The cumulative sample sizes for arm $m \in \{T, C\}$ at stage $k \in \{1, \dots, K\}$ are $n_{m,1} < n_{m,2} < \dots < n_{m,K}$, with $\Delta n_{m,k} = n_{m,k} - n_{m,k-1}$ additional patients enrolled between stages (setting $n_{m,0} = 0$). The total planned sample size is $n_{\text{trial}} = n_{T,K} + n_{C,K}$, reached only if the trial runs to the final analysis.
 
-Under Normal sampling with known variances, the cumulative sample means are distributed as:
+Under normal sampling with known variances, the cumulative sample means are distributed as:
 \begin{equation*}
   \bar{y}_{m,k} \mid \theta_m \sim \mathcal{N}\!\left(\theta_m,\; \frac{\sigma_m^2}{n_{m,k}}\right).
 \end{equation*}
@@ -803,7 +803,7 @@ The analysis prior $\pi_A(\theta_C)$ and the vague treatment prior are updated a
 \begin{equation*}
   \delta \mid \bar{y}_{C,k}, \bar{y}_{T,k} \sim \mathcal{N}(\hat{\delta}_k, V_{\delta,k}),
 \end{equation*}
-where $\hat{\delta}_k$ and $V_{\delta,k}$ follow from the Normal Normal conjugacy derivations in Appendix~\ref{sec:appendix_normal_priors}.
+where $\hat{\delta}_k$ and $V_{\delta,k}$ follow from the normal normal conjugacy derivations in Appendix~\ref{sec:appendix_normal_priors}.
 
 \paragraph{Stopping Rules at the Interim}
 There are two types of stopping rules: efficacy and futility.
@@ -944,7 +944,7 @@ because the ratio of expectations does not, in general, equal the expectation of
 \end{remarkbox}
 
 
-\subsection{Choice of the Normalizing Sample Size}
+\subsection{Choice of the normalizing Sample Size}
 
 Equation~\eqref{eq:classical_euii} normalizes by $n_{\text{trial}} = n_C + n_T$, the patients enrolled in the current trial. Under Bayesian borrowing that choice is not obvious, because the design also relies on the $n_{\text{A}}$ patients encoded in the analysis prior. It is therefore natural to ask whether those historical patients should enter the denominator as well.
 
@@ -1036,7 +1036,7 @@ grid.arrange(pr3a, pr3b, ncol = 2)
 @
 
 \subsection{Asymptotic Value}
-Under the single Normal model, the EUII converges to a finite value:
+Under the single normal model, the EUII converges to a finite value:
 \begin{equation}\label{eq:euii_asymptotic}
   \lim_{n_C \to \infty} \EUII(\delta)
   = \exp\!\left[\frac{r_T\big[(\delta - q)^2 + q^2\big]}{2\sigma^2 (1 + r_T)^2}\right].
@@ -1050,10 +1050,10 @@ Moreover, the allocation ratio enters only through $r_T/(1 + r_T)^2$, so Equatio
 
 Importantly, the asymptotic value is independent of the analysis and design priors. Therefore it is reasonable to expect the MAP mixture
 and its robustified versions to reach the same asymptotic value. However, we cannot confirm this numerically, because evaluating
-a mixture of Normals relies on numerical integration that becomes unstable as $n_C \to \infty$.
+a mixture of normals relies on numerical integration that becomes unstable as $n_C \to \infty$.
 
 \paragraph{Dual Criterion}
-Under the single Normal model, we can derive the asymptotic EUII of the \textit{dual criterion} (see Appendix~\ref{sec:app_asymptotic} for details):
+Under the single normal model, we can derive the asymptotic EUII of the \textit{dual criterion} (see Appendix~\ref{sec:app_asymptotic} for details):
 \begin{equation}\label{eq:euii_asymptotic_dc}
   \lim_{n_C \to \infty} \EUII^{\DC}(\delta)
   = \exp\!\left[\frac{r_T\big[(\delta - \DV)^2 + \DV^2\big]}{2\sigma^2 (1 + r_T)^2}\right].
@@ -1118,7 +1118,7 @@ p_right <- ggplot(df_nc, aes(n_C, EUII, color = Criterion)) +
 
 grid.arrange(p_left, p_right, ncol = 2)
 
-## I tried to get this asymptotic results using RBest, but the EUII converges to 1 even in the 1 Normal case prior
+## I tried to get this asymptotic results using RBest, but the EUII converges to 1 even in the 1 normal case prior
 ## (Analysis prior == Design prior ). Maybe it is numerical stabiity ?
 @
 
@@ -1241,7 +1241,7 @@ allowing different boundary shapes to be calibrated by the same procedure. Using
 classical boundary derived by \citet{shi2019control}, strict early and relaxing down to $p$ at the final look. A power family sets $p_k = 1 - (1-p)\,t_k^{\rho}$
 for a shape exponent $\rho$. Haybittle-Peto sets $p_k = p_{\text{HP}}$ (e.g.\ $0.999$) for every interim $k < K$ and $p_K = p$ at the final look. These
 four shapes mirror the O'Brien Fleming, power, and constant threshold spending functions that \citet{zhu2017bayesian} compare in a Bayesian sequential
-design with a Normal endpoint, calibrated here by the same threshold search rather than a separately derived spending schedule. A builder can also add
+design with a normal endpoint, calibrated here by the same threshold search rather than a separately derived spending schedule. A builder can also add
 a residual correction on top of such a shape, as in \citet{shi2019control}, pushing the asymptotic boundary toward certainty by an amount controlled
 by a second parameter, refining an asymptotically valid boundary into one with exact finite sample control. Any of these shapes can also be combined
 with a futility rule by supplying a builder that returns a non-null futility criterion at the relevant looks, so that the threshold search calibrates

@@ -154,45 +154,63 @@ more patients may be randomized to the control arm after the interim, or the ran
 \section{The Experimental Unit Information Index}
 \label{subsec:euii_intro}
 Comparing designs is not straightforward when they differ in sample size, power, and T1E rate simultaneously, especially when
-the design is adaptive, i.e. the sample size is random. \citet{held2025balancing} address this with the Experimental Unit
+the design is adaptive, i.e.\ the sample size is random. \citet{held2025balancing} address this with the Experimental Unit
 Information Index (EUII), which normalizes the \textit{diagnostic odds ratio} (DOR) by the number of patients a design needs, making
 designs with different stopping rules comparable on a common scale, per patient.
 
 
 \section{Objectives}
 
-This thesis asks how to balance the evidentiary value a trial design produces against the number of
-patients it requires, when historical information is borrowed on the control arm. The objectives are
-the following.
+This thesis explores how to balance the evidentiary value a trial design produces against the number of
+patients it requires, when historical information is borrowed on the control arm, starting from the
+standard fixed design and extending to \textit{Bayesian group sequential} and \textit{dual criterion}
+designs.
+The main objectives are listed below.
 
 \begin{itemize}
-    \item Complete the set of average operating characteristics for control arm borrowing. This
-    covers the average T1E rate of \citet{best_beyond_2025} together with an analogous average power.
-    The latter replaces \textit{assurance}, which averages over uncertainty in the treatment effect
-    rather than over the control parameter and is therefore not the relevant quantity when historical
-    information is borrowed on the control arm. Closed form expressions and the properties of both
-    metrics are derived under Normal priors, together with the sample size computation they imply,
-    which for mixture analysis priors admits no closed form.
+    \item Starting from the average T1E rate of \citet{best_beyond_2025}, defined for borrowing on the
+    control arm, develop an analogous \textit{average power} by integrating the power conditional on
+    the control parameter over the same design prior. Derive closed form expressions and properties of
+    both metrics under normal priors, together with the sample size computation they imply, extending
+    the derivations to \textit{dual criterion} designs.
+
+    \item Apply these metrics to a Crohn's disease PoC trial. Then, extend the application
+    using a robust MAP analysis prior (i.e.\ a mixture of normals), whose operating characteristics are obtained by numerical
+    integration rather than in closed form, and the sample size computation is extended to these
+    normal mixture priors accordingly. Quantify how much \textit{drift} a given robustness weight
+    tolerates by perturbing the design prior.
+
+    \item Starting from the EUII definition from \citep{held2025balancing}, use these averaged metrics to define an average EUII, 
+    extending the metric to the Bayesian borrowing framework, and characterize its asymptotic
+    behavior.
 
     \item Extend these metrics, and the EUII built from them, from fixed designs to group sequential
-    designs with robust mixture priors, covering both a single criterion and a \textit{dual criterion}
-    and allowing stopping for efficacy and for futility.
+    designs, for both the single and the dual criterion, allowing stopping for efficacy and for
+    futility, with the corresponding operating characteristics obtained by Monte Carlo simulation.
 
-    \item Establish what the EUII does and does not measure. In particular, determine whether it can
-    be read as a summary of design quality when the design prior conflicts with the analysis prior,
-    and delimit the setting in which the index is informative.
+    \item Characterize the use of the EUII as a design comparison tool, determining whether it remains
+    useful under prior conflict, defining the setting in which the
+    index is informative.
 
-    \item Use the EUII to evaluate whether the sequential framework delivers higher evidentiary value
-    per patient than the fixed design framework, comparing designs calibrated to a common average T1E
-    rate and average power rather than to a common threshold, following \citet{held2025balancing}.
+    \item Use the EUII to compare the evidentiary value delivered per patient across designs, varying
+    the number of interim analyses and the shape of the stopping boundary, calibrating every design to
+    a common average T1E rate and average power, following \citet{held2025balancing}.
 
-    \item Quantify how much \textit{drift} a given robustness weight tolerates, by perturbing the
-    design prior through switching, shifting and scaling, and thereby give the choice of that weight
-    an empirical basis rather than a conventional one.
 \end{itemize}
 
 
-The remainder of the thesis is organized as follows. Chapter~\ref{sec:methodology} develops the methodology: the MAP prior, the average metrics with their closed forms under Normal priors, the extension of the EUII to the borrowing framework, the \textit{dual criterion}, and group sequential designs. Chapter~\ref{sec:Applications} applies the framework to a case study in Crohn's disease, evaluating fixed and sequential designs under aligned and misspecified design priors. Chapter~\ref{sec:conclusion} concludes with a discussion of the findings and directions for future work.
+The remainder of the thesis is organized as follows. Chapter~\ref{sec:methodology} develops the
+methodology: the MAP prior and its robust extension (Section~\ref{subsec:formulating_priors}), the
+average metrics with their closed forms and properties under normal priors
+(Section~\ref{subsec:metrics_bayesian}), the \textit{dual criterion}
+(Section~\ref{subsec:dual_criterion_methods}), Bayesian group sequential designs
+(Section~\ref{subsec:sequential}), and the extension of the EUII to the borrowing framework, both for
+fixed and for sequential designs (Section~\ref{subsec:euii}). Chapter~\ref{sec:Applications} applies
+the framework to a PoC case study in Crohn's disease: the fixed design (Section~\ref{sec:fixed_design}),
+one and two interim analyses (Sections~\ref{sec:one_interim} and~\ref{sec:two_interim}), and a
+comparison of designs calibrated to common error rates across the number of looks, the boundary shape,
+and futility stopping (Section~\ref{sec:calibrated_comparison}). Chapter~\ref{sec:conclusion} concludes
+with a discussion of the findings, their limitations, and directions for future work.
 
 
 

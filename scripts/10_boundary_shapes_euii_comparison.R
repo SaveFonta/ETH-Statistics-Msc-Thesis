@@ -2,8 +2,8 @@
 # STEP 2 - EUII across delta for the calibrated boundary shapes
 # =============================================================================
 # Loads the shapes calibrated in 09_calibrate_boundary_shapes.R (all sharing
-# the same avgT1E, and the same avgPower at delta_MCID, at a fixed K = 2
-# schedule) and compares them across the whole range of treatment effects.
+# the same avgT1E, and the same avgPower at delta_MCID, at a fixed number of
+# looks) and compares them across the whole range of treatment effects.
 # Since the error rates coincide by construction, the EUII differences are
 # attributable to the boundary shape alone, priced per patient.
 #
@@ -23,7 +23,7 @@ dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
-n_sim_eval   <- 2e5
+n_sim_eval   <- 1e6
 delta_values <- c(0, seq(10, 100, by = 10))   # delta = 0 required by compute_euii
 prior_H1     <- c(0.01, 0.1, 0.5)
 
@@ -88,7 +88,8 @@ p_euii <- ggplot(band) +
        y = "EUII",
        title = paste0("EUII at equal avgT1E (", cal$target_t1e,
                       ") and equal avgPower (", cal$target_power,
-                      " at delta = ", cal$delta_MCID, "), K = 2 fixed")) +
+                      " at delta = ", cal$delta_MCID, "), K = ",
+                      length(designs_cal[[shape_names[1]]]$n2_seq), " fixed")) +
   my_theme
 
 print(p_euii)

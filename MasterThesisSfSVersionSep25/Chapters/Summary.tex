@@ -3,14 +3,14 @@
 
 \section{Overview}
 
-This thesis studied the design of Bayesian two arm trials with a Normal endpoint that borrow
+This thesis studied the design of Bayesian two arm trials with a normal endpoint that borrow
 historical information on the control arm, with the aim of balancing the evidentiary value a
 design produces against the number of patients it requires. The vehicle for that balance is the
 Experimental Unit Information Index of \citet{held2025balancing}, which normalizes the
 \textit{diagnostic odds ratio} by the number of patients enrolled and therefore places designs of
 different size, and designs whose size is random, on a common per patient scale.
 
-The starting point was the observation that a single Normal analysis prior offers no protection
+The starting point was the observation that a single normal analysis prior offers no protection
 against prior misspecification. When the historical data disagree with the new trial, the design
 silently loses the error control it was planned under, and its operating characteristics no longer
 describe it. This motivated the two ingredients that the rest of the thesis is built on, the robust
@@ -29,7 +29,7 @@ under control arm borrowing the uncertainty that matters concerns the control pa
 $\avgTIE$ and $\avgPow$ are what allows the EUII to be defined in average form.
 
 \paragraph{Closed forms and three properties}
-Closed form expressions for $\avgTIE$ and $\avgPow$ were derived under Normal priors, and three
+Closed form expressions for $\avgTIE$ and $\avgPow$ were derived under normal priors, and three
 properties of the averaged metrics were established. First, the marginal variance in the denominator
 exceeds the sampling variance by the term $(1 - W)^2 \sigma_{D,C}^2$, which accounts for integrating
 over $\pi_D$, so average metrics are always pulled closer to $50\%$ than their conditional
@@ -41,7 +41,7 @@ $0.5$, whatever the analysis prior, so the metrics degenerate when nothing is as
 control parameter. The frequentist two sample $Z$ test is recovered as $W \to 1$.
 
 \paragraph{Sample size computation}
-The closed form for the required control sample size applies only to a single Normal analysis prior.
+The closed form for the required control sample size applies only to a single normal analysis prior.
 For mixture priors, and in particular for the MAP prior and its robust extension, no closed form is
 available. Since $\avgPow$ is monotone in $n_C$, the smallest adequate sample size can be obtained by
 numerical inversion, which is the route taken throughout the applications and the step that makes the
@@ -57,7 +57,7 @@ informative prior for the very information it supplies. The denominator therefor
 quantity the investigator actually controls.
 
 \paragraph{Asymptotic behavior}
-The asymptotic value of the EUII was derived under the single Normal model for both the single
+The asymptotic value of the EUII was derived under the single normal model for both the single
 criterion and the dual criterion, giving a finite limit as the effect size grows and a reference
 against which the finite sample behavior can be read.
 
@@ -145,7 +145,7 @@ read off a formula.
 
 \section{Limitations}
 
-The scope of the work is deliberately narrow in several respects. The endpoint is Normal with a known
+The scope of the work is deliberately narrow in several respects. The endpoint is normal with a known
 standard deviation, and the consequences of misspecifying that standard deviation were not
 investigated. Borrowing is on the control arm only, for the reasons set out above. The analysis
 priors considered are the MAP prior and its robust extension, so \textit{power priors} and
