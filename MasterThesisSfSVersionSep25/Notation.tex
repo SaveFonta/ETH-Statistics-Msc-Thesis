@@ -1,10 +1,10 @@
 \chapter*{Notation}
 \label{c:Notation}
 
-Throughout, an exponent marks a conversion rather than a category. Lower case $v$ joins $\sigma$ and $\tau$ in denoting
-standard deviations, so that $v_C = \sigma/\sqrt{n_C}$ and the corresponding variances are written $v^2$, $\sigma^2$ and
-$\tau^2$. Upper case $V$ is reserved for the composite variances of the treatment contrast, such as $V_{\delta}$ and
-$V_{\text{samp}}$, which denote variances directly and therefore carry no square.
+Note that, to be consistent with the Crohn's disease case 
+study used throughout this thesis, the endpoint is oriented 
+so that lower values indicate a better clinical outcome.
+
 
 \section*{Parameters and data}
 
@@ -13,8 +13,8 @@ $V_{\text{samp}}$, which denote variances directly and therefore carry no square
 Symbol & Meaning \\
 \midrule
 $\theta_C,\ \theta_T$        & true control and treatment means \\
-$\delta$                     & treatment contrast, $\delta = \theta_C - \theta_T$ (lower $y$ is beneficial) \\
 $\bar y_C,\ \bar y_T$        & observed arm means \\
+$\delta$                     & treatment contrast, $\delta = \theta_C - \theta_T$ (lower $y$ is beneficial) \\
 $\sigma$                     & per patient standard deviation, assumed known \\
 $n_C,\ n_T$                  & control and treatment sample sizes \\
 $n_A$                        & effective sample size of the historical information \\
@@ -37,7 +37,8 @@ $\mu_{A,C},\ \sigma_{A,C}^2$            & mean and variance of the analysis prio
 $\mu_{D,C},\ \sigma_{D,C}^2$            & mean and variance of the design prior \\
 $W = \sigma_{A,C}^2/(\sigma_{A,C}^2+v_C^2)$ & weight the data carries in the control estimate \\
 $1-W$                                   & weight the historical prior carries \\
-$\omega$                                & weight of the vague component in a robust mixture prior \\
+$\omega$                                & weight of the non-informative component in a robust mixture prior \\
+$\mu_R,\ \sigma_R^2$                    & mean and variance of that non-informative component \\
 MAP                                     & meta analytic predictive \\
 UIP                                     & unit information prior \\
 ESS                                     & effective sample size \\
@@ -50,18 +51,40 @@ ESS                                     & effective sample size \\
 \toprule
 Symbol & Meaning \\
 \midrule
-$\mu_{\text{post}},\ \sigma_{\text{post}}^2$ & mean and variance of the control posterior \\
+$\mu_{\text{post},C},\ \sigma_{\text{post},C}^2$ & mean and variance of the control posterior \\
 $\hat\delta$                                 & posterior mean of the contrast \\
 $V_\delta$                                   & posterior variance of the contrast \\
 $V_{\text{samp}}$                            & sampling variance of $\hat\delta$ at a fixed $\theta_C$ \\
 $V_{\text{marg}}$                            & marginal variance of $\hat\delta$ under the design prior \\
 $p$                                          & posterior probability threshold for success \\
 $z_p = \Phi^{-1}(p)$                         & corresponding standard Normal quantile \\
-$q$                                          & reference value in the success criterion \\
+$q$                                          & null hypothesis threshold for $\delta$, e.g.\ $q=0$ for a superiority test \\
 $\DV$                                        & decision value of the dual criterion \\
-$k = q + z_p\sqrt{V_\delta}$                 & success threshold on the $\hat\delta$ scale \\
+$k = q + z_p\sqrt{V_\delta}$                 & decision threshold in the Normal case: success iff $\hat\delta > k$ \\
 $K$                                          & total number of analyses, interims plus final \\
 $t_k$                                        & information fraction at look $k$ \\
+\bottomrule
+\end{tabular}
+
+\section*{Sequential designs and calibration}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\mathcal{S} = \{(n_{T,k}, n_{C,k})\}_{k=1}^{K}$ & schedule, the cumulative arm sizes at each of the $K$ looks \\
+$n_{m,k}$                    & cumulative size of arm $m \in \{T,C\}$ at look $k$ \\
+$n_{\max}$                   & maximum total sample size, reached if the trial runs to the final look \\
+$N$                          & realized total sample size, a random variable in a sequential design \\
+$N^+,\ N^-$                  & $N$ conditional on success and on no success \\
+$p_{k,\text{eff}},\ q_{k,\text{eff}}$ & efficacy threshold and reference value at look $k$ \\
+$p_{k,\text{fut}},\ q_{k,\text{fut}}$ & futility threshold and reference value at look $k$ \\
+$p_k$                        & shorthand for $p_{k,\text{eff}}$, used where only the efficacy \\
+                             & boundary is being shaped and calibrated \\
+$p_{\mathrm{HP}}$            & near impossible interim threshold of the Haybittle Peto boundary \\
+$\Delta$                     & shape parameter of the Wang Tsiatis boundary family \\
+$\delta_{\text{target}}$     & effect size a design is calibrated to, the target for avgPower \\
+$\alpha^\ast,\ 1-\beta^\ast$ & the avgT1E and avgPower a design is calibrated to \\
 \bottomrule
 \end{tabular}
 
@@ -77,7 +100,9 @@ $\avgTIE$               & average type one error, integrated over $\pi_D$ \\
 $\Pow(\theta_C,\delta)$ & conditional power \\
 $\avgPow(\delta)$       & average power at effect $\delta$, integrated over $\pi_D$ \\
 $\DOR$                  & diagnostic odds ratio \\
-$\EUII$                 & experimental unit information index, $\DOR^{1/n_{\text{trial}}}$ \\
+$\text{LR}^+,\ \text{LR}^-$ & likelihood ratios of a positive and a negative outcome \\
+$\EUII$                 & experimental unit information index, $\DOR^{1/n_{\text{trial}}}$ for a fixed design \\
+                        & and $(\text{LR}^+)^{\Erw[1/N^+]} / (\text{LR}^-)^{\Erw[1/N^-]}$ for a sequential one \\
 $\Pr(H_1)$              & prior probability of the alternative, used in the EUII bands \\
 $\SC$                   & single criterion \\
 $\DC$                   & dual criterion \\

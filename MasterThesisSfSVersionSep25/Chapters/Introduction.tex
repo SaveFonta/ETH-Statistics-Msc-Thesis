@@ -33,7 +33,7 @@ on the treatment effect or on one (or both) arms:
 \begin{itemize}
         \item \textbf{Borrowing on the Control Group:} when recruiting patients for a standard-of-care or placebo arm is ethically challenging or 
     operationally slow, historical data can be used to inform the control parameters. Designs that supplement a smaller concurrent control group
-    with historical information are formally referred to in the literature as \textit{hybrid-control} trials \citep[e.g.,][]{gravestock2017adaptive, gravestock2019power, li2022hybrid, fu2023covariate, kopp2024simulating}.
+    with historical information are formally referred to in the literature as \textit{hybrid-control} trials \citep{gravestock2017adaptive, gravestock2019power, li2022hybrid, fu2023covariate, kopp2024simulating}.
 
 
     \item \textbf{Borrowing on the Treatment Effect:} When the primary goal is to use existing efficacy data to support a new indication or
@@ -57,8 +57,9 @@ that account for uncertainty in the control arm. The classical frequentist T1E r
 controlled once external information is borrowed \citep{viele_use_2014, kopp2024simulating}. This is acknowledged in regulatory guidance: when a
 frequentist T1E rate is not applicable to a Bayesian design that borrows external information, alternative trial characteristics should be
 considered \citep{fda_bayesian_2026}. To address this, \citet{best_beyond_2025}
-propose the average T1E rate, which integrates the conditional T1E rate over a design prior on the control parameter rather than
- evaluating it at a single point. This reformulation is attractive because it restores the
+propose the \textit{average T1E rate}, which integrates the conditional T1E rate over a design prior on the control parameter rather than
+ evaluating it at a single point. Here the \textit{analysis prior} is the one used to form the posterior and reach a decision, while
+the \text{design} prior represents the plausible true underlying value of the control parameter. This reformulation is attractive because it restores the
 guarantee that borrowing removes: when the design prior is aligned with the analysis prior, the average T1E rate is
 controlled exactly at the nominal level.
 
@@ -100,7 +101,7 @@ the weight had been chosen, which motivates a systematic study of how that weigh
 A limitation of standard trial designs is that success is defined by a single statistical threshold: a significant $p$-value or a posterior probability. While this guarantees sufficient evidence against the null hypothesis, 
 it says nothing about whether the effect is large enough to be clinically meaningful, since a statistically significant result can arise from a modest, practically unimportant treatment difference.
 
-The dual criterion responds to this by requiring two conditions rather than one. Developed for proof of concept
+The \textit{dual criterion} addresses this by requiring two conditions rather than one. Developed for proof of concept
 trials, where the decision is whether to continue development \citep{gsponer_practical_2014, fisch2015bayesian}, it
 answers two distinct questions. The first asks whether the drug works at all, and demands high posterior confidence that the effect
 is superior to placebo. The second asks whether the drug has a relevant clinical effect, and demands only moderate
@@ -117,8 +118,9 @@ large part of the trial, with a design of twelve treated and six control patient
 patients split evenly. 
 
 
-\citet{roychoudhury_beyond_2018} later formalise this as the \textit{dual criterion} (DC) design, in which trial success requires both a statistical criterion and a clinical criterion: the estimated effect must reach a pre-specified Decision Value (DV), 
-the minimum clinically meaningful improvement elicited from domain experts. power at the DV is approximately $50\%$ 
+\citet{roychoudhury_beyond_2018} later formalise this within a frequentist framework, 
+in which trial success requires both statistical significance and a clinically relevant estimated effect: the effect estimate must reach a pre-specified \textit{Decision Value} (DV),
+the minimum clinically meaningful improvement elicited from domain experts. Power at the DV is approximately $50\%$
 by construction, meaning the sample size must be chosen to achieve adequate power for effects meaningfully above the DV.
 
 
@@ -133,10 +135,10 @@ treatment available sooner and saves patients from an inferior arm, while stoppi
 Historically, interim analyses have been applied predominantly within the frequentist framework,
 where taking multiple looks at the data inflates the T1E rate beyond its nominal level. Because the frequentist test statistic depends only 
 on the difference between the two arms, its behaviour across looks can be represented as a discretely observed Brownian 
-motion \citep{jennison_group_1999}. Various methods to define boundaries to control the T1E rate have been developed, including Pocock's constant threshold 
-\citep{pocock_group_1977}, O'Brien and Fleming's boundaries \citep{obrien_multiple_1979}, and the alpha-spending function \citep{lan_demets_discrete_1983}.
+motion \citep{jennison_group_1999}. Various methods to define boundaries to control the T1E rate have been developed, including \textit{Pocock's} constant threshold 
+\citep{pocock_group_1977}, \textit{O'Brien and Fleming's} boundaries \citep{obrien_multiple_1979}, and the \textit{alpha-spending} function \citep{lan_demets_discrete_1983}.
 
-Bayesian group sequential designs replace the frequentist test statistic with the posterior probability that the treatment is superior, 
+\textit{Bayesian group sequential designs} replace the frequentist test statistic with the posterior probability that the treatment is superior, 
 stopping early for efficacy once this probability is high enough, and for futility using posterior or predictive probability. Traditionally, 
 frequentist operating characteristics are obtained using simulation approaches \citep{berry2010bayesian}.
 Whether these thresholds should be adjusted for the planning of interim analyses to guarantee frequentist T1E control is itself debated, 
@@ -154,8 +156,8 @@ more patients may be randomized to the control arm after the interim, or the ran
 \section{The Experimental Unit Information Index}
 \label{subsec:euii_intro}
 Comparing designs is not straightforward when they differ in sample size, power, and T1E rate simultaneously, especially when
-the design is adaptive, i.e.\ the sample size is random. \citet{held2025balancing} address this with the Experimental Unit
-Information Index (EUII), which normalizes the \textit{diagnostic odds ratio} (DOR) by the number of patients a design needs, making
+the design is adaptive, i.e.\ the sample size is random. \citet{held2025balancing} address this with the \textit{Experimental Unit
+Information Index} (EUII), which normalizes the \textit{diagnostic odds ratio} (DOR) by the number of patients a design needs, making
 designs with different stopping rules comparable on a common scale, per patient.
 
 
@@ -163,54 +165,61 @@ designs with different stopping rules comparable on a common scale, per patient.
 
 This thesis explores how to balance the evidentiary value a trial design produces against the number of
 patients it requires, when historical information is borrowed on the control arm, starting from the
-standard fixed design and extending to \textit{Bayesian group sequential} and \textit{dual criterion}
+standard fixed design and extending to \textit{Bayesian group sequential} and \textit{dual criterion} (DC)
 designs.
 The main objectives are listed below.
 
 \begin{itemize}
-    \item Starting from the average T1E rate of \citet{best_beyond_2025}, defined for borrowing on the
-    control arm, develop an analogous \textit{average power} by integrating the power conditional on
-    the control parameter over the same design prior. Derive closed form expressions and properties of
-    both metrics under normal priors, together with the sample size computation they imply, extending
-    the derivations to \textit{dual criterion} designs.
+    \item Building on the \textit{average T1E rate} (avgT1E) of \citet{best_beyond_2025}, defined for borrowing on the
+    control arm, develop an analogous \textit{average power} (avgPower) by integrating the power conditional on
+    the control parameter over the design prior. Derive closed form expressions and properties of
+    both metrics under normal priors, together with the sample size computation they imply, and
+    generalize the derivation to DC designs.
 
-    \item Apply these metrics to a Crohn's disease PoC trial. Then, extend the application
-    using a robust MAP analysis prior (i.e.\ a mixture of normals), whose operating characteristics are obtained by numerical
-    integration rather than in closed form, and the sample size computation is extended to these
-    normal mixture priors accordingly. Quantify how much \textit{drift} a given robustness weight
-    tolerates by perturbing the design prior.
+    \item Apply these metrics to a Crohn's disease PoC trial. Moving from the single normal case to a
+    robust MAP analysis prior, obtain these same metrics by numerical integration rather than closed
+    form. Quantify how much \textit{drift} a given robustness weight tolerates by perturbing the
+    design prior.
 
-    \item Starting from the EUII definition from \citep{held2025balancing}, use these averaged metrics to define an average EUII, 
-    extending the metric to the Bayesian borrowing framework, and characterize its asymptotic
-    behavior.
+    \item Combine these averaged metrics into an average \textit{Experimental Unit Information Index}
+    (EUII) for the Bayesian borrowing framework, following the definition of \citet{held2025balancing}, and characterize its asymptotic behavior.
 
-    \item Extend these metrics, and the EUII built from them, from fixed designs to group sequential
-    designs, for both the single and the dual criterion, allowing stopping for efficacy and for
+    \item Extend these metrics, and the EUII built from them, from fixed designs to \textit{group sequential
+    designs}, for both the single and the dual criterion, allowing stopping for efficacy and for
     futility, with the corresponding operating characteristics obtained by Monte Carlo simulation.
 
     \item Characterize the use of the EUII as a design comparison tool, determining whether it remains
-    useful under prior conflict, defining the setting in which the
-    index is informative.
+    useful under prior conflict, and identifying the setting in which the index is informative.
 
     \item Use the EUII to compare the evidentiary value delivered per patient across designs, varying
     the number of interim analyses and the shape of the stopping boundary, calibrating every design to
-    a common average T1E rate and average power, following \citet{held2025balancing}.
+    a common avgT1E and avgPower.
 
 \end{itemize}
 
 
-The remainder of the thesis is organized as follows. Chapter~\ref{sec:methodology} develops the
-methodology: the MAP prior and its robust extension (Section~\ref{subsec:formulating_priors}), the
-average metrics with their closed forms and properties under normal priors
-(Section~\ref{subsec:metrics_bayesian}), the \textit{dual criterion}
-(Section~\ref{subsec:dual_criterion_methods}), Bayesian group sequential designs
-(Section~\ref{subsec:sequential}), and the extension of the EUII to the borrowing framework, both for
-fixed and for sequential designs (Section~\ref{subsec:euii}). Chapter~\ref{sec:Applications} applies
-the framework to a PoC case study in Crohn's disease: the fixed design (Section~\ref{sec:fixed_design}),
-one and two interim analyses (Sections~\ref{sec:one_interim} and~\ref{sec:two_interim}), and a
-comparison of designs calibrated to common error rates across the number of looks, the boundary shape,
-and futility stopping (Section~\ref{sec:calibrated_comparison}). Chapter~\ref{sec:conclusion} concludes
-with a discussion of the findings, their limitations, and directions for future work.
+The remainder of the thesis is organized as follows. 
+
+Chapter~\ref{sec:methodology} develops the
+methodology, illustrated throughout on a
+running example (Section~\ref{sec:running_example}): the MAP prior and its robust
+extension (Section~\ref{subsec:formulating_priors}), the average metrics with their
+closed forms and properties under normal priors (Section~\ref{subsec:metrics_bayesian}),
+the DC (Section~\ref{subsec:dual_criterion_methods}), Bayesian group sequential designs
+(Section~\ref{subsec:sequential}), the extension of the EUII to the borrowing framework,
+both for fixed and for sequential designs (Section~\ref{subsec:euii}), and the calibration
+that places designs at common error rates (Section~\ref{sec:seq_calibration}).
+Section~\ref{subsec:contrast_limitation} sets out why the framework does not extend to
+borrowing on the treatment contrast.
+
+Chapter~\ref{sec:Applications} applies the framework to a PoC case study in Crohn's
+disease (Section~\ref{sec:trial_setup}): the fixed design, one interim and two interim
+analyses (Section~\ref{sec:application1}), and a comparison of designs calibrated to
+common error rates across the number of looks, the boundary shape, and futility stopping
+(Section~\ref{sec:calibrated_comparison}).
+
+Chapter~\ref{sec:conclusion} concludes
+with a discussion of the findings and directions for future work.
 
 
 
