@@ -2,19 +2,19 @@
 \label{sec:app_asymptotic}
 
 \section{Setup}
-In this derivation, we assume a common per-patient variation $\sigma^2$. Thus, we can write: 
+In this derivation, we assume a common per patient variance $\sigma^2$. Thus, we can write: 
 $v_C^2=\sigma^2/n_C$, $v_T^2=\sigma^2/n_T$, $\sigma_{A,C}^2=\sigma^2/n_A$, and 
 \[
   W=\frac{\sigma_{A,C}^2}{\sigma_{A,C}^2+v_C^2}=\frac{n_C}{n_C+n_A},\qquad
-  n_T=r_T n_C,\qquad n_{\mathrm{trial}}=n_C(1+r_T).
+  n_T=r_T n_C,\qquad n_{\text{trial}}=n_C(1+r_T).
 \]
 
-We also allow the Design prior to be different from the Analysis prior.
+We also allow the design prior to be different from the analysis prior.
 Three variances appear: 
 \begin{equation}\label{eq:vars}
   V_\delta = W v_C^2 + v_T^2,\qquad
-  V_{\mathrm{samp}} = W^2 v_C^2 + v_T^2,\qquad
-  V_{\mathrm{marg}} = V_{\mathrm{samp}} + (1-W)^2\sigma_{D,C}^2,
+  V_{\text{samp}} = W^2 v_C^2 + v_T^2,\qquad
+  V_{\text{marg}} = V_{\text{samp}} + (1-W)^2\sigma_{D,C}^2,
 \end{equation}
 
 and the decision threshold is $k=q+z_p\sqrt{V_\delta}$, while the conflict bias is:
@@ -24,32 +24,32 @@ and the decision threshold is $k=q+z_p\sqrt{V_\delta}$, while the conflict bias 
 which goes to zero under prior alignment.
 
 Following from Section~\ref{sec:avgmetrics}, the average estimator is:
-$\hat\delta \mid \delta \sim\mathcal N(\delta+\beta,\,V_{\mathrm{marg}})$.
+$\hat\delta \mid \delta \sim\mathcal N(\delta+\beta,\,V_{\text{marg}})$.
 
 Thus, following from \eqref{eq:app_avgpower_closed_form} and \eqref{eq:app_avgt1e_closed_form}, we can write:
 \begin{equation}\label{eq:avg}
-  \avgPow(\delta)=\Phi(b),\quad b=\frac{\delta+\beta-k}{\sqrt{V_{\mathrm{marg}}}};\qquad
-  \avgTIE=\avgPow(0)=\Phi(a),\quad a=\frac{\beta-k}{\sqrt{V_{\mathrm{marg}}}} .
+  \avgPow(\delta)=\Phi(b),\quad b=\frac{\delta+\beta-k}{\sqrt{V_{\text{marg}}}},\qquad
+  \avgTIE=\avgPow(0)=\Phi(a),\quad a=\frac{\beta-k}{\sqrt{V_{\text{marg}}}} .
 \end{equation}
 
 
 \section{Log EUII and the Mills Ratio}
-With avgPower odds $\Phi(b)/\Phi(-b)$ and avgT1E odds $\Phi(a)/\Phi(-a)$, the $\DOR$ and the $\EUII$ are:
+With avgPower odds $\Phi(b)/\Phi(-b)$ and avgT1E odds $\Phi(a)/\Phi(-a)$, the DOR and the EUII are:
 
 \[
   \DOR=\frac{\Phi(b)/\Phi(-b)}{\Phi(a)/\Phi(-a)},\qquad
-  \EUII=\DOR^{1/n_{\mathrm{trial}}} .
+  \EUII=\DOR^{1/n_{\text{trial}}} .
 \]
 
 We can write these metrics in log space by using the log odds (logit) of a Gaussian CDF:
 $\Lodd(x):=\log\Phi(x)-\log\Phi(-x)$, which gives: 
 
 \begin{equation}\label{eq:logeuii}
-  \boxed{\;\log\EUII=\frac{\Lodd(b)-\Lodd(a)}{n_{\mathrm{trial}}}\;}.
+  \boxed{\;\log\EUII=\frac{\Lodd(b)-\Lodd(a)}{n_{\text{trial}}}\;}.
 \end{equation}
 
 
-\paragraph{Mills Ratio}
+\paragraph{Mills ratio}
 The Mills ratio is defined as $\Mills(x)=\dfrac{1-\Phi(x)}{\phi(x)}$, with the classical
 expansion
 \begin{equation}\label{eq:mills}
@@ -72,10 +72,10 @@ Adding the two, we finally obtain:
 
  
 \paragraph{Asymptotic values of the arguments}
-We now obtain the limits of the arguments $b$ and $a$ defined in Equation~\eqref{eq:avg}, analysing their numerator and denominator separately.
+We now obtain the limits of the arguments $b$ and $a$ defined in Equation~\eqref{eq:avg}, analyzing their numerator and denominator separately.
 
 \paragraph{Numerators} Both numerators are built from the bias $\beta$ and the threshold $k$.
-From Equation~\eqref{eq:bias}, $\beta = (1 - W)(\mu_{A,C} - \mu_{D,C})$; since
+From Equation~\eqref{eq:bias}, $\beta = (1 - W)(\mu_{A,C} - \mu_{D,C})$. Since
 \[
   1 - W = \frac{n_A}{n_C + n_A} = O\!\left(\frac{1}{n_C}\right),
 \]
@@ -90,105 +90,105 @@ so $z_p \sqrt{V_\delta} = O\!\left(\frac{1}{\sqrt{n_C}}\right) \to 0$ and $k \to
   \underbrace{\beta - k}_{\text{numerator of } a} \;\longrightarrow\; -q.
 \]
 
-\paragraph{Denominator} From Equation~\eqref{eq:vars}, $V_{\mathrm{marg}} = W^2 v_C^2 + v_T^2 + (1 - W)^2 \sigma_{D,C}^2$. Both $v_C^2 = \sigma^2/n_C$ and $v_T^2 = \sigma^2/(r_T n_C)$ are $O(1/n_C)$, and since $W = n_C/(n_C+n_A) \to 1$, $W^2 v_C^2 = O(1/n_C)$. The 
-design-prior term is smaller still: $1 - W = n_A/(n_C+n_A) = O(1/n_C)$, so $(1 - W)^2 \sigma_{D,C}^2 = O(1/n_C^2)$ with $\sigma_{D,C}^2$ fixed. Adding them,
+\paragraph{Denominator} From Equation~\eqref{eq:vars}, $V_{\text{marg}} = W^2 v_C^2 + v_T^2 + (1 - W)^2 \sigma_{D,C}^2$. Both $v_C^2 = \sigma^2/n_C$ and $v_T^2 = \sigma^2/(r_T n_C)$ are $O(1/n_C)$, and since $W = n_C/(n_C+n_A) \to 1$, $W^2 v_C^2 = O(1/n_C)$. The 
+design prior term is smaller still: $1 - W = n_A/(n_C+n_A) = O(1/n_C)$, so $(1 - W)^2 \sigma_{D,C}^2 = O(1/n_C^2)$ with $\sigma_{D,C}^2$ fixed. Adding them,
 \[
-  V_{\mathrm{marg}}
+  V_{\text{marg}}
   = \underbrace{W^2 v_C^2}_{O(1/n_C)}
   + \underbrace{v_T^2}_{O(1/n_C)}
   + \underbrace{(1 - W)^2 \sigma_{D,C}^2}_{O(1/n_C^2)}
   = O\!\left(\frac{1}{n_C}\right),
 \]
-so the common denominator vanishes, $\sqrt{V_{\mathrm{marg}}} \to 0^+$.
+so the common denominator vanishes, $\sqrt{V_{\text{marg}}} \to 0^+$.
 
 \paragraph{Convergence of $b$} Assuming we are evaluating the avgPower for a meaningful effect ($\delta > q$), the numerator of $b$ tends to the positive constant $\delta - q$ while the denominator tends to $0^+$, hence
 \[
-  b = \frac{\delta + \beta - k}{\sqrt{V_{\mathrm{marg}}}} \;\longrightarrow\; +\infty .
+  b = \frac{\delta + \beta - k}{\sqrt{V_{\text{marg}}}} \;\longrightarrow\; +\infty .
 \]
 
 \paragraph{Convergence of $a$} The numerator of $a$ tends to $-q$, so two cases arise:
 \begin{itemize}
-  \item if $q > 0$, the numerator tends to $-q < 0$ and the denominator to $0^+$, hence $a \to -\infty$;
+  \item if $q > 0$, the numerator tends to $-q < 0$ and the denominator to $0^+$, hence $a \to -\infty$.
   \item if $q = 0$, then $k = z_p\sqrt{V_\delta}$ and both numerator and denominator of $a$ tend to $0$, so we need to expand. Dividing numerator and denominator by $\sqrt{V_\delta}$,
   \[
-    a = \frac{\beta - z_p \sqrt{V_\delta}}{\sqrt{V_{\mathrm{marg}}}}
-      = \frac{\,\beta/\sqrt{V_\delta} - z_p\,}{\sqrt{V_{\mathrm{marg}}/V_\delta}} .
+    a = \frac{\beta - z_p \sqrt{V_\delta}}{\sqrt{V_{\text{marg}}}}
+      = \frac{\,\beta/\sqrt{V_\delta} - z_p\,}{\sqrt{V_{\text{marg}}/V_\delta}} .
   \]
-  Since $\beta = O(1/n_C)$ and $\sqrt{V_\delta} = O(1/\sqrt{n_C})$, the ratio $\beta/\sqrt{V_\delta} = O(1/\sqrt{n_C}) \to 0$; and $V_\delta,\,V_{\mathrm{marg}}$ share the same order, so $V_{\mathrm{marg}}/V_\delta \to 1$. Hence $a \to -z_p$.
+  Since $\beta = O(1/n_C)$ and $\sqrt{V_\delta} = O(1/\sqrt{n_C})$, the ratio $\beta/\sqrt{V_\delta} = O(1/\sqrt{n_C}) \to 0$, and $V_\delta,\,V_{\text{marg}}$ share the same order, so $V_{\text{marg}}/V_\delta \to 1$. Hence $a \to -z_p$.
 \end{itemize}
 
 
 \section{Asymptotic EUII}
 
 
-Recall from Equation~\eqref{eq:logeuii} that $\log\EUII = \dfrac{\Lodd(b)-\Lodd(a)}{n_{\mathrm{trial}}}$. We can use the fact that $\Lodd(x)\approx\tfrac{x^2}{2}$. For $q>0$ we have $b\to+\infty$ and $a\to-\infty$, so, using $\Lodd(-x)=-\Lodd(x)$,
+Recall from Equation~\eqref{eq:logeuii} that $\log\EUII = \dfrac{\Lodd(b)-\Lodd(a)}{n_{\text{trial}}}$. We can use the fact that $\Lodd(x)\approx\tfrac{x^2}{2}$. For $q>0$ we have $b\to+\infty$ and $a\to-\infty$, so, using $\Lodd(-x)=-\Lodd(x)$,
 \[
   \Lodd(b)-\Lodd(a) \approx \frac{b^2}{2} - \left(-\frac{a^2}{2}\right) = \frac{b^2+a^2}{2}.
 \]
-Substituting $b=\dfrac{\delta+\beta-k}{\sqrt{V_{\mathrm{marg}}}}$ and $a=\dfrac{\beta-k}{\sqrt{V_{\mathrm{marg}}}}$ with their numerator limits $\delta+\beta-k\to\delta-q$ and $\beta-k\to-q$,
+Substituting $b=\dfrac{\delta+\beta-k}{\sqrt{V_{\text{marg}}}}$ and $a=\dfrac{\beta-k}{\sqrt{V_{\text{marg}}}}$ with their numerator limits $\delta+\beta-k\to\delta-q$ and $\beta-k\to-q$,
 \[
-  \frac{b^2+a^2}{2} \;\longrightarrow\; \frac{(\delta-q)^2+q^2}{2\,V_{\mathrm{marg}}},
+  \frac{b^2+a^2}{2} \;=\; \frac{(\delta-q)^2+q^2+o(1)}{2\,V_{\text{marg}}},
 \]
 so that
 \begin{equation}\label{eq:app_logeuii_asymp}
-  \log\EUII \;\longrightarrow\; \frac{(\delta-q)^2+q^2}{2\,V_{\mathrm{marg}}\,n_{\mathrm{trial}}} .
+  \log\EUII \;=\; \frac{(\delta-q)^2+q^2+o(1)}{2\,V_{\text{marg}}\,n_{\text{trial}}} .
 \end{equation}
-The only quantity left to evaluate is the product $V_{\mathrm{marg}}\,n_{\mathrm{trial}}$.
+The only quantity left to evaluate is the product $V_{\text{marg}}\,n_{\text{trial}}$.
 
 Since $W\to1$ and $1-W=O(1/n_C)$, we can write:
 \[
-  V_{\mathrm{marg}}
+  V_{\text{marg}}
   = \underbrace{W^2 v_C^2}_{\sigma^2/n_C \,+\, O(1/n_C^2)}
   + \underbrace{v_T^2}_{\sigma^2/n_T}
   + \underbrace{(1-W)^2 \sigma_{D,C}^2}_{O(1/n_C^2)} .
 \]
-Dropping the $O(1/n_C^2)$ terms, we remain with the two-sample variance:
+Dropping the $O(1/n_C^2)$ terms, we remain with the two sample variance:
 \[
-  V_{\mathrm{marg}} = \sigma^2\!\left(\frac{1}{n_C}+\frac{1}{n_T}\right) + O\!\left(\frac{1}{n_C^2}\right).
+  V_{\text{marg}} = \sigma^2\!\left(\frac{1}{n_C}+\frac{1}{n_T}\right) + O\!\left(\frac{1}{n_C^2}\right).
 \]
-Hence, with $n_{\mathrm{trial}}=n_C+n_T$ and $n_T=r_T n_C$,
+Hence, with $n_{\text{trial}}=n_C+n_T$ and $n_T=r_T n_C$,
 \[
-  V_{\mathrm{marg}}\,n_{\mathrm{trial}}
-  \;\longrightarrow\; \sigma^2\!\left(\frac{1}{n_C}+\frac{1}{n_T}\right)(n_C+n_T)
-  = \sigma^2\,\frac{(n_C+n_T)^2}{n_C\, n_T}
-  = \frac{\sigma^2(1+r_T)^2}{r_T} .
+  V_{\text{marg}}\,n_{\text{trial}}
+  \;=\; \sigma^2\!\left(\frac{1}{n_C}+\frac{1}{n_T}\right)(n_C+n_T) + O\!\left(\frac{1}{n_C}\right)
+  = \sigma^2\,\frac{(n_C+n_T)^2}{n_C\, n_T} + O\!\left(\frac{1}{n_C}\right)
+  = \frac{\sigma^2(1+r_T)^2}{r_T} + O\!\left(\frac{1}{n_C}\right) .
 \]
 
-\paragraph{Final Asymptotic EUII}
+\paragraph{Final asymptotic EUII}
 Plugging this into Equation~\eqref{eq:app_logeuii_asymp} and exponentiating,
 \begin{equation}\label{eq:app_ceiling}
   \lim_{n_C\to\infty}\EUII(n_C)
   = \exp\!\left[\frac{r_T\big[(\delta-q)^2+q^2\big]}{2\sigma^2(1+r_T)^2}\right].
 \end{equation}
-For $q=0$ the argument $a\to-z_p$ stays finite, so $\Lodd(a)/n_{\mathrm{trial}}\to0$ and only the $b$-term contributes, the result is Equation~\eqref{eq:app_ceiling} evaluated at $q=0$.
+For $q=0$ the argument $a\to-z_p$ stays finite, so $\Lodd(a)/n_{\text{trial}}\to0$ and only the $b$ term contributes. The result is Equation~\eqref{eq:app_ceiling} evaluated at $q=0$.
 
 
 \section{Extension to the Dual Criterion}
 As already mentioned in the main text, the only difference when using a \textit{dual criterion} is a new threshold:
 \begin{equation}\label{eq:app_kdc}
-  k_{\mathrm{DC}} = \max\!\Big(\,q + z_p\sqrt{V_\delta},\ \ \DV\,\Big).
+  k_{\DC} = \max\!\Big(\,q + z_p\sqrt{V_\delta},\ \ \DV\,\Big).
 \end{equation}
 
-Everything else is unchanged: the DC average metrics are still $\avgPow^{\mathrm{DC}}(\delta) = \Phi(b_{\mathrm{DC}})$ and $\avgTIE^{\mathrm{DC}} = \Phi(a_{\mathrm{DC}})$, with
+Everything else is unchanged: the DC average metrics are still $\avgPow^{\DC}(\delta) = \Phi(b_{\DC})$ and $\avgTIE^{\DC} = \Phi(a_{\DC})$, with
 \[
-  b_{\mathrm{DC}} = \frac{\delta+\beta-k_{\mathrm{DC}}}{\sqrt{V_{\mathrm{marg}}}},
+  b_{\DC} = \frac{\delta+\beta-k_{\DC}}{\sqrt{V_{\text{marg}}}},
   \qquad
-  a_{\mathrm{DC}} = \frac{\beta-k_{\mathrm{DC}}}{\sqrt{V_{\mathrm{marg}}}},
+  a_{\DC} = \frac{\beta-k_{\DC}}{\sqrt{V_{\text{marg}}}},
 \]
-and $\log\EUII^{\mathrm{DC}} = \big(\Lodd(b_{\mathrm{DC}})-\Lodd(a_{\mathrm{DC}})\big)/n_{\mathrm{trial}}$ exactly as in Equation~\eqref{eq:logeuii}.
+and $\log\EUII^{\DC} = \big(\Lodd(b_{\DC})-\Lodd(a_{\DC})\big)/n_{\text{trial}}$ exactly as in Equation~\eqref{eq:logeuii}.
 
 \paragraph{Threshold at the limit}
 The derivation for the SC used the threshold only through its limit $k\to q$, so
 \[
-  k_{\mathrm{DC}} \;\longrightarrow\; \max(q,\DV) = \DV.
+  k_{\DC} \;\longrightarrow\; \max(q,\DV) = \DV,
 \]
-(since $\DV > q$). We can thus follow the same computations of the asymptotic $\SC$ just replacing $q$ with $\DV$: the numerators become $\delta+\beta-k_{\mathrm{DC}}\to\delta-\DV$ and $\beta-k_{\mathrm{DC}}\to-\DV$, and for $\delta>\DV$ we have $b_{\mathrm{DC}}\to+\infty$ and $a_{\mathrm{DC}}\to-\infty$.
+since $\DV > q$. We can thus repeat the computations of the SC case, replacing $q$ with $\DV$: the numerators become $\delta+\beta-k_{\DC}\to\delta-\DV$ and $\beta-k_{\DC}\to-\DV$, and for $\delta>\DV$ we have $b_{\DC}\to+\infty$ and $a_{\DC}\to-\infty$.
 
 
-\paragraph{Final Asymptotic EUII}
+\paragraph{Final asymptotic EUII}
 Substituting $q$ with $\DV$ into Equation~\eqref{eq:app_ceiling} yields:
 \begin{equation}\label{eq:app_ceiling_dc}
-  \lim_{n_C\to\infty}\EUII^{\mathrm{DC}}(n_C)
+  \lim_{n_C\to\infty}\EUII^{\DC}(n_C)
   = \exp\!\left[\frac{r_T\big[(\delta-\DV)^2+\DV^2\big]}{2\sigma^2(1+r_T)^2}\right],
   \qquad \delta > \DV .
 \end{equation}

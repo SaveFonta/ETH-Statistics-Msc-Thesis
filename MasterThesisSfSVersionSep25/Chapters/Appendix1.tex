@@ -13,12 +13,12 @@ Conditional on the true underlying parameters, the sampling distributions of the
 \end{align*}
 where $\sigma_C^2$ and $\sigma_T^2$ are the known variances, and $n_C, n_T$ are the sample sizes. The true treatment effect is defined as $\delta = \theta_C - \theta_T$. 
 
-During the design evaluation, the true parameter $\theta_C$ is either fixed at a specific scalar value $\theta_C^*$ (when computing conditional T1E rate or power) or distributed following the design prior $\pi_D(\theta_C)$ (when calculating $\avgTIE$ or $\avgPow$).
+During the design evaluation, the true parameter $\theta_C$ is either fixed at a specific scalar value $\theta_C^*$ (when computing conditional T1E rate or power) or distributed following the design prior $\pi_D(\theta_C)$ (when calculating avgT1E or avgPower).
 
 
-\paragraph{Analysis Prior and Posterior}
-We incorporate an informative historical analysis prior for the control arm, $\pi_A(\theta_C) \sim \mathcal{N}(\mu_{A,C}, \sigma_{A,C}^2)$, where $\mu_{A,C}$ represents the historical mean and $\sigma_{A,C}^2$ quantifies the prior uncertainty. We assume a non-informative analysis prior for the treatment arm.
-Due to Normal-Normal conjugacy, the posterior distribution for the control parameter remains Normally distributed, $\theta_C \mid \bar{y}_C \sim \mathcal{N}(\mu_{\text{post},C}, \sigma_{\text{post},C}^2)$, where:
+\paragraph{Analysis prior and posterior}
+We incorporate an informative historical analysis prior for the control arm, $\pi_A(\theta_C) = \mathcal{N}(\theta_C;\, \mu_{A,C}, \sigma_{A,C}^2)$, where $\mu_{A,C}$ represents the historical mean and $\sigma_{A,C}^2$ quantifies the prior uncertainty. We assume a noninformative analysis prior for the treatment arm.
+Due to normal normal conjugacy, the posterior distribution for the control parameter remains normally distributed, $\theta_C \mid \bar{y}_C \sim \mathcal{N}(\mu_{\text{post},C}, \sigma_{\text{post},C}^2)$, where:
 $$
     \sigma_{\text{post},C}^2 = \left( \frac{1}{\sigma_{A,C}^2} + \frac{1}{v_C^2} \right)^{-1} = \frac{\sigma_{A,C}^2 v_C^2}{\sigma_{A,C}^2 + v_C^2},
 $$
@@ -32,12 +32,12 @@ $$
 $$
 where $(1 - W)$ quantifies the weight of the historical prior on the final control estimate. 
 
-Conversely, we assume a non-informative (vague) analysis prior for $\theta_T$. Thus, the posterior for the treatment arm is driven entirely by the likelihood:
+Conversely, we assume a noninformative (vague) analysis prior for $\theta_T$. Thus, the posterior for the treatment arm is driven entirely by the likelihood:
 $$
     \theta_T \mid \bar{y}_T \sim \mathcal{N}(\bar{y}_T, v_T^2).
 $$
 
-\paragraph{Decision Rule}
+\paragraph{Decision rule}
 Assuming independence between the two trial arms, the posterior distribution of the treatment contrast $\delta = \theta_C - \theta_T$ is also Normal:
 $$
     \delta \mid \bar{y}_C, \bar{y}_T \sim \mathcal{N}(\hat{\delta}, V_{\delta}),
@@ -48,7 +48,7 @@ where the posterior mean and variance are exactly:
     V_{\delta} &= \sigma_{\text{post},C}^2 + v_T^2.
 \end{align*}
 
-A trial is declared successful if the posterior probability that the treatment effect exceeds a critical threshold $q$ (e.g., $q=0$ for any benefit, or $q=\delta_0$ for clinical relevance) is greater than a pre-specified confidence level $p$:
+A trial is declared successful if the posterior probability that the treatment effect exceeds a critical threshold $q$ (e.g., $q=0$ for any benefit, or $q=\DV$ for clinical relevance) is greater than a prespecified confidence level $p$:
 \begin{align}
     \Pr(\delta > q \mid \bar{y}_C, \bar{y}_T) &> p \nonumber \\
     1 - \Phi\left( \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} \right) &> p. \label{eq:app_decision_rule}
@@ -61,7 +61,7 @@ Starting from the posterior decision rule established in Equation~\eqref{eq:app_
 $$
     1 - \Phi\left( \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} \right) > p \implies \Phi\left( \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} \right) < 1 - p \implies \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} < \Phi^{-1}(1 - p).
 $$
-Using the symmetry of the standard Normal distribution, $\Phi^{-1}(1 - p) = - \Phi^{-1}(p)$. Defining $z_p = \Phi^{-1}(p)$ as the critical $z$-value corresponding to the required posterior probability threshold $p$ (e.g., if $p = 0.975$, $z_p \approx 1.96$), we obtain:
+Using the symmetry of the standard Normal distribution, $\Phi^{-1}(1 - p) = - \Phi^{-1}(p)$. Defining $z_p = \Phi^{-1}(p)$ as the critical $z$-value corresponding to the required posterior probability threshold $p$ (e.g., if $p = 0.95$, $z_p \approx 1.645$), we obtain:
 $$
     \frac{q - \hat{\delta}}{\sqrt{V_{\delta}}} < -z_p.
 $$
@@ -78,11 +78,11 @@ $$
 Because the posterior variance $V_{\delta}$ depends exclusively on the fixed prior variance $\sigma_{A,C}^2$ and the known sampling variances ($v_C^2, v_T^2$), the threshold $k$ is a constant determined entirely at the design stage.
 
 
-\section{Conditional power and T1E rate}
+\section{Conditional Power and T1E Rate}
 
 To evaluate the operating characteristics under theoretical repetitions of the trial, we derive the frequentist sampling distribution of $\hat{\delta}$.
 
-\paragraph{Expected Value of the Estimator}
+\paragraph{Expected value of the estimator}
 By linearity of expectation, and substituting $\Erw[\bar{y}_C \mid \theta_C] = \theta_C$ and $\Erw[\bar{y}_T \mid \theta_C, \delta] = \theta_C - \delta$, we obtain:
 \begin{align}
     \Erw[\hat{\delta} \mid \theta_C, \delta] &= \Erw[\mu_{\text{post},C} \mid \theta_C] - \Erw[\bar{y}_T \mid \theta_C, \delta] \nonumber \\
@@ -91,11 +91,11 @@ By linearity of expectation, and substituting $\Erw[\bar{y}_C \mid \theta_C] = \
     &= (1 - W)(\mu_{A,C} - \theta_C) + \delta. \label{eq:app_expected_delta}
 \end{align}
 
-\paragraph{Sampling Variance of the Estimator}
+\paragraph{Sampling variance of the estimator}
 Assuming the control and treatment arms are enrolled independently:
 \begin{align}
     \Var(\hat{\delta} \mid \theta_C, \delta) &= \Var(\mu_{\text{post},C} \mid \theta_C) + \Var(\bar{y}_T \mid \theta_C, \delta) \nonumber \\
-    &= Var\Big((1 - W)\mu_{A,C} + W\bar{y}_C\Big) + \Var(\bar{y}_T) \nonumber \\
+    &= \Var\Big((1 - W)\mu_{A,C} + W\bar{y}_C\Big) + \Var(\bar{y}_T) \nonumber \\
     &= W^2 \Var(\bar{y}_C) + v_T^2 \nonumber \\
     &= W^2 v_C^2 + v_T^2. \label{eq:app_variance_delta}
 \end{align}
@@ -104,7 +104,7 @@ $$
     \hat{\delta} \mid \theta_C, \delta \sim \mathcal{N}\Big( (1 - W)(\mu_{A,C} - \theta_C) + \delta, \; V_{\text{samp}} \Big).
 $$
 
-\paragraph{Closed-Form Solutions}
+\paragraph{Closed form solutions}
 To compute the conditional power, we replace $\theta_C$ with a true control rate $\theta_C^*$ and integrate the sampling distribution over the success region defined by $k$:
 \begin{align*}
     \Pow(\theta_C^*, \delta) &= \Pr(\hat{\delta} > k \mid \theta_C^*, \delta) \\
@@ -119,25 +119,25 @@ which reduces to the conditional T1E rate by setting $\delta = 0$:
     \TIE(\theta_C^*) = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}} - (1 - W)(\mu_{A,C} - \theta_C^*)}{\sqrt{V_{\text{samp}}}} \right). 
 \end{equation}
 
-with $V_{\delta} = \frac{\sigma_{A,C}^2 v_C^2}{\sigma_{A,C}^2 + v_C^2} + v_T^2$.
+Here $V_{\delta} = \frac{\sigma_{A,C}^2 v_C^2}{\sigma_{A,C}^2 + v_C^2} + v_T^2$.
 
 
-\section{Average power and T1E rate}
+\section{Average Power and T1E Rate}
 \label{sec:avgmetrics}
 When the true control parameter is distributed according to a Normal design prior, $\theta_C \sim \pi_D(\theta_C) = \mathcal{N}(\mu_{D,C}, \sigma_{D,C}^2)$, we have to obtain the marginal sampling distribution of $\hat{\delta}$.
 
-\paragraph{Marginal Expectation and Variance}
+\paragraph{Marginal expectation and variance}
 Using the Law of Total Expectation over $\pi_D(\theta_C)$:
-    $$\Erw[\hat{\delta} \mid \delta] = E_{\theta_C} \Big[ \Erw[\hat{\delta} \mid \theta_C, \delta] \Big] $$
+    $$\Erw[\hat{\delta} \mid \delta] = \Erw_{\theta_C} \Big[ \Erw[\hat{\delta} \mid \theta_C, \delta] \Big] $$
 
 Substituting Equation~\eqref{eq:app_expected_delta}, we obtain:
 \begin{equation} \label{eq:app_marginal_expectation}
-    E_{\theta_C} \Big[ (1 - W)(\mu_{A,C} - \theta_C) + \delta \Big] = (1 - W)(\mu_{A,C} - \mu_{D,C}) + \delta. 
+    \Erw_{\theta_C} \Big[ (1 - W)(\mu_{A,C} - \theta_C) + \delta \Big] = (1 - W)(\mu_{A,C} - \mu_{D,C}) + \delta. 
 \end{equation}
 Applying the Law of Total Variance:
 \begin{align}
-\Var(\hat{\delta} \mid \delta) &= E_{\theta_C} \Big[ \Var(\hat{\delta} \mid \theta_C, \delta) \Big] + \Var_{\theta_C} \Big( \Erw[\hat{\delta} \mid \theta_C, \delta] \Big) \nonumber \\
-&= E_{\theta_C} \Big[ V_{\text{samp}} \Big] + \Var_{\theta_C} \Big( (1 - W)(\mu_{A,C} - \theta_C) + \delta \Big) \nonumber \\
+\Var(\hat{\delta} \mid \delta) &= \Erw_{\theta_C} \Big[ \Var(\hat{\delta} \mid \theta_C, \delta) \Big] + \Var_{\theta_C} \Big( \Erw[\hat{\delta} \mid \theta_C, \delta] \Big) \nonumber \\
+&= \Erw_{\theta_C} \Big[ V_{\text{samp}} \Big] + \Var_{\theta_C} \Big( (1 - W)(\mu_{A,C} - \theta_C) + \delta \Big) \nonumber \\
 &= V_{\text{samp}} + (1 - W)^2 \, \Var(\theta_C) \nonumber \\
 &= W^2 v_C^2 + v_T^2 + (1 - W)^2 \sigma_{D,C}^2. \label{eq:app_marginal_variance}
 \end{align}
@@ -148,7 +148,7 @@ Since the conditional mean is linear in $\theta_C$ and $\pi_D$ is Normal, the ma
     \hat{\delta} \mid \delta \sim \mathcal{N}\Big( (1 - W)(\mu_{A,C} - \mu_{D,C}) + \delta, \; V_{\text{marg}} \Big).
 \end{equation}
 
-\paragraph{Closed-Form Solutions}
+\paragraph{Closed form solutions}
 Evaluating the probability that this marginal distribution crosses $k$ yields the average power:
 \begin{equation} \label{eq:app_avgpower_closed_form}
     \avgPow(\delta) = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}} - \big[(1 - W)(\mu_{A,C} - \mu_{D,C}) + \delta\big]}{\sqrt{V_{\text{marg}}}} \right).
@@ -158,11 +158,11 @@ Setting $\delta = 0$ yields the average T1E rate:
     \avgTIE = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}} - (1 - W)(\mu_{A,C} - \mu_{D,C})}{\sqrt{V_{\text{marg}}}} \right).
 \end{equation}
 
-with $V_{\delta} = \frac{\sigma_{A,C}^2 v_C^2}{\sigma_{A,C}^2 + v_C^2} + v_T^2$.
+Here $V_{\delta} = \frac{\sigma_{A,C}^2 v_C^2}{\sigma_{A,C}^2 + v_C^2} + v_T^2$.
 
-\section{Mathematical properties of the average metrics}
+\section{Mathematical Properties of the Average Metrics}
 
-\paragraph{Property 1: Predictive metrics closer to 50\%}
+\paragraph{Property 1: Average metrics closer to 50\%}
 Evaluating the conditional metric at the center of the design prior ($\theta_C^* = \mu_{D,C}$), the numerators for the $Z$-scores of conditional power and average power are identical. However, as proven in Equation~\eqref{eq:app_marginal_variance}, the marginal variance strictly exceeds the sampling variance ($V_{\text{marg}} > V_{\text{samp}}$). 
 Because the denominator of $Z_{\text{marg}}$ is larger, its absolute magnitude must be smaller:
 $$
@@ -170,7 +170,7 @@ $$
 $$
 Since $\Phi(Z)$ is monotonically increasing and centered at $\Phi(0) = 0.5$, dividing by a larger variance shrinks the $Z$-score toward zero, forcing the average metric to be closer to $0.5$ compared to its conditional counterpart. 
 
-\paragraph{Property 2: Exact Control under Alignment}
+\paragraph{Property 2: Exact control under alignment}
 Assume the design prior exactly matches the analysis prior ($\mu_{D,C} = \mu_{A,C}$ and $\sigma_{D,C}^2 = \sigma_{A,C}^2$). 
 The numerator bias term becomes $(1 - W)(\mu_{A,C} - \mu_{A,C}) = 0$. 
 In the denominator, substituting $\sigma_{A,C}^2$ into $V_{\text{marg}}$ and expanding weights $W$:
@@ -182,9 +182,9 @@ Therefore, $V_{\text{marg}} = \sigma_{\text{post},C}^2 + v_T^2$, which is exactl
 $$
     \avgTIE = 1 - \Phi\left( \frac{q + z_p \sqrt{V_{\delta}}}{\sqrt{V_{\delta}}} \right) = 1 - \Phi\left( \frac{q}{\sqrt{V_{\delta}}} + z_p \right).
 $$
-If $q = 0$, $\avgTIE = 1 - \Phi(z_p)$. Because $z_p = \Phi^{-1}(p)$ and the nominal significance level is $\alpha = 1 - p$, we achieve exact control: $\avgTIE = \alpha$. Note that this exact control holds at $q = 0$; for a non-zero reference value $q \neq 0$ (e.g., a non-inferiority margin), the result is $\avgTIE = 1 - \Phi(q/\sqrt{V_{\delta}} + z_p) \neq \alpha$.
+If $q = 0$, $\avgTIE = 1 - \Phi(z_p)$. Because $z_p = \Phi^{-1}(p)$ and the nominal significance level is $\alpha = 1 - p$, we achieve exact control: $\avgTIE = \alpha$. Note that this exact control holds at $q = 0$. For a nonzero reference value $q \neq 0$ (e.g., a non-inferiority margin), the result is $\avgTIE = 1 - \Phi(q/\sqrt{V_{\delta}} + z_p) \neq \alpha$.
 
-\paragraph{Property 3: The Triviality of a vague Design Prior}
+\paragraph{Property 3: The triviality of a vague design prior}
 Assuming a positive weight assigned to the historical prior ($(1 - W) > 0$), we evaluate the limit of the marginal variance as design uncertainty approaches infinity ($\sigma_{D,C}^2 \to \infty$):
 $$
     \lim_{\sigma_{D,C}^2 \to \infty} V_{\text{marg}} = \lim_{\sigma_{D,C}^2 \to \infty} \Big[ W^2 v_C^2 + v_T^2 + (1 - W)^2 \sigma_{D,C}^2 \Big] = \infty.

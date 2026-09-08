@@ -1,7 +1,7 @@
 \chapter{Computational Framework for the Average Metrics}
 \label{app:computational_framework}
 
-This appendix sets out the computational framework behind the average metrics, which extends the \texttt{RBesT} package \citep{weber_applying_2021}.
+This appendix sets out the computational framework behind the average metrics, which extends the \texttt{RBesT} package \citep{weber_applying_2021}. Decision rules are built with \texttt{decision2S}, the decision boundary of Equation~\eqref{eq:app_boundary} with \texttt{decision2S\_boundary}, the conditional operating characteristics of Equation~\eqref{eq:oc2S_normal} with \texttt{oc2S}, and the averaging integral of Equation~\eqref{eq:avg_integral} with \texttt{integrate\_density\_log}.
 
 Let $\bar{y}_T$ and $\bar{y}_C$ denote the sample means for the treatment and control arms, respectively.
 
@@ -11,16 +11,18 @@ Success is determined by a decision function $D(\bar{y}_T, \bar{y}_C) \in \{0, 1
 
 When evaluating multiple conditions simultaneously, such as in \textit{dual criterion} designs requiring both statistical significance and clinical relevance 
 \citep{roychoudhury_beyond_2018}, the decision is formulated as the product of Heaviside step functions for each condition\footnote{Note that this product 
-formulation naturally generalizes to an arbitrary number of conditions} $H(x)$, where $H(x) = 1$ for $x > 0$ and $0$ for $x \le 0$:
+formulation naturally generalizes to an arbitrary number of conditions} $H(x)$, where $H(x) = 1$ for $x > 0$ and $0$ for $x \le 0$, and where $q_{c,i}$ and $p_{c,i}$ are the reference value and the posterior probability threshold of the $i$th criterion:
 
 $$D(\bar{y}_T, \bar{y}_C) = \prod_{i} H\Big(\Pr(\delta \ge q_{c,i} \mid \bar{y}_T, \bar{y}_C) - p_{c,i}\Big)$$
 
 
 
-The specification of priors, the sample sizes ($n_T$, $n_C$), and the decision function $D(\bar{y}_T, \bar{y}_C)$ uniquely define a conditional Decision Boundary 
+The specification of priors, the sample sizes ($n_T$, $n_C$), and the decision function $D(\bar{y}_T, \bar{y}_C)$ uniquely define a conditional decision boundary 
 $D_T(\bar{y}_C)$ for each observed control outcome $\bar{y}_C$,
-$$D_T(\bar{y}_C) = \max\{\bar{y}_T : D(\bar{y}_T, \bar{y}_C) = 1\}$$
-This represents the maximal threshold the treatment data $\bar{y}_T$ must satisfy to declare success.
+\begin{equation} \label{eq:app_boundary}
+D_T(\bar{y}_C) = \sup\{\bar{y}_T : D(\bar{y}_T, \bar{y}_C) = 1\}
+\end{equation}
+This is the largest value of $\bar{y}_T$ that still yields success, so success occurs when $\bar{y}_T$ falls below it.
 
 Given this boundary, we can compute the conditional probability of success $\Pr(\text{Success} \mid \theta_C, \theta_T)$ required in Equation~\eqref{eq:m_joint}. Assuming
  true parameters $\theta_C$ and $\theta_T$, the overall probability of a success is the expectation of crossing the boundary $D_T(\bar{y}_C)$ over the sampling
@@ -41,7 +43,28 @@ Equation~\eqref{eq:oc2S_general} can be evaluated directly using the standard No
 \end{equation}
  
 
-\section{Averaging over the design prior}
+\section{The Decision Boundary under a Mixture Analysis Prior}
+
+Equation~\eqref{eq:oc2S_normal} presumes the boundary $D_T(\bar{y}_C)$ of
+Equation~\eqref{eq:app_boundary} is available. For a single normal analysis prior it is available in closed form: the
+posterior mean of the contrast is affine in $\bar{y}_C$, the posterior variance does not depend on
+the data, and the success condition reduces to the fixed threshold of
+Equation~\eqref{eq:threshold_k}, so $D_T$ is an affine function of $\bar{y}_C$ with slope $W$.
+
+A mixture analysis prior breaks the last two of these. The posterior is again a normal mixture, but its
+component weights are updated by $\bar{y}_C$, so the posterior variance depends on the data and the
+success condition can no longer be inverted analytically. The boundary is instead located
+numerically, by solving $\Pr(\delta > q \mid \bar{y}_T, \bar{y}_C) = p$ for $\bar{y}_T$ at each
+$\bar{y}_C$, and it is no longer affine: for the three component MAP prior of
+Section~\ref{subsec:formulating_priors} it is visibly curved over the plausible range of
+$\bar{y}_C$, whereas for the single normal its curvature is numerically zero.
+
+This is the computational reason the mixture designs of Chapter~\ref{sec:Applications} have no
+closed form, and it is a property of the analysis prior alone. The design prior enters only as the
+integrating measure in Equation~\eqref{eq:avg_integral}, so a mixture design prior costs nothing
+beyond the numerical integration that is required in any case.
+
+\section{Averaging over the Design Prior}
 
 Equation~\eqref{eq:oc2S_normal} gives the probability of success at a fixed pair $(\theta_C, \theta_T)$.
 The average metrics of Section~\ref{subsec:metrics_bayesian} replace that fixed pair by a draw from the
@@ -52,29 +75,40 @@ interest while the control parameter varies, the average probability of success 
   = \int_{-\infty}^{\infty} \Pr\!\left(\text{Success} \given \theta_C,\, \theta_C - \delta\right)
     \pi_D(\theta_C)\, d\theta_C .
 \end{equation}
-Setting $\delta = 0$ returns the $\avgTIE$ and any other $\delta$ returns the $\avgPow$ at that effect, so a
+Setting $\delta = 0$ returns the avgT1E and any other $\delta$ returns the avgPower at that effect, so a
 single integral produces both metrics. The integrand is the conditional curve of
 Equation~\eqref{eq:oc2S_normal}, which is bounded in $[0,1]$ and smooth in $\theta_C$, and the integral is
-evaluated numerically on the logit scale over the central mass of $\pi_D$, discarding a mass $\varepsilon$ in
-each tail. For a Normal mixture design prior no simulation is required at any point.
+evaluated numerically on the logit probability scale over the central mass of $\pi_D$, discarding a mass
+$\varepsilon/2$ in each tail, with $\varepsilon = 10^{-6}$ throughout. For a Normal mixture design prior no
+simulation is required at any point. The routine used, \texttt{integrate\_density\_log}, is internal to
+\texttt{RBesT} rather than part of its exported interface, so this step depends on an implementation detail
+of that package.
 
-\section{Monte Carlo evaluation of sequential designs}
+With avgT1E and avgPower available from Equation~\eqref{eq:avg_integral} at $\delta = 0$ and at the effect of
+interest respectively, the fixed design EUII of Equation~\eqref{eq:euii_avg} requires no further integration:
+the total sample size $n_{\text{trial}}$ is deterministic, so obtaining the EUII is a single division on the
+log scale rather than an average over $N$.
+
+\section{Monte Carlo Evaluation of Sequential Designs}
 
 A group sequential design has no closed form counterpart to Equation~\eqref{eq:avg_integral}, because success
 at look $k$ depends on the whole history of the trial. The operating characteristics are therefore obtained by
-simulation, with three features that keep the cost manageable.
+simulation, with the three features below keeping the cost manageable.
 
 \paragraph{Boundaries are precomputed once.} The decision boundary at each look is a property of the analysis,
 not of the truth: it is determined by the priors, the sample sizes and the decision rule, and depends neither on
-$\theta_C$ nor on $\delta$. Each look therefore contributes a function $D_{T,k}(\bar{y}_{C,k})$, built once
+$\theta_C$ nor on $\delta$. Each look therefore contributes a function $D_{T,k}(\bar{y}_{C,k})$, built once by the averaging routine
 before the simulation starts and reused for every replicate and every value of $\delta$.
 
-\paragraph{Trials are simulated in parallel and retired as they stop.} For $n_{\text{sim}}$ replicates the
+\paragraph{Trials are simulated jointly across replicates and retired as they stop.} For $n_{\text{sim}}$ replicates the
 control parameter is drawn from the design prior, $\theta_C^{(i)} \sim \pi_D$, and the treatment parameter is
 set to $\theta_T^{(i)} = \theta_C^{(i)} - \delta$. At each look only the increment of new patients is
 generated, and the running arm means are updated cumulatively. A replicate that crosses the efficacy boundary is
 recorded as an efficacy stop at that look, one that crosses the futility boundary as a futility stop, and either
-way it is removed from the active set, so later looks are simulated only for the trials still running.
+way it is removed from the active set, so later looks are simulated only for the trials still running. The
+decision rule at each look may test several conditions at once, exactly as in the dual criterion case of
+Equation~\eqref{eq:app_boundary}: \texttt{decision2S} accepts a vector of thresholds for this purpose, and the
+boundary crossing check above applies unchanged, so no separate code path is needed for the DC.
 
 \paragraph{The conditional case is the same computation.} Drawing every $\theta_C^{(i)}$ from $\pi_D$ gives
 the average metrics, while fixing $\theta_C^{(i)} = \theta_C^*$ for all $i$ gives the conditional ones. The
@@ -82,4 +116,30 @@ conditional operating characteristics are thus the special case of a degenerate 
 code path is needed.
 
 The stopping probabilities of Section~\ref{subsec:sequential} are the proportions of replicates retired at each
-look, and summing the efficacy proportions over looks gives $\avgPow$, or $\avgTIE$ when $\delta = 0$.
+look, and summing the efficacy proportions over looks gives avgPower, or avgT1E when $\delta = 0$. A
+replicate still running at the final look is recorded as a failure, since the final analysis admits only
+success or failure (Section~\ref{sec:trial_setup}).
+
+The same per look proportions supply the sequential EUII of Equation~\eqref{eq:seq_euii}. Running the simulation
+once at $\delta = 0$ and once at the effect of interest gives, for each run, the per look efficacy proportion
+divided by that run's own avgT1E or avgPower, which is exactly $\Pr(\text{stop at } k \mid \text{success}, H_i)$
+of Equation~\eqref{eq:seq_inv_enp} for $H_i = H_0$ or $H_1$ respectively. The analogous ratio to
+$1 - \text{avgT1E}$ or $1 - \text{avgPower}$ gives $\Pr(\text{stop at } k \mid \text{no success}, H_i)$ of
+Equation~\eqref{eq:seq_inv_enm}. These two simulations therefore supply every term needed for
+$\Erw[1/N_i^+]$ and $\Erw[1/N_i^-]$. Combining them into $\Erw[1/N^+]$ and $\Erw[1/N^-]$ through the
+posterior probabilities of $H_0$ and $H_1$, and then into the EUII itself, is the closed form Bayes' rule
+step of Section~\ref{subsubsec:seq_euii} and needs no further simulation.
+
+\paragraph{Precision.} avgT1E and avgPower are each an average of Bernoulli stopping indicators over
+$n_{\text{sim}}$ replicates, so each carries a Monte Carlo standard error of order
+$\sqrt{\hat{p}(1-\hat{p})/n_{\text{sim}}}$. The EUII is a function of these two proportions and of the per
+look proportions behind $\Erw[1/N^+]$ and $\Erw[1/N^-]$, and inherits their uncertainty through a nonlinear
+transform, so it carries a larger error. At the replicate counts used here both are small: at
+$n_{\text{sim}} = 2 \times 10^6$ an avgT1E near $0.05$ has a standard error below $2 \times 10^{-4}$, well
+inside the three decimals reported, and the EUII is resolved to the leading digits shown. Every calibrated
+design is nonetheless reevaluated once more, at a fresh seed and at twice the number of replicates used during
+the calibration search, before it is reported: $n_{\text{sim}} = 10^6$ for the search and
+$n_{\text{sim}} = 2 \times 10^6$ for this verification, in the calibrated comparisons of
+Section~\ref{sec:calibrated_comparison}. A design whose avgT1E or avgPower falls within two Monte Carlo standard errors
+of its calibration target at the higher precision is flagged, since the margin is then too thin to distinguish
+from noise.

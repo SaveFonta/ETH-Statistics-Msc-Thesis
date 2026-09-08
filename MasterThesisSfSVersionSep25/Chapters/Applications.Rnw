@@ -1,4 +1,4 @@
-\chapter{Application to a PoC study in Crohn's disease}
+\chapter{Application to a PoC Study in Crohn's Disease}
 \label{sec:Applications}
 <<load.functions, include=FALSE, cache=FALSE>>=
 source("../scripts/00_shared_setup.R")   # prior_names, dprior_names, my_theme, scale_color_prior(),
@@ -13,12 +13,17 @@ library(tidyr)
 library(ggplot2)
 library(patchwork)
 library(ggh4x)
+
+# Shared across every figure chunk below: order the prior factors consistently.
+to_factors <- function(df) df |>
+  dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
+                Design_Prior   = factor(Design_Prior,   levels = dprior_names))
 @  
  
 \section{Trial Setup}
 \label{sec:trial_setup}
 
-We evaluate the design of a Proof of Concept (PoC) study in Crohn’s disease, an inflammatory bowel disease. This is the trial behind the Running Example used throughout Chapter~\ref{sec:methodology} to illustrate the closed form results. The primary endpoint is the change from baseline to week 6 in the Crohn’s Disease Activity Index (CDAI), a
+We evaluate the design of a PoC study in Crohn's disease, an inflammatory bowel disease. This is the trial behind the running example used throughout Chapter~\ref{sec:methodology} to illustrate the closed form results. The primary endpoint is the change from baseline to week 6 in the Crohn's Disease Activity Index (CDAI), a
 continuous measure where lower scores indicate clinical improvement.
 
 The original trial evaluated the efficacy of secukinumab against a placebo \citep{hueber2012secukinumab}. 
@@ -26,13 +31,13 @@ Let $\theta_C$ and $\theta_T$ be the true underlying mean changes for the contro
 
 
 To improve trial efficiency, an informative analysis prior ($\pi_A$) for the placebo arm was derived from 671
-historical placebo patients across six previous Crohn’s disease trials via a \textit{meta analytic predictive} (MAP) approach.
+historical placebo patients across six previous Crohn's disease trials via a \textit{meta-analytic-predictive} (MAP) approach.
 See Section~\ref{subsec:formulating_priors} for more details.
 
 
 
 
-\paragraph{Decision Rules}
+\paragraph{Decision rules}
 At any given analysis, a successful terminal decision requires both strong evidence of a positive treatment effect and sufficient evidence of a clinically relevant 
 effect size:
 $$
@@ -48,7 +53,7 @@ $$
 
 
 
-\paragraph{Design Variations and Evaluation Strategy}
+\paragraph{Design variations and evaluation strategy}
 The literature presents varying implementations of this trial. The original protocol \citep{hueber2012secukinumab} planned two interim analyses, occurring when 17 and 41 patients, 
 respectively, reached the 6 week evaluation time point. Conversely, \citet{gsponer_practical_2014} modified this into a two stage group sequential design with a 1:2 allocation 
 ratio (10 placebo and 20 experimental patients per stage). Taking a simpler approach, \citet{best_beyond_2025} evaluated the trial as a fixed design using 20 and 40 
@@ -58,12 +63,12 @@ binary decision (success or failure) by removing the terminal futility check.
 
 
 
-Therefore, we will compute avgT1E, avgPower, and $\EUII$ across three design variations of this trial:
+Therefore, we will compute avgT1E, avgPower, and EUII across three design variations of this trial:
  \begin{enumerate}
-  \item \textbf{Fixed Design:} A single stage design (analogous to the evaluation by \citet{best_beyond_2025}). \footnote{\citet{best_beyond_2025} originally used a threshold of $0.975$. We adopt $0.95$ throughout for consistency with the other Design Variations.}
+  \item \textbf{Fixed design:} A single stage design (analogous to the evaluation by \citet{best_beyond_2025}). \footnote{\citet{best_beyond_2025} originally used a threshold of $0.975$. We adopt $0.95$ throughout for consistency with the other design variations.}
   
-  \item \textbf{One Interim Analysis:} An evaluation of the two stage group sequential design proposed by \citet{gsponer_practical_2014}.
-  \item \textbf{Two Interim Analyses:} An evaluation of the original three stage trial protocol \citep{hueber2012secukinumab}.
+  \item \textbf{One interim analysis:} An evaluation of the two stage group sequential design proposed by \citet{gsponer_practical_2014}.
+  \item \textbf{Two interim analyses:} An evaluation of the original three stage trial protocol \citep{hueber2012secukinumab}.
 
 \end{enumerate}
 
@@ -73,37 +78,39 @@ Therefore, we will compute avgT1E, avgPower, and $\EUII$ across three design var
 
 
  
-\paragraph{Analysis Priors ($\pi_A$)}
+\paragraph{Analysis priors ($\pi_A$)}
 The analysis prior $\pi_A(\theta_C)$ determines the degree of historical information incorporated into the final posterior decision:
 \begin{enumerate}
-  \item \textbf{Normal MAP:} A single component normal prior obtained using the MAP approach on historical data: 
-  $$\pi_{\text{MAP},1}(\theta_C) \sim \mathcal{N}(-50,\, 88^2/20).$$
-   This is the prior used for the closed form Running Example of Chapter~\ref{sec:methodology}. It is not evaluated separately in the Monte Carlo comparisons of this section.
-  \item \textbf{3 components MAP:} A mixture of three normals obtained using the MAP approach:
-  $$\pi_{\text{MAP},3}(\theta_C) = 0.48\,\mathcal{N}(-52.5,\,21.2^2) + 0.46\,\mathcal{N}(-47.5,\,7.8^2) + 0.06\,\mathcal{N}(-50.4,\,48.2^2).$$
-  \item \textbf{\textit{Robust MAP} ($\omega \in \{0.2, 0.35, 0.5\}$):} Three robust mixture priors constructed by assigning a weight $\omega$ to a noninformative component and $(1-\omega)$ to the 3 components MAP prior:
+  \item \textbf{1 component normal:} A single component normal prior obtained using the MAP approach on historical data: 
+  $$\pi_{\text{MAP},1}(\theta_C) = \mathcal{N}(\theta_C;\, -50,\, 88^2/20).$$
+   This is the prior used for the closed form running example of Chapter~\ref{sec:methodology}. It is not evaluated separately in the comparisons of this section.
+  \item \textbf{3 component MAP:} A mixture of three normals obtained using the MAP approach:
+  $$\pi_{\text{MAP},3}(\theta_C) = 0.48\,\mathcal{N}(\theta_C;\,-52.5,\,21.2^2) + 0.46\,\mathcal{N}(\theta_C;\,-47.5,\,7.8^2) + 0.06\,\mathcal{N}(\theta_C;\,-50.4,\,48.2^2).$$
+  \item \textbf{\textit{Robust MAP} ($\omega \in \{0.2, 0.35, 0.5\}$):} Three robust mixture priors constructed by assigning a weight $\omega$ to a robust component and $(1-\omega)$ to the 3 component MAP prior:
   $$\pi_{\text{robust}}(\theta_C) = (1 - \omega)\,\pi_{\text{MAP},3}(\theta_C) + \omega\,\mathcal{N}(\theta_C;\,-50,\,88^2).$$
-  The mean of the vague component is set to $-50$ to be consistent with the historical data, and its standard deviation is set to $\sigma = 88$, to be approximately equivalent to one subject's
+  The mean of the robust component is set to $-50$ to be consistent with the historical data, and its standard deviation is set to $\sigma = 88$, so that it carries exactly one subject's
   worth of information. The value of $\omega$ reflects our prior belief about the possibility of nonexchangeability between the placebo effect from the historical studies and the
   placebo effect in the new study.
   \item \textbf{Vague:} A noninformative prior representing a design with no historical borrowing, serving as the frequentist baseline: 
-  $$\pi_{\text{vague}}(\theta_C) = \mathcal{N}(-50,\,8800^2).$$ 
+  $$\pi_{\text{vague}}(\theta_C) = \mathcal{N}(\theta_C;\,-50,\,8800^2).$$ 
   This is the same vague prior adopted by \citet{best_beyond_2025}. The standard deviation is set to $8800 = 100\,\sigma$, so the prior carries an \textit{effective sample size} of $\sigma^2/8800^2 = 10^{-4}$, that is, negligible information. 
-  The design therefore effectively reduces to the frequentist no borrowing baseline. 
-\end{enumerate} 
+  The design therefore effectively reduces to the frequentist no borrowing baseline.
+\end{enumerate}
+The first three are plotted as densities in Figure~\ref{fig:map_robust_plot}, with the robust prior at $\omega = 0.2$.
 
  
 
-\paragraph{Design Priors ($\pi_D$)}
+\paragraph{Design priors ($\pi_D$)}
 The design prior $\pi_D(\theta_C)$ represents the assumed true data generating process for the control arm ($\theta_C$):
 \begin{enumerate}
   \item \textbf{Dirac:} A Dirac measure at $\theta_C^* = -50$, which recovers the classical conditional T1E rate and power.
-  \item \textbf{3 components MAP:} A design prior exactly matching the corresponding 3 components MAP analysis prior.
-  \item \textbf{Skeptical:} Following the terminology of \citet{best_beyond_2025}, this prior corresponds to the posterior distribution of a standalone analysis of the historical study with the “most extreme” placebo effect ($\bar{y} = -90$, $n = 25$, so $\sigma/\sqrt{n} = 88/5 = 17.6$): 
-  $$\pi_{\text{skep}}(\theta_C) = \mathcal{N}(-90,\,17.6^2).$$
+  \item \textbf{3 component MAP:} A design prior exactly matching the corresponding 3 component MAP analysis prior.
+  \item \textbf{Skeptical:} Following the terminology of \citet{best_beyond_2025}, this prior corresponds to the posterior distribution of a standalone analysis of the historical study with the ``most extreme'' placebo effect ($\bar{y} = -90$, $n = 25$, so $\sigma/\sqrt{n} = 88/5 = 17.6$): 
+  $$\pi_{\text{skep}}(\theta_C) = \mathcal{N}(\theta_C;\,-90,\,17.6^2).$$
   Because the placebo is exceptionally effective, this scenario is highly \textit{skeptical} of the experimental treatment's ability to demonstrate superiority.
-  \item \textbf{Misspecified:} A hypothetical \textit{prior data conflict} scenario where the true control arm performs much worse than historically predicted: 
-  $$\pi_{\text{miss}}(\theta_C) = \mathcal{N}(-10,\,25^2).$$
+  \item \textbf{Misspecified:} A hypothetical \textit{prior-data conflict} scenario where the true control arm performs much worse than historically predicted: 
+  $$\pi_{\text{miss}}(\theta_C) = \mathcal{N}(\theta_C;\,-10,\,25^2).$$
+  The mean mirrors the skeptical scenario, displaced from the MAP mean by the same 40 units in the opposite direction. Its standard deviation is set slightly wider than the 19.5 of the MAP prior itself, because this scenario is a hypothesis about how the control arm might behave rather than a posterior derived from an observed study.
 \end{enumerate}
 
 
@@ -111,7 +118,7 @@ The design prior $\pi_D(\theta_C)$ represents the assumed true data generating p
 \section{Original Designs}
 \label{sec:application1}
 
-\subsection{Fixed Design}
+\subsection{Fixed design}
 \label{sec:fixed_design}
 Following \citet{best_beyond_2025}, we fix the sample size at $n_C = 20$ and $n_T = 40$ and we analyze the \textit{single criterion} (SC) and the \textit{dual criterion} (DC) designs.
 Because no closed form exists for the mixture case, the conditional metrics are computed numerically using \texttt{RBesT::oc2S} and the average metrics with a numerical integration routine, detailed in Appendix~\ref{app:computational_framework}.
@@ -123,7 +130,7 @@ Figure~\ref{fig:plot_cond_both} shows the conditional T1E rate ($\delta = 0$, to
 The vague prior borrows nothing so its curves are flat: the T1E rate is exactly $0.05$ for the SC at every $\theta_C^*$ (and lower for the DC), while power depends only on the sample size. It is the frequentist reference against which the borrowing priors are compared.
 The informative priors shrink the control estimate toward the prior mean $\mu_{A,C} = -50$, and the consequence depends on where the truth lies. When the true control mean is far below the prior mean ($\theta_C^* \ll -50$, the skeptical scenario), the shrinkage makes the 
 control arm look worse than it is, which favors the treatment and inflates T1E rate and power. When the truth is above the prior mean ($\theta_C^* \gg -50$, the misspecified scenario), the opposite happens, and both the T1E rate and the power are suppressed. The
-\textit{robust MAP} priors moderate this behavior: as $\omega$ increases, each curve is pulled monotonically toward the flat vague baseline. 
+robust MAP priors moderate this behavior: as $\omega$ increases, each curve is pulled monotonically toward the flat vague baseline. 
 
 
 <<plot_cond_both, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=10, dev='cairo_pdf', fig.cap="Conditional metrics for all five analysis priors as a function of the fixed true control mean $\\theta_C^*$, for the SC design (left column) and the DC design (right column). Top row: conditional T1E rate ($\\delta = 0$), with the dashed red line marking $\\alpha = 0.05$. Bottom row: conditional power at $\\delta = 60$. The vague prior (dashed) provides the no borrowing reference. The dotted vertical line marks the prior mean $\\mu_{A,C} = -50$.">>=
@@ -186,14 +193,10 @@ more informative analysis priors lead to avgT1E and avgPower inflation. The miss
 suppressing both avgT1E and avgPower simultaneously, making the trial conservative but underpowered.
 
 The DC column mirrors this structure at a lower level: avgT1E still inflates under the skeptical design prior and is suppressed under the misspecified one, but the DC keeps the avgT1E far below the nominal $0.05$ in almost every scenario. 
-This supports the use of \textit{dual criterion} designs in PoC phase II trials, where the cost of a false positive is particularly high, exactly the setting for which the design was originally proposed \citep{gsponer_practical_2014, fisch2015bayesian, roychoudhury_beyond_2018}. The avgPower at $\delta = 60$ follows the avgT1E structure in both columns: high under the skeptical prior, 
+This supports the use of dual criterion designs in PoC phase II trials, where the cost of a false positive is particularly high, exactly the setting for which the design was originally proposed \citep{gsponer_practical_2014, fisch2015bayesian, roychoudhury_beyond_2018}. The avgPower at $\delta = 60$ follows the avgT1E structure in both columns: high under the skeptical prior, 
 moderate under the aligned and Dirac priors, low under the misspecified prior, and progressively closer to the vague baseline as $\omega \to 1$.
 
 <<plot_avg_both, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=10, dev='cairo_pdf', fig.cap="avgT1E (top row) and avgPower at $\\delta = 60$ (bottom row) for all 20 analysis$\\times$design prior combinations, for the SC design (left column) and the DC design (right column). The dashed red line marks $\\alpha = 0.05$. The vague prior (dashed line) is the no borrowing reference.">>=
-
-to_factors <- function(df) df |>
-  dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
-                Design_Prior   = factor(Design_Prior,   levels = dprior_names))
 
 df_sc <- to_factors(readRDS("../Output/02_fixed_design_SC/euii.RDS")$df_euii)
 df_dc <- to_factors(readRDS("../Output/03_fixed_design_DC/avg.RDS")$df_avg)
@@ -247,16 +250,10 @@ p22 <- avg_panel(df_dc, "DC", 60, "avgPower", NULL,            pow_lim) + angle_
 
 Figure~\ref{fig:plot_power_delta_both} shows the average power as a function of $\delta$, for $\delta \geq \DV = 50$ with the SC design on the top row and the DC design on the bottom row.
 At $\delta = \DV$ the SC already sits well above $50\%$ under every design prior, while for the DC, at $\delta = \DV$ the power is close to $50\%$ when the analysis prior is the same as the
-design prior (MAP and Dirac), and for the vague prior in every panel, while prior data conflict shifts it up under the skeptical prior and down under the misspecified prior.
+design prior (MAP and Dirac), and for the vague prior in every panel, while prior-data conflict shifts it up under the skeptical prior and down under the misspecified prior.
 
 <<plot_power_delta_both, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=12, dev='cairo_pdf', fig.cap="Average power as a function of the true treatment effect $\\delta$, faceted by design prior and coloured by analysis prior, for the SC design (top row) and the DC design (bottom row). The red horizontal line marks $50\\%$ power. The vague prior (dashed line) is the no borrowing reference.">>=
 
-to_factors <- function(df) df |>
-  dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
-                Design_Prior   = factor(Design_Prior,   levels = dprior_names))
-
-df_sc <- to_factors(readRDS("../Output/02_fixed_design_SC/euii.RDS")$df_euii)
-df_dc <- to_factors(readRDS("../Output/03_fixed_design_DC/avg.RDS")$df_avg)
 
 # facet_grid puts the framed design prior headers on top and a framed design
 # label (SC or DC) on the right of each row, so the two rows are clearly told apart.
@@ -327,13 +324,13 @@ nc_map      <- g("MAP", "n_C")
 extra_02    <- g("robust (w=0.2)", "n_C") - nc_map
 extra_05    <- g("robust (w=0.5)", "n_C") - nc_map
 
-kable(tab_ss, format = "latex", booktabs = TRUE, escape = FALSE, align = "lcccccc",
+kable(tab_ss, format = "latex", booktabs = TRUE, escape = FALSE, align = "lrrrrrr",
       col.names = c("Analysis prior", "prior ESS", "$n_C$", "$n_T$", "$N$", "$\\avgPow$", "$\\avgTIE$"),
       caption = paste0("Smallest control sample size reaching an average power of ",
                        round(100 * ss$target), "\\% at $\\delta = ", ss$delta,
                        "$ with allocation ratio $r_T = ", ss$rT,
                        "$, for each analysis prior, with the design prior fixed at ",
-                       "$\\pi_{\\mathrm{MAP}}$. The final column gives the ",
+                       "$\\pi_{\\text{MAP}}$. The final column gives the ",
                        "$\\avgTIE$ of the selected design."),
       label = "samplesize_mix") |>
   kable_styling(latex_options = "hold_position")
@@ -373,7 +370,7 @@ can tolerate while keeping an acceptable avgT1E.
 
 \citet{best_beyond_2025} suggest varying the design prior across several scenarios, as done in Figure~\ref{fig:plot_avg_both},
 and as we will do again for the sequential designs in Sections~\ref{sec:one_interim} and~\ref{sec:two_interim}. We call this
-\textit{switching}: evaluating avgT1E under a different design prior, such as the \textit{skeptical} or
+\textit{switching}: evaluating avgT1E under a different design prior, such as the skeptical or
 \textit{misspecified} scenarios, in place of $\pi_{\text{MAP}}$.
 
 Beyond switching, in Figure~\ref{fig:plot_t1e} we already presented two ways of changing the design prior in order to create conflict with the analysis
@@ -383,7 +380,7 @@ slides every mean component of $\pi_{\text{MAP}}$ by $d$ while the weights and
 component variances stay fixed, and \textit{scaling} multiplies by a factor $s$ every component $sd$ while the means and weights stay fixed. 
 Since lower values of the endpoint are clinically better, only a negative drift,
 i.e. a true control mean better than the one $\pi_{\text{MAP}}$ assumes, can inflate avgT1E: this is the direction of the
-\textit{skeptical} scenario above, while the \textit{misspecified} one drifts the other way and only makes the design
+skeptical scenario above, while the misspecified one drifts the other way and only makes the design
 more conservative, as already observed in Figure~\ref{fig:plot_avg_both}. We therefore only shift $\pi_{\text{MAP}}$ toward lower values, and only widen its spread,
 since narrowing it further would only shrink avgT1E the same way alignment already does.
 
@@ -395,7 +392,7 @@ ss_tab <- readRDS("../Output/02.2_omega_calibration/switch_vs_shift.RDS")
 
 tab_sw <- data.frame(
   "$\\omega$"                          = formatC(ss_tab$omega, format = "f", digits = 2),
-  "$\\pi_D = \\pi_{\\mathrm{MAP}}$"    = formatC(ss_tab$t1e_map, format = "f", digits = 3),
+  "$\\pi_D = \\pi_{\\text{MAP}}$"    = formatC(ss_tab$t1e_map, format = "f", digits = 3),
   "skeptical"                          = formatC(ss_tab$switch_skept, format = "f", digits = 3),
   "misspecified"                       = formatC(ss_tab$switch_missp, format = "f", digits = 3),
   "$d = -15$"                          = formatC(ss_tab$shift_d15, format = "f", digits = 3),
@@ -405,9 +402,9 @@ tab_sw <- data.frame(
   check.names = FALSE
 )
 
-kable(tab_sw, format = "latex", booktabs = TRUE, escape = FALSE, align = "cccccccc",
+kable(tab_sw, format = "latex", booktabs = TRUE, escape = FALSE, align = "crrrrrrr",
       caption = paste0("$\\avgTIE$ under switching design prior, ",
-                       "shifting $\\pi_{\\mathrm{MAP}}$'s location by a drift $d$, or scaling its ",
+                       "shifting $\\pi_{\\text{MAP}}$'s location by a drift $d$, or scaling its ",
                        "$sd$ by a factor $s$."),
       label = "switch_vs_shift") |>
   add_header_above(c(" " = 2, "Switch" = 2, "Shift" = 2, "Scale" = 2), escape = FALSE) |>
@@ -436,8 +433,8 @@ Scaling behaves differently. Tripling $\pi_{\text{MAP}}$'s $sd$ reaches only $\a
 $\omega = 0$, below even the mildest drift considered, $\Sexpr{d15_0}$ at $d = -15$. 
 Thus, being wrong about how uncertain $\theta_C$ is costs less than being wrong about where it is.
 
-As we increase the robustification (the $\omega$ weight), the avgT1E decreases: going from $\omega = 0$ to
-$\omega = 0.50$ the \textit{skeptical} column 
+As we increase the robustification ($\omega$), the avgT1E decreases: going from $\omega = 0$ to
+$\omega = 0.50$ the skeptical column 
 halves from \Sexpr{skept_0} to \Sexpr{skept_05}, the $d = -30$ column falls from \Sexpr{d30_0} to \Sexpr{d30_05}, 
 and the $s = 3$ column from \Sexpr{s3_0} to \Sexpr{s3_05}. 
 
@@ -457,7 +454,7 @@ As mentioned in Section~\ref{subsec:euii}, the average EUII ($\EUII_{avg}$) is d
 
 Figure~\ref{fig:plot_euii_both} displays on the first two rows the EUII of the
 SC and the DC designs as functions of $\delta$.
-Under aligned priors (Dirac and MAP), results are similar to the ones obtained by \citet{held2025balancing}: the EUII
+Under aligned priors (Dirac and MAP) the EUII
 rises with $\delta$ in both designs, the ordering in $\omega$ is strict, so more
 borrowing always gives a higher EUII, and the Dirac design prior, which fixes the
 truth at the prior mean, is the upper bound.
@@ -485,10 +482,6 @@ $\EUII^{\DC} / \EUII^{\SC}$. Under the aligned design priors the DC is slightly 
 is above for large ones.
 
 <<plot_euii_both, echo=FALSE, warning=FALSE, message=FALSE, fig.height=11, fig.width=12, dev='cairo_pdf', fig.cap="EUII comparison of the two criteria, faceted by design prior and coloured by analysis prior (vague shown dashed). Top row: EUII of the SC design as a function of $\\delta$. Middle row: EUII of the DC design. Bottom row: ratio $\\EUII^{\\DC} / \\EUII^{\\SC}$.">>=
-
-to_factors <- function(df) df |>
-  dplyr::mutate(Analysis_Prior = factor(Analysis_Prior, levels = prior_names),
-                Design_Prior   = factor(Design_Prior,   levels = dprior_names))
 
 df_sc    <- to_factors(readRDS("../Output/02_fixed_design_SC/euii.RDS")$df_euii) |>
   dplyr::filter(delta >= 50)
@@ -532,7 +525,7 @@ p_ratio <- row_layout(df_ratio, "EUII_ratio",
 @
 
 
-\subsection{One Interim Analysis}
+\subsection{One interim analysis}
 \label{sec:one_interim}
 Following \citet{gsponer_practical_2014}, we can extend the design to allow one interim analysis. The total sample size is the same as the fixed design, $n_T = 40$ and $n_C = 20$, 
 while the interim look takes place after half the patients in each arm, so the trial can stop with $30$ patients or continue to the full $60$. 
@@ -697,9 +690,8 @@ Taken together, the error rates are almost blind to futility stopping. Its benef
 
 \paragraph{EUII}
 As discussed for the fixed design, the EUII is better suited to compare design choices under aligned priors, so here both the analysis prior and the design prior
-are the MAP prior. The sequential form of the index used here is the one derived in
-Section~\ref{subsubsec:seq_euii}. Figure~\ref{fig:plot_seq_euii} shows the EUII of the four sequential designs together with their fixed counterparts (top), the ratio of each
-sequential design to its own fixed counterpart (middle), and the \textit{effective sample size} of the two futility designs, $1/\Erw[1/N^+]$ for success and $1/\Erw[1/N^-]$ for non success (bottom). 
+are the MAP prior. Figure~\ref{fig:plot_seq_euii} shows the EUII of the four sequential designs together with their fixed counterparts (top), the ratio of each
+sequential design to its own fixed counterpart (middle), and the effective sample size of the two futility designs, $1/\Erw[1/N^+]$ for success and $1/\Erw[1/N^-]$ for non success (bottom). 
 Since Equation~\eqref{eq:seq_euii} requires a prior probability $\Pr(H_1)$ that the treatment truly works, each panel shows a line at $\Pr(H_1) = 0.5$ together with a band spanning 
 $\Pr(H_1) \in \{0.01, 0.1, 0.5\}$, so that the width of the band reveals how sensitive the metric is to this choice.
  
@@ -847,7 +839,7 @@ With futility the SC has the higher EUII instead, and the difference grows with 
  
 
 
-\subsection{Two Interim Analyses}
+\subsection{Two interim analyses}
 \label{sec:two_interim}
 
 
@@ -991,7 +983,7 @@ kable(tab_designs2, format = "latex", booktabs = TRUE, digits = 3, escape = FALS
 Every design gains from the second interim while the futility designs gain the most, since it allows
 a failing trial to exit early, and a second interim gives it one more chance to do so. Figure~\ref{fig:plot_seq2_vs_one}
 shows the two interim designs against their one interim counterparts: the ratio of the two interim EUII to the one
-interim EUII, matched at the same $\Pr(H_1)$ (top), and the \textit{effective sample size} of the futility designs (bottom).  
+interim EUII, matched at the same $\Pr(H_1)$ (top), and the effective sample size of the futility designs (bottom).  
 
 <<plot_seq2_vs_one, echo=FALSE, warning=FALSE, message=FALSE, fig.height=7, fig.width=8, dev='cairo_pdf', fig.cap="Two interim analyses against one interim, aligned priors. Top: ratio of the EUII with two interims to the EUII with one interim. Bottom: effective sample size of the two futility designs by trial outcome. Lines are drawn at $\\Pr(H_1) = 0.5$, bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$.">>=
 
@@ -1093,7 +1085,7 @@ bottom_panel2 <- p_ess2 +
 \paragraph{Conclusion}
 Adding another interim increases the EUII in every case, but this comes at the cost of an inflated
 avgT1E. For example, the avgT1E of the DC rises to the nominal $0.05$, losing the conservatism that justified it in the fixed design.
-Thus, one may argue that the comparison is not fair. For this reason in the next Section, we follow the approach from 
+Thus, one may argue that the comparison is not fair. For this reason in the next section, we follow the approach from 
 \citet{held2025balancing}, comparing different designs calibrated at the same avgT1E and avgPower. 
 
  
@@ -1106,8 +1098,8 @@ Following the approach outlined in Section~\ref{sec:seq_calibration}, the goal o
 compare different designs calibrated at approximately an avgT1E of $0.05$ and an avgPower of $0.90$.
 
 We vary two aspects of the design: Section~\ref{sec:calibrated_sc}
-varies the number of interim analyses at a fixed boundary shape, and Section~\ref{sec:calibrated_shapes}
-varies the boundary shape itself at two looks. Section~\ref{sec:calibrated_futility} then
+varies the number of interim analyses at a fixed stopping rule, and Section~\ref{sec:calibrated_shapes}
+varies the stopping rule itself at two looks. Section~\ref{sec:calibrated_futility} then
 takes the calibrated designs and adds a futility rule on top.
 
 Throughout, the analysis prior and the design prior are both $\pi_{\text{MAP}}$, so the calibration
@@ -1243,17 +1235,17 @@ Each design is calibrated using the two nested searches of Section~\ref{subsubse
 Algorithm~\ref{alg:calibrate_threshold} finds the threshold, Algorithm~\ref{alg:calibrate_design} the
 sample size. This is repeated independently at every
 $\delta_{\text{target}} \in \{50, 60, 70, 80, 90\}$, so each result that follow is its own
-calibrated design, sharing nothing with the others except the schedule shape it was searched from.
+calibrated design, sharing nothing with the others except the schedule it was searched from.
 
 Once a pair $(n_{C,K}, p)$ is accepted, it is
 reevaluated once more, at a fresh seed and at $\Sexpr{n_sim_check_f}$ replicates, twice the
 $\Sexpr{n_sim_calib_f}$ used for the search, and it is this reevaluation, not the search, that is
-reported throughout this Section.
+reported throughout this section.
 
-\subsection{The Effect of the Number of Interim Analyses}
+\subsection{The effect of the number of interim analyses}
 \label{sec:calibrated_sc}
 
-The three designs compared here follow the same schedule shapes already introduced: the fixed design
+The three designs compared here follow the same schedules already introduced: the fixed design
 of Section~\ref{sec:fixed_design}, the two stage design of Section~\ref{sec:one_interim}, and the
 three stage design of Section~\ref{sec:two_interim}. Only the scale changes: at each
 $\delta_{\text{target}}$ the schedule is rescaled to whatever maximum sample size the calibration
@@ -1312,15 +1304,16 @@ kable(tab_sc, format = "latex", booktabs = TRUE, escape = FALSE, align = "clrrrr
 @
 
 Table~\ref{tab:calibrated_sc} reports the result across the whole $\delta_{\text{target}}$ grid, and
-Figure~\ref{fig:plot_cal_sc} plots the EUII of the three calibrated designs at each
+Figure~\ref{fig:plot_cal_sc} plots the EUII of the calibrated designs at each
 $\delta_{\text{target}}$: the ordering is monotone in the number of looks at every target, and the
 mechanism behind it is visible in the expected sample size. The fixed design always enrolls its full
-sample, while a treatment that works is often recognised at an early look, so the interim designs stop
-there instead and enroll fewer patients, the more so the more looks they have. Since the three designs
-share almost the same avgT1E and avgPower and therefore the same $\DOR$, the EUII differences trace entirely
-to sample size, mostly through this early stopping on the success branch. The failure branch also
-differs, since $n_{\max}$ itself grows with the number of looks, but that difference works against the
-observed ordering rather than for it, and is outweighed by the saving on the success branch.
+sample, while a treatment that works is often recognized at an early look, so the interim designs stop
+there instead and enroll fewer patients, the more so the more looks they have. The three designs share
+almost the same avgT1E and avgPower, and therefore almost the same DOR, so what separates their EUII is
+sample size. Most of the difference comes from $\Erw[1/N^+]$, the success term, through the early
+stopping just described. The non success term works the other way: since these designs stop early only
+for efficacy, a trial that does not succeed always runs to the final look, so $\Erw[1/N^-] = 1/n_{\max}$
+exactly, which grows with the number of looks.
 
 <<plot_cal_sc, echo=FALSE, warning=FALSE, message=FALSE, fig.height=11, fig.width=8, dev='cairo_pdf', fig.cap="Calibrated designs against the target $\\delta_{\\text{target}}$, each point a separately calibrated design sharing the same avgT1E and avgPower. Top: EUII. Middle: ratio to the fixed design at the same target. Bottom: effective sample size on each branch. Lines are drawn at $\\Pr(H_1) = 0.5$ and bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$.">>=
 looks_cols <- c("Fixed" = col_cond, "One interim" = col_sc, "Two interims" = col_dc)
@@ -1328,16 +1321,16 @@ looks_cols <- c("Fixed" = col_cond, "One interim" = col_sc, "Two interims" = col
 euii_three_panel(sc_df, group_var = "Looks", cols = looks_cols, baseline = "Fixed")
 @
 
-\subsection{Boundary Shapes}
+\subsection{Stopping rules}
 \label{sec:calibrated_shapes}
 
 Section~\ref{sec:calibrated_sc} varies the number of looks while holding the boundary flat, so the
-posterior probability threshold $p$ is the same at every look. Here the number of looks is held fixed and the shape of the
-boundary is varied instead. Four shapes are compared: Pocock's constant threshold, the O'Brien Fleming
+posterior probability threshold $p$ is the same at every look. Here the number of looks is held fixed and the
+stopping rule is varied instead. Four stopping rules are compared: Pocock's constant threshold, the O'Brien Fleming
 boundary, the Haybittle Peto boundary, and a Wang Tsiatis boundary, all four defined in
-Section~\ref{subsubsec:boundary_shapes}. Each shape is calibrated through
+Section~\ref{subsubsec:boundary_shapes}. Each stopping rule is calibrated through
 one scalar parameter $p$ as explained in
-Section~\ref{sec:seq_calibration}, while the comparison is run at $K = 3$ rather than $K = 2$, since it gives the shapes room to differ more
+Section~\ref{sec:seq_calibration}, and the comparison is run at $K = 3$ rather than $K = 2$, since it gives the stopping rules room to differ more
 from the fixed design than a single interim would.
 
 
@@ -1373,7 +1366,7 @@ sh_euii_max <- ave(sh_df_clean$EUII, sh_df_clean$DeltaTarget, FUN = max)
 
 tab_sh <- data.frame(
   "$\\delta_{\\text{target}}$" = sh_df_clean$DeltaTarget,
-  "Shape"        = as.character(sh_df_clean$Shape),
+  "Stopping Rule" = as.character(sh_df_clean$Shape),
   "$n_{\\max}$"  = sh_df_clean$n_max,
   "$\\avgTIE$"   = formatC(sh_df_clean$avgT1E,   format = "f", digits = 3),
   "$\\avgPow$"   = formatC(sh_df_clean$avgPower, format = "f", digits = 3),
@@ -1385,8 +1378,8 @@ tab_sh <- data.frame(
 
 kable(tab_sh, format = "latex", booktabs = TRUE, escape = FALSE, align = "clrrrrr",
       row.names = FALSE,
-      caption = paste0("Calibrated boundary shapes at $K = ", K_sh,
-                       "$, across the full design target grid. Every shape is tuned to approximately $\\avgTIE = ", cal_t1e_tgt, "$ and $\\avgPow = ",
+      caption = paste0("Calibrated stopping rules at $K = ", K_sh,
+                       "$, across the full design target grid. Every stopping rule is tuned to approximately $\\avgTIE = ", cal_t1e_tgt, "$ and $\\avgPow = ",
                        cal_pow_tgt, "$ at its own target. $\\Erw[N]$ and the EUII are reported at ",
                        "$\\delta = \\delta_{\\text{target}}$ and $\\Pr(H_1) = 0.5$. The highest EUII within each ",
                        "$\\delta_{\\text{target}}$ block is bolded."),
@@ -1394,8 +1387,8 @@ kable(tab_sh, format = "latex", booktabs = TRUE, escape = FALSE, align = "clrrrr
   kable_styling(latex_options = "hold_position") |>
   collapse_rows(columns = 1, latex_hline = "major", valign = "middle")
 @
-Table~\ref{tab:calibrated_shapes} reports the four calibrated shapes across the full
-$\delta_{\text{target}}$ grid. At $\delta_{\text{target}} \in \{50, 60, 70, 90\}$ the shapes separate clearly, and in the
+Table~\ref{tab:calibrated_shapes} reports the four calibrated stopping rules across the full
+$\delta_{\text{target}}$ grid. At $\delta_{\text{target}} \in \{50, 60, 70, 90\}$ the stopping rules separate clearly, and in the
 same order throughout: Pocock highest, then Wang Tsiatis, then
 O'Brien Fleming, and Haybittle Peto last. The mechanism is the trade between how permissive a
 boundary is at the interims and the maximum size that this costs. Pocock is the most
@@ -1406,19 +1399,19 @@ result. Only at $\delta_{\text{target}} = 80$ does the ordering change, with Wan
 Pocock, $\Sexpr{pow_eu80_f}$ against $\Sexpr{flat_eu80_f}$
 
 
-<<plot_cal_shapes, echo=FALSE, warning=FALSE, message=FALSE, fig.height=11, fig.width=8, dev='cairo_pdf', fig.cap=paste0("Calibrated boundary shapes against the design target, at $K = ", K_sh, "$. Top: EUII. Middle: ratio to Pocock at the same target. Bottom: effective sample size on each branch. Lines are drawn at $\\Pr(H_1) = 0.5$ and bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$.")>>=
-shape_cols <- c("Pocock" = "#000000", "OBF" = col_sc, "Haybittle-Peto" = col_dc,
+<<plot_cal_shapes, echo=FALSE, warning=FALSE, message=FALSE, fig.height=11, fig.width=8, dev='cairo_pdf', fig.cap=paste0("Calibrated stopping rules against the design target, at $K = ", K_sh, "$. Top: EUII. Middle: ratio to Pocock at the same target. Bottom: effective sample size on each branch. Lines are drawn at $\\Pr(H_1) = 0.5$ and bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$.")>>=
+shape_cols <- c("Pocock" = "#000000", "O'Brien Fleming" = col_sc, "Haybittle Peto" = col_dc,
                 "Wang Tsiatis" = "#009E73")
 
 euii_three_panel(sh_df_clean, group_var = "Shape", cols = shape_cols, baseline = "Pocock")
 @
 
-\subsection{Futility Stopping}
+\subsection{Futility stopping}
 \label{sec:calibrated_futility}
 
 We now take the designs already calibrated in Section~\ref{sec:calibrated_shapes}, leave $n_{\max}$ and the
 efficacy threshold exactly as calibrated, and add on top the futility rule of Section~\ref{sec:one_interim} at
-every interim look but never at the final analysis. 
+every interim look but not at the final analysis. 
 
 Note that we do not repeat this exercise on the number of looks. Every additional interim is already another
 opportunity for the futility rule to act, so adding futility there would only make the design with the
@@ -1472,19 +1465,29 @@ The results are displayed in Figure~\ref{fig:plot_cal_futility_shapes}. The orde
 unchanged: Wang Tsiatis already has a higher EUII than Pocock at $\delta_{\text{target}} = 80$ without
 futility (Section~\ref{sec:calibrated_shapes}), $\Sexpr{pow_eu80_f}$ against $\Sexpr{flat_eu80_f}$, and
 with futility the difference gets larger, $\Sexpr{f4(pow_fut80)}$ against
-$\Sexpr{f4(flat_fut80)}$. At $\delta_{\text{target}} = 50$ the two shapes already have almost the same
+$\Sexpr{f4(flat_fut80)}$. At $\delta_{\text{target}} = 50$ the two stopping rules already have almost the same
 EUII without futility, $\Sexpr{flat_eu50_f}$ against $\Sexpr{pow_eu50_f}$, and with futility Wang
 Tsiatis has the higher one by a small margin, $\Sexpr{f4(pow_fut50)}$ against
-$\Sexpr{f4(flat_fut50)}$. At every other target, $60$, $70$ and $90$, Pocock has the higher EUII with
-futility exactly as it does without it.
+$\Sexpr{f4(flat_fut50)}$. At this target the two are close enough that the ordering could plausibly
+reflect Monte Carlo noise rather than a genuine difference. At every other target, $60$, $70$ and $90$,
+Pocock has the higher EUII with futility exactly as it does without it.
 
-<<plot_cal_futility_shapes, echo=FALSE, warning=FALSE, message=FALSE, fig.height=11, fig.width=8, dev='cairo_pdf', fig.cap="Calibrated boundary shapes with futility added, against the design target. Top: EUII. Middle: ratio to Pocock at the same target. Bottom: effective sample size on each branch. Lines are drawn at $\\Pr(H_1) = 0.5$ and bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$.">>=
+<<plot_cal_futility_shapes, echo=FALSE, warning=FALSE, message=FALSE, fig.height=11, fig.width=8, dev='cairo_pdf', fig.cap="Calibrated stopping rules with futility added, against the design target. Top: EUII. Middle: ratio to Pocock at the same target. Bottom: effective sample size on each branch. Lines are drawn at $\\Pr(H_1) = 0.5$ and bands span $\\Pr(H_1) \\in \\{0.01, 0.1, 0.5\\}$.">>=
 fa_sh_clean <- fa_sh |>
   dplyr::filter(Futility == "futility") |>
   dplyr::mutate(Shape = factor(Shape, levels = sh_nms))
 
 euii_three_panel(fa_sh_clean, group_var = "Shape", cols = shape_cols, baseline = "Pocock")
 @
+
+\paragraph{Conclusion}
+Once every design is calibrated to a common avgT1E and avgPower, more
+looks are always better, since the EUII rises monotonically with the number of interim analyses at
+every design target. Among stopping rules at a fixed number of looks,
+Pocock's constant threshold gives the highest EUII at four of the five targets. Adding futility on
+top raises the EUII of every stopping rule. Importantly, because calibration approximately pins the DOR,
+these differences mainly trace to how a design distributes the patients it needs between a successful and an
+unsuccessful trial.
 
 
 

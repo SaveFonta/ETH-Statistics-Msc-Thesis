@@ -37,6 +37,7 @@
 \usepackage{colortbl}
 \usepackage{multirow}
 \usepackage{array}
+\usepackage{tabularx}
 \usepackage{float}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
@@ -200,7 +201,7 @@ col_cond <- "#56B4E9"
 %% label prints even with no co-advisor. Blank it explicitly.
 \alternatereaderprefix{}
 \submissiondate{13 September 2026}
-\title{Balancing Evidentiary Value and Sample Size \\ in Bayesian Group Sequential \\ and Dual-Criterion Designs}
+\title{Average Operating Characteristics \\ and Evidentiary Value \\ in Bayesian Designs \\ with Historical Control Borrowing}
 
 \maketitle%- Titelseite wird abgeschlossen
 \cleardoublepage

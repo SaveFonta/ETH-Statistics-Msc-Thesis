@@ -8,26 +8,28 @@ so that lower values indicate a better clinical outcome.
 
 \section*{Parameters and data}
 
-\begin{tabular}{@{}ll@{}}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
 \toprule
 Symbol & Meaning \\
 \midrule
 $\theta_C,\ \theta_T$        & true control and treatment means \\
 $\bar y_C,\ \bar y_T$        & observed arm means \\
 $\delta$                     & treatment contrast, $\delta = \theta_C - \theta_T$ (lower $y$ is beneficial) \\
-$\sigma$                     & per patient standard deviation, assumed known \\
+$\sigma_C,\ \sigma_T$        & per patient standard deviations, assumed known \\
+$\sigma$                     & their common value, where the two arms are taken equal \\
 $n_C,\ n_T$                  & control and treatment sample sizes \\
+$n_{\text{trial}} = n_C + n_T$ & total sample size of a fixed design \\
 $n_A$                        & effective sample size of the historical information \\
-$v_C^2 = \sigma^2/n_C$         & sampling variance of $\bar y_C$ \\
-$v_T^2 = \sigma^2/n_T$         & sampling variance of $\bar y_T$ \\
+$v_C^2 = \sigma_C^2/n_C$       & sampling variance of $\bar y_C$ \\
+$v_T^2 = \sigma_T^2/n_T$       & sampling variance of $\bar y_T$ \\
 $r_T = n_T/n_C$              & allocation ratio \\
 $r_A = n_A/n_C$              & historical to control effective sample size ratio \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 
 \section*{Priors}
 
-\begin{tabular}{@{}ll@{}}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
 \toprule
 Symbol & Meaning \\
 \midrule
@@ -37,17 +39,14 @@ $\mu_{A,C},\ \sigma_{A,C}^2$            & mean and variance of the analysis prio
 $\mu_{D,C},\ \sigma_{D,C}^2$            & mean and variance of the design prior \\
 $W = \sigma_{A,C}^2/(\sigma_{A,C}^2+v_C^2)$ & weight the data carries in the control estimate \\
 $1-W$                                   & weight the historical prior carries \\
-$\omega$                                & weight of the non-informative component in a robust mixture prior \\
-$\mu_R,\ \sigma_R^2$                    & mean and variance of that non-informative component \\
-MAP                                     & meta analytic predictive \\
-UIP                                     & unit information prior \\
-ESS                                     & effective sample size \\
+$\omega$                                & weight of the robust component in a robust mixture prior \\
+$\mu_R,\ \sigma_R^2$                    & mean and variance of that robust component, a UIP with effective sample size one \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 
 \section*{Posterior and decision quantities}
 
-\begin{tabular}{@{}ll@{}}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
 \toprule
 Symbol & Meaning \\
 \midrule
@@ -57,6 +56,7 @@ $V_\delta$                                   & posterior variance of the contras
 $V_{\text{samp}}$                            & sampling variance of $\hat\delta$ at a fixed $\theta_C$ \\
 $V_{\text{marg}}$                            & marginal variance of $\hat\delta$ under the design prior \\
 $p$                                          & posterior probability threshold for success \\
+$\Phi(\cdot),\ \phi(\cdot)$                  & standard Normal distribution and density functions \\
 $z_p = \Phi^{-1}(p)$                         & corresponding standard Normal quantile \\
 $q$                                          & null hypothesis threshold for $\delta$, e.g.\ $q=0$ for a superiority test \\
 $\DV$                                        & decision value of the dual criterion \\
@@ -64,11 +64,11 @@ $k = q + z_p\sqrt{V_\delta}$                 & decision threshold in the Normal 
 $K$                                          & total number of analyses, interims plus final \\
 $t_k$                                        & information fraction at look $k$ \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 
 \section*{Sequential designs and calibration}
 
-\begin{tabular}{@{}ll@{}}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
 \toprule
 Symbol & Meaning \\
 \midrule
@@ -79,35 +79,46 @@ $N$                          & realized total sample size, a random variable in 
 $N^+,\ N^-$                  & $N$ conditional on success and on no success \\
 $p_{k,\text{eff}},\ q_{k,\text{eff}}$ & efficacy threshold and reference value at look $k$ \\
 $p_{k,\text{fut}},\ q_{k,\text{fut}}$ & futility threshold and reference value at look $k$ \\
-$p_k$                        & shorthand for $p_{k,\text{eff}}$, used where only the efficacy \\
-                             & boundary is being shaped and calibrated \\
 $p_{\mathrm{HP}}$            & near impossible interim threshold of the Haybittle Peto boundary \\
 $\Delta$                     & shape parameter of the Wang Tsiatis boundary family \\
 $\delta_{\text{target}}$     & effect size a design is calibrated to, the target for avgPower \\
 $\alpha^\ast,\ 1-\beta^\ast$ & the avgT1E and avgPower a design is calibrated to \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 
 \section*{Operating characteristics and metrics}
 
-\begin{tabular}{@{}ll@{}}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
 \toprule
 Symbol & Meaning \\
 \midrule
-$\alpha$                & nominal significance level, $\alpha = 1-p$ \\
+$\alpha$                & nominal significance level \\
 $\TIE(\theta_C)$        & conditional type one error at a fixed $\theta_C$ \\
 $\avgTIE$               & average type one error, integrated over $\pi_D$ \\
 $\Pow(\theta_C,\delta)$ & conditional power \\
 $\avgPow(\delta)$       & average power at effect $\delta$, integrated over $\pi_D$ \\
 $\DOR$                  & diagnostic odds ratio \\
-$\text{LR}^+,\ \text{LR}^-$ & likelihood ratios of a positive and a negative outcome \\
-$\EUII$                 & experimental unit information index, $\DOR^{1/n_{\text{trial}}}$ for a fixed design \\
-                        & and $(\text{LR}^+)^{\Erw[1/N^+]} / (\text{LR}^-)^{\Erw[1/N^-]}$ for a sequential one \\
-$\Pr(H_1)$              & prior probability of the alternative, used in the EUII bands \\
+$\LRpos,\ \LRneg$       & likelihood ratios of a positive and a negative outcome \\
+$\EUII$                 & experimental unit information index, $\DOR^{1/n_{\text{trial}}}$ for a fixed design and $(\LRpos)^{\Erw[1/N^+]} / (\LRneg)^{\Erw[1/N^-]}$ for a sequential one \\
+$\Lodd(x) = \log\Phi(x)-\log\Phi(-x)$ & log odds of $\Phi(x)$, used in the asymptotic EUII derivation \\
+$\Mills(x) = (1-\Phi(x))/\phi(x)$ & Mills ratio, used in the same derivation \\
+$\Pr(H_1)$              & prior probability of the alternative. \\
+\bottomrule
+\end{tabularx}
+
+\section*{Abbreviations}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Abbreviation & Meaning \\
+\midrule
+MAP                     & meta analytic predictive \\
+UIP                     & unit information prior \\
+ESS                     & effective sample size \\
 $\SC$                   & single criterion \\
 $\DC$                   & dual criterion \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 
 %%% Local Variables: 
 %%% mode: latex

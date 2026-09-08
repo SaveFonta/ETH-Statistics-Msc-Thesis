@@ -1,23 +1,41 @@
+% ============================================================================
+% BIBLIOGRAPHY NOTES 
+% ============================================================================
+% Rendering is controlled by chicago.bst 
+%
+%   1. Article titles are auto-lowercased except the first word and any word
+%      right after a colon. Acronyms, proper nouns, and Roman numerals must be
+%      individually wrapped in braces or they print wrong, e.g. {Bayesian},
+%      Phase {II}, Type {I}. 
+%   2. Book and misc-type titles print EXACTLY as typed (no auto-casing), so
+%      a book title must already be in correct Title Case in the source.
+%
+% What to keep for each:
+%   article entry : author, title, journal, year, volume, number, pages, [doi]
+%   book entry    : author, title, publisher, year, [note]
+%   misc entry    : author, title, year, note   (note is the ONE field a misc
+%                   entry prints, so any locator -- URL, arXiv id -- goes there)
+% doi/url/issn/abstract/keywords/file/langid/shorttitle/etc. are silently
+% dropped by this chicago.bst for article entries; doi is kept anyway as reference
+% metadata, never fabricated when absent.
+% ============================================================================
 
 @article{wasserstein2016asa,
-author = {Ronald L. Wasserstein and Nicole A. Lazar},
-title = {The ASA Statement on p-Values: Context, Process, and Purpose},
-journal = {The American Statistician},
-volume = {70},
-number = {2},
-pages = {129--133},
-year = {2016},
-publisher = {Taylor \& Francis},
-doi = {10.1080/00031305.2016.1154108},
-URL = {https://doi.org/10.1080/00031305.2016.1154108},
-eprint = {https://doi.org/10.1080/00031305.2016.1154108}
+  author  = {Wasserstein, Ronald L. and Lazar, Nicole A.},
+  title   = {The {ASA} Statement on p-Values: Context, Process, and Purpose},
+  journal = {The American Statistician},
+  year    = {2016},
+  volume  = {70},
+  number  = {2},
+  pages   = {129--133},
+  doi     = {10.1080/00031305.2016.1154108}
 }
 
 @book{berry2010bayesian,
-  title={Bayesian adaptive methods for clinical trials},
-  author={Berry, Scott M and Carlin, Bradley P and Lee, J Jack and Muller, Peter},
-  year={2010},
-  publisher={CRC press}
+  author    = {Berry, Scott M. and Carlin, Bradley P. and Lee, J. Jack and M{\"u}ller, Peter},
+  title     = {Bayesian Adaptive Methods for Clinical Trials},
+  publisher = {CRC Press},
+  year      = {2010}
 }
 
 @article{armitage1989inference,
@@ -28,7 +46,7 @@ eprint = {https://doi.org/10.1080/00031305.2016.1154108}
   volume  = {42},
   number  = {4},
   pages   = {293--299},
-  doi     = {10.1016/0895-4356(89)90001-8}
+  doi     = {10.1016/0895-4356(89)90033-4}
 }
 
 @article{nicewander1997consonance,
@@ -39,48 +57,45 @@ eprint = {https://doi.org/10.1080/00031305.2016.1154108}
   volume  = {51},
   number  = {4},
   pages   = {311--317},
-  doi     = {10.1080/00031305.1997.10474407}
+  doi     = {10.1080/00031305.1997.10474404}
 }
 
 @article{gravestock2019power,
-  title={Power priors based on multiple historical studies for binary outcomes},
-  author={Gravestock, Isaac and Held, Leonhard},
-  journal={Biometrical Journal},
-  volume={61},
-  number={5},
-  pages={1201--1218},
-  year={2019},
-  publisher={Wiley Online Library}
+  author  = {Gravestock, Isaac and Held, Leonhard},
+  title   = {Power priors based on multiple historical studies for binary outcomes},
+  journal = {Biometrical Journal},
+  year    = {2019},
+  volume  = {61},
+  number  = {5},
+  pages   = {1201--1218}
 }
 
+% TODO: Only one with missing journal
 @article{weru2026uptake,
-  title={Uptake of Bayesian robust information borrowing in Phase II clinical trials: a scoping review},
-  author={Weru, Vivienn and Calderazzo, Silvia and Held, Leonhard and Wiesenfarth, Manuel and Kopp-Schneider, Annette},
-  year={2026}
+  author = {Weru, Vivienn and Calderazzo, Silvia and Held, Leonhard and Wiesenfarth, Manuel and Kopp-Schneider, Annette},
+  title  = {Uptake of {Bayesian} robust information borrowing in Phase {II} clinical trials: a scoping review},
+  year   = {2026}
 }
 
 @article{fisch2015bayesian,
-  title={Bayesian design of proof-of-concept trials},
-  author={Fisch, Roland and Jones, Ieuan and Jones, Julie and Kerman, Jouni and Rosenkranz, Gerd Karl and Schmidli, Heinz},
-  journal={Therapeutic Innovation \& Regulatory Science},
-  volume={49},
-  number={1},
-  pages={155--162},
-  year={2015},
-  publisher={SAGE Publications Sage CA: Los Angeles, CA}
+  author  = {Fisch, Roland and Jones, Ieuan and Jones, Julie and Kerman, Jouni and Rosenkranz, Gerd Karl and Schmidli, Heinz},
+  title   = {Bayesian design of proof-of-concept trials},
+  journal = {Therapeutic Innovation \& Regulatory Science},
+  year    = {2015},
+  volume  = {49},
+  number  = {1},
+  pages   = {155--162}
 }
 
 @article{gravestock2017adaptive,
-  title={Adaptive power priors with empirical Bayes for clinical trials},
-  author={Gravestock, Isaac and Held, Leonhard and COMBACTE-Net Consortium},
-  journal={Pharmaceutical statistics},
-  volume={16},
-  number={5},
-  pages={349--360},
-  year={2017},
-  publisher={Wiley Online Library}
+  author  = {Gravestock, Isaac and Held, Leonhard and {COMBACTE-Net Consortium}},
+  title   = {Adaptive power priors with empirical {Bayes} for clinical trials},
+  journal = {Pharmaceutical Statistics},
+  year    = {2017},
+  volume  = {16},
+  number  = {5},
+  pages   = {349--360}
 }
-
 
 @article{kieser2005assessment,
   author  = {Kieser, Meinhard and Hauschke, Dieter},
@@ -90,9 +105,8 @@ eprint = {https://doi.org/10.1080/00031305.2016.1154108}
   volume  = {4},
   number  = {2},
   pages   = {101--107},
-  doi     = {10.1002/pst.162}
+  doi     = {10.1002/pst.161}
 }
-
 
 @article{carroll2009back,
   author  = {Carroll, Kevin J.},
@@ -102,769 +116,566 @@ eprint = {https://doi.org/10.1080/00031305.2016.1154108}
   volume  = {8},
   number  = {4},
   pages   = {333--345},
-  doi     = {10.1002/pst.384}
+  doi     = {10.1002/pst.362}
 }
 
 @article{lachin1981introduction,
-	author  = {Lachin, John M.},
-	title   = {Introduction to sample size determination and power analysis for clinical trials},
-	journal = {Controlled Clinical Trials},
-	year    = {1981},
-	volume  = {2},
-	number  = {2},
-	pages   = {93--113},
-	doi     = {10.1016/0197-2456(81)90001-5}
+  author  = {Lachin, John M.},
+  title   = {Introduction to sample size determination and power analysis for clinical trials},
+  journal = {Controlled Clinical Trials},
+  year    = {1981},
+  volume  = {2},
+  number  = {2},
+  pages   = {93--113},
+  doi     = {10.1016/0197-2456(81)90001-5}
 }
 
-
+% No volume/number: confirmed ahead-of-print at tandfonline.com (listed as
+% "Vol 0, No 0") -- ahead-of-print articles have no volume/number yet by
+% definition, this is correctly cited as-is, nothing more to fetch.
 @article{weru_information_2026,
-  title={Information borrowing in Bayesian clinical trials: choice of tuning parameters for the robust mixture prior},
-  author={Weru, Vivienn and Kopp-Schneider, Annette and Wiesenfarth, Manuel and Weber, Sebastian and Calderazzo, Silvia},
-  journal={Statistics in Biopharmaceutical Research},
-  pages={1--25},
-  year={2026},
-  publisher={Taylor \& Francis}
+  author  = {Weru, Vivienn and Kopp-Schneider, Annette and Wiesenfarth, Manuel and Weber, Sebastian and Calderazzo, Silvia},
+  title   = {Information borrowing in {Bayesian} clinical trials: choice of tuning parameters for the robust mixture prior},
+  journal = {Statistics in Biopharmaceutical Research},
+  year    = {2026},
+  pages   = {1--25},
+  doi     = {10.1080/19466315.2026.2646537}
 }
 
 @article{gsponer_practical_2014,
-  title={A practical guide to Bayesian group sequential designs},
-  author={Gsponer, Thomas and Gerber, Florian and Bornkamp, Bj{\"o}rn and Ohlssen, David and Vandemeulebroecke, Marc and Schmidli, Heinz},
-  journal={Pharmaceutical statistics},
-  volume={13},
-  number={1},
-  pages={71--80},
-  year={2014},
-  publisher={Wiley Online Library}
+  author  = {Gsponer, Thomas and Gerber, Florian and Bornkamp, Bj{\"o}rn and Ohlssen, David and Vandemeulebroecke, Marc and Schmidli, Heinz},
+  title   = {A practical guide to {Bayesian} group sequential designs},
+  journal = {Pharmaceutical Statistics},
+  year    = {2014},
+  volume  = {13},
+  number  = {1},
+  pages   = {71--80}
 }
 
-
 @article{ohagan_assurance_2005,
-  title={Assurance in clinical trial design},
-  author={O'Hagan, Anthony and Stevens, John W and Campbell, Michael J},
-  journal={Pharmaceutical Statistics: The Journal of Applied Statistics in the Pharmaceutical Industry},
-  volume={4},
-  number={3},
-  pages={187--201},
-  year={2005},
-  publisher={Wiley Online Library}
+  author  = {O'Hagan, Anthony and Stevens, John W. and Campbell, Michael J.},
+  title   = {Assurance in clinical trial design},
+  journal = {Pharmaceutical Statistics},
+  year    = {2005},
+  volume  = {4},
+  number  = {3},
+  pages   = {187--201}
 }
 
 @article{roychoudhury_beyond_2018,
-  title={Beyond p-values: a phase II dual-criterion design with statistical significance and clinical relevance},
-  author={Roychoudhury, Satrajit and Scheuer, Nicolas and Neuenschwander, Beat},
-  journal={Clinical Trials},
-  volume={15},
-  number={5},
-  pages={452--461},
-  year={2018},
-  publisher={SAGE Publications Sage UK: London, England}
+  author  = {Roychoudhury, Satrajit and Scheuer, Nicolas and Neuenschwander, Beat},
+  title   = {Beyond p-values: a phase {II} dual-criterion design with statistical significance and clinical relevance},
+  journal = {Clinical Trials},
+  year    = {2018},
+  volume  = {15},
+  number  = {5},
+  pages   = {452--461}
 }
 
 @article{rosenkranz_replicability_2021,
-	title = {Replicability of studies following a dual-criterion design},
-	volume = {40},
-	rights = {© 2021 John Wiley \& Sons Ltd.},
-	issn = {1097-0258},
-	url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/sim.9014},
-	doi = {10.1002/sim.9014},
-	abstract = {Replicability of results is regarded as the corner stone of science. Recent research seems to raise doubts about whether this requirement is generally fulfilled. Often, replicability of results is defined as repeating a statistically significant result. However, since significance may not imply scientific relevance, dual-criterion study designs that take both aspects into account have been proposed and investigated during the last decade. Originally developed for proof-of-concept trials, the design could be appropriate for phase {III} trials as well. In fact, a dual-criterion design has been requested for {COVID}-19 vaccine applications by major health authorities. In this article, replicability of dual-criterion designs is investigated. It turns out that the probability to replicate a significant and relevant result can become as low as 0.5. The replication probability increases if the effect estimator exceeds the minimum relevant effect in the original study by an extra amount.},
-	pages = {4068--4076},
-	number = {18},
-	journal = {Statistics in Medicine},
-	author = {Rosenkranz, Gerd K.},
-	urlyear = {2026},
-	year = {2021},
-	langid = {english},
-	note = {\_eprint: https://onlinelibrary.wiley.com/doi/pdf/10.1002/sim.9014},
-	keywords = {clinical relevance, {COVID}-19 vaccine trials, dual-criterion design, proof-of-concept, replicability},
-	file = {Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\9J7UJ57Y\\Rosenkranz - 2021 - Replicability of studies following a dual-criterion design.pdf:application/pdf},
+  author  = {Rosenkranz, Gerd K.},
+  title   = {Replicability of studies following a dual-criterion design},
+  journal = {Statistics in Medicine},
+  year    = {2021},
+  volume  = {40},
+  number  = {18},
+  pages   = {4068--4076},
+  doi     = {10.1002/sim.9014}
 }
 
 @article{psioda_bayesian_2020,
-	title = {A {Bayesian} Adaptive Two-Stage Design for Pediatric Clinical Trials},
-	volume = {30},
-	issn = {1054-3406},
-	url = {https://doi.org/10.1080/10543406.2020.1821704},
-	doi = {10.1080/10543406.2020.1821704},
-	abstract = {We develop a novel two-stage Bayesian adaptive trial design for pediatric settings which borrows information from previously completed trials in adults to support establishing substantial evidence of efficacy for the pediatric population in situations where information extrapolation from adults is justifiable. At the time of the stage I analysis, the extent of information borrowing from adult data is determined by assessing compatibility of the observed pediatric data with its prior predictive distribution, derived using the adult trial data. At this time, the trial may be stopped for futility, enrollment may be stopped (with ongoing patients followed up for primary outcome ascertainment), or enrollment may proceed into stage {II} to reach a prespecified maximum sample size. We provide guidance on how practitioners can approach answering the question “How much information should be borrowed?” through balancing use of the adult data (when compatible with the pediatric data) with the need to ensure the design leads to reasonable recommendations regarding key actions that might be taken regarding the trial (e.g., when to stop early for efficacy). Type I error control is considered secondary to these considerations as type I error rate inflation above typical levels is unavoidable in these settings. We illustrate how the method can be applied using the Pediatric Lupus Trial of Belimumab Plus Background Standard Therapy as motivation.},
-	pages = {1091--1108},
-	number = {6},
-	journal = {Journal of Biopharmaceutical Statistics},
-	publisher = {Taylor \& Francis},
-	author = {Psioda, Matthew A. and Xue, Xiaoqiang},
-	urlyear = {2026},
-	year = {2020},
-	note = {\_eprint: https://doi.org/10.1080/10543406.2020.1821704},
-	keywords = {Bayesian Trial Design, extrapolation, information Borrowing, pediatric Trials, two-Stage Design},
-	file = {Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\TVMIBI2H\\Psioda e Xue - 2020 - A Bayesian Adaptive Two-Stage Design for Pediatric Clinical Trials.pdf:application/pdf},
+  author  = {Psioda, Matthew A. and Xue, Xiaoqiang},
+  title   = {A {Bayesian} Adaptive Two-Stage Design for Pediatric Clinical Trials},
+  journal = {Journal of Biopharmaceutical Statistics},
+  year    = {2020},
+  volume  = {30},
+  number  = {6},
+  pages   = {1091--1108},
+  doi     = {10.1080/10543406.2020.1821704}
 }
 
 @article{best_beyond_2025,
-	title = {Beyond the Classical {Type} {I} Error: {Bayesian} Metrics for {Bayesian} Designs Using Informative Priors},
-	volume = {17},
-	issn = {null},
-	url = {https://doi.org/10.1080/19466315.2024.2342817},
-	doi = {10.1080/19466315.2024.2342817},
-	shorttitle = {Beyond the Classical Type I Error},
-	abstract = {There is growing interest in Bayesian clinical trial designs with informative prior distributions, for example for extrapolation of adult data to pediatrics, or use of external controls. While the classical Type I error is commonly used to evaluate such designs, it cannot be strictly controlled and it is acknowledged that other metrics may be more appropriate. We focus on two common situations—borrowing control data or information on the treatment contrast—and discuss several fully probabilistic metrics to evaluate the risk of false positive conclusions. Each metric requires specification of a design prior, which can differ from the analysis prior and permits understanding of the behavior of a Bayesian design under scenarios where the analysis prior differs from the true data generation process. The metrics include the average Type I error and the pre-posterior probability of a false positive result. When borrowing control data, our empirical cases demonstrate that the average Type I error is asymptotically controlled (in certain cases strictly) when the analysis and design prior coincide. We illustrate use of these Bayesian metrics with real applications, and discuss how they could facilitate discussions between sponsors, regulators and other stakeholders about the appropriateness of Bayesian borrowing designs for pivotal studies.},
-	pages = {183--196},
-	number = {2},
-	journal = {Statistics in Biopharmaceutical Research},
-	publisher = {Taylor \& Francis},
-	author = {Best, Nicky and Ajimi, Maxine and Neuenschwander, Beat and Saint-Hilary, Gaëlle and Wandel, Simon},
-	urlyear = {2026},
-	year = {2025},
-	note = {\_eprint: https://doi.org/10.1080/19466315.2024.2342817},
-	keywords = {Bayesian dynamic borrowing, Clinical trial design, Design prior, Historical data, Robust mixture prior, Type 1 error},
-	file = {Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\YTN35ATH\\Best et al. - 2025 - Beyond the Classical Type I Error Bayesian Metrics for Bayesian Designs Using Informative Priors.pdf:application/pdf},
+  author  = {Best, Nicky and Ajimi, Maxine and Neuenschwander, Beat and Saint-Hilary, Ga{\"e}lle and Wandel, Simon},
+  title   = {Beyond the Classical {Type} {I} Error: {Bayesian} Metrics for {Bayesian} Designs Using Informative Priors},
+  journal = {Statistics in Biopharmaceutical Research},
+  year    = {2025},
+  volume  = {17},
+  number  = {2},
+  pages   = {183--196},
+  doi     = {10.1080/19466315.2024.2342817}
 }
 
 @article{spiegelhalter1993bayesian,
-	title = {{Bayesian} analysis in expert systems},
-	author = {Spiegelhalter, David J. and Dawid, A. Philip and Lauritzen, Steffen L. and Cowell, Robert G.},
-	journal = {Statistical Science},
-	volume = {8},
-	number = {3},
-	pages = {219--247},
-	year = {1993},
-	publisher = {JSTOR},
+  author  = {Spiegelhalter, David J. and Dawid, A. Philip and Lauritzen, Steffen L. and Cowell, Robert G.},
+  title   = {Bayesian analysis in expert systems},
+  journal = {Statistical Science},
+  year    = {1993},
+  volume  = {8},
+  number  = {3},
+  pages   = {219--247}
 }
 
 @article{hobbs_2011,
-	title = {Hierarchical Commensurate and Power Prior Models for Adaptive Incorporation of Historical Information in Clinical Trials},
-	author = {Hobbs, Brian P. and Carlin, Bradley P. and Mandrekar, Sumithra J. and Sargent, Daniel J.},
-	journal = {Biometrics},
-	volume = {67},
-	number = {3},
-	pages = {1047--1056},
-	year = {2011},
-	doi = {10.1111/j.1541-0420.2011.01564.x},
+  author  = {Hobbs, Brian P. and Carlin, Bradley P. and Mandrekar, Sumithra J. and Sargent, Daniel J.},
+  title   = {Hierarchical Commensurate and Power Prior Models for Adaptive Incorporation of Historical Information in Clinical Trials},
+  journal = {Biometrics},
+  year    = {2011},
+  volume  = {67},
+  number  = {3},
+  pages   = {1047--1056},
+  doi     = {10.1111/j.1541-0420.2011.01564.x}
 }
 
 @article{stallard_comparison_2020,
-	title = {Comparison of {Bayesian} and frequentist group-sequential clinical trial designs},
-	volume = {20},
-	issn = {1471-2288},
-	url = {https://doi.org/10.1186/s12874-019-0892-8},
-	doi = {10.1186/s12874-019-0892-8},
-	abstract = {There is a growing interest in the use of Bayesian adaptive designs in late-phase clinical trials. This includes the use of stopping rules based on Bayesian analyses in which the frequentist type I error rate is controlled as in frequentist group-sequential designs.},
-	pages = {4},
-	number = {1},
-	journal = {{BMC} Medical Research Methodology},
-	shortjournal = {{BMC} Med Res Methodol},
-	author = {Stallard, Nigel and Todd, Susan and Ryan, Elizabeth G. and Gates, Simon},
-	urlyear = {2026},
-	year = {2020},
-	langid = {english},
-	keywords = {Adaptive design, Interim analysis, Sequential analysis, Sequential design, Type I error rate},
-	file = {Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\I58XITEC\\Stallard et al. - 2020 - Comparison of Bayesian and frequentist group-sequential clinical trial designs.pdf:application/pdf},
+  author  = {Stallard, Nigel and Todd, Susan and Ryan, Elizabeth G. and Gates, Simon},
+  title   = {Comparison of {Bayesian} and frequentist group-sequential clinical trial designs},
+  journal = {{BMC} Medical Research Methodology},
+  year    = {2020},
+  volume  = {20},
+  number  = {1},
+  pages   = {4},
+  doi     = {10.1186/s12874-019-0892-8}
 }
 
 @article{shi2019control,
-  title={Control of type I error rates in Bayesian sequential designs},
-  author={Shi, Haolun and Yin, Guosheng},
-  year={2019}
+  author  = {Shi, Haolun and Yin, Guosheng},
+  title   = {Control of type {I} error rates in {Bayesian} sequential designs},
+  journal = {Bayesian Analysis},
+  year    = {2019},
+  volume  = {14},
+  number  = {2},
+  pages   = {399--425},
+  doi     = {10.1214/18-BA1109}
 }
 
 @article{ryan2020we,
-  title={Do we need to adjust for interim analyses in a Bayesian adaptive trial design?},
-  author={Ryan, Elizabeth G and Brock, Kristian and Gates, Simon and Slade, Daniel},
-  journal={BMC Medical Research Methodology},
-  volume={20},
-  number={1},
-  pages={150},
-  year={2020},
-  publisher={Springer}
+  author  = {Ryan, Elizabeth G. and Brock, Kristian and Gates, Simon and Slade, Daniel},
+  title   = {Do we need to adjust for interim analyses in a {Bayesian} adaptive trial design?},
+  journal = {BMC Medical Research Methodology},
+  year    = {2020},
+  volume  = {20},
+  number  = {1},
+  pages   = {150}
 }
 
 @article{psioda_bayesian_2019,
-	title = {{Bayesian} clinical trial design using historical data that inform the treatment effect},
-	volume = {20},
-	issn = {1465-4644},
-	url = {https://doi.org/10.1093/biostatistics/kxy009},
-	doi = {10.1093/biostatistics/kxy009},
-	abstract = {We consider the problem of Bayesian sample size determination for a clinical trial in the presence of historical data that inform the treatment effect. Our broadly applicable, simulation-based methodology provides a framework for calibrating the informativeness of a prior while simultaneously identifying the minimum sample size required for a new trial such that the overall design has appropriate power to detect a non-null treatment effect and reasonable type I error control. We develop a comprehensive strategy for eliciting null and alternative sampling prior distributions which are used to define Bayesian generalizations of the traditional notions of type I error control and power. Bayesian type I error control requires that a weighted-average type I error rate not exceed a prespecified threshold. We develop a procedure for generating an appropriately sized Bayesian hypothesis test using a simple partial-borrowing power prior which summarizes the fraction of information borrowed from the historical trial. We present results from simulation studies that demonstrate that a hypothesis test procedure based on this simple power prior is as efficient as those based on more complicated meta-analytic priors, such as normalized power priors or robust mixture priors, when all are held to precise type I error control requirements. We demonstrate our methodology using a real data set to design a follow-up clinical trial with time-to-event endpoint for an investigational treatment in high-risk melanoma.},
-	pages = {400--415},
-	number = {3},
-	journal = {Biostatistics},
-	shortjournal = {Biostatistics},
-	author = {Psioda, Matthew A and Ibrahim, Joseph G},
-	urlyear = {2026},
-	year = {2019},
-	keywords = {To read},
-	file = {Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\HLMA73ZC\\Psioda e Ibrahim - 2019 - Bayesian clinical trial design using historical data that inform the treatment effect.pdf:application/pdf},
+  author  = {Psioda, Matthew A. and Ibrahim, Joseph G.},
+  title   = {Bayesian clinical trial design using historical data that inform the treatment effect},
+  journal = {Biostatistics},
+  year    = {2019},
+  volume  = {20},
+  number  = {3},
+  pages   = {400--415},
+  doi     = {10.1093/biostatistics/kxy009}
 }
 
 @article{zhou_ji_2024,
-    author = {Tianjian Zhou and Yuan Ji},
-    title = {On Bayesian Sequential Clinical Trial Designs},
-    journal = {The New England Journal of Statistics in Data Science},
-    volume = {2},
-    number = {1},
-    year = {2024},
-    pages = {136--151},
-    doi = {10.51387/23-NEJSDS24},
-    issn = {2693-7166},
-    publisher = {New England Statistical Society}
+  author  = {Zhou, Tianjian and Ji, Yuan},
+  title   = {On {Bayesian} Sequential Clinical Trial Designs},
+  journal = {The New England Journal of Statistics in Data Science},
+  year    = {2024},
+  volume  = {2},
+  number  = {1},
+  pages   = {136--151},
+  doi     = {10.51387/23-NEJSDS24}
 }
 
 @article{kopp-schneider_power_2020,
-	title = {Power gains by using external information in clinical trials are typically not possible when requiring strict type I error control},
-	volume = {62},
-	rights = {© 2019 The Authors. Biometrical Journal published by {WILEY}-{VCH} Verlag {GmbH} \& Co. {KGaA}, Weinheim.},
-	issn = {1521-4036},
-	url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/bimj.201800395},
-	doi = {10.1002/bimj.201800395},
-	abstract = {In the era of precision medicine, novel designs are developed to deal with flexible clinical trials that incorporate many treatment strategies for multiple diseases in one trial setting. This situation often leads to small sample sizes in disease-treatment combinations and has fostered the discussion about the benefits of borrowing of external or historical information for decision-making in these trials. Several methods have been proposed that dynamically discount the amount of information borrowed from historical data based on the conformity between historical and current data. Specifically, Bayesian methods have been recommended and numerous investigations have been performed to characterize the properties of the various borrowing mechanisms with respect to the gain to be expected in the trials. However, there is common understanding that the risk of type I error inflation exists when information is borrowed and many simulation studies are carried out to quantify this effect. To add transparency to the debate, we show that if prior information is conditioned upon and a uniformly most powerful test exists, strict control of type I error implies that no power gain is possible under any mechanism of incorporation of prior information, including dynamic borrowing. The basis of the argument is to consider the test decision function as a function of the current data even when external information is included. We exemplify this finding in the case of a pediatric arm appended to an adult trial and dichotomous outcome for various methods of dynamic borrowing from adult information to the pediatric arm. In conclusion, if use of relevant external data is desired, the requirement of strict type I error control has to be replaced by more appropriate metrics.},
-	pages = {361--374},
-	number = {2},
-	journal = {Biometrical Journal},
-	author = {Kopp-Schneider, Annette and Calderazzo, Silvia and Wiesenfarth, Manuel},
-	urlyear = {2026},
-	year = {2020},
-	langid = {english},
-	note = {\_eprint: https://onlinelibrary.wiley.com/doi/pdf/10.1002/bimj.201800395},
-	keywords = {Bayesian dynamic borrowing of information, evidence synthesis, frequentist error control, historical information, robust prior},
-	file = {Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\HULA7ITK\\Kopp-Schneider et al. - 2020 - Power gains by using external information in clinical trials are typically not possible when requiri.pdf:application/pdf},
+  author  = {Kopp-Schneider, Annette and Calderazzo, Silvia and Wiesenfarth, Manuel},
+  title   = {Power gains by using external information in clinical trials are typically not possible when requiring strict type {I} error control},
+  journal = {Biometrical Journal},
+  year    = {2020},
+  volume  = {62},
+  number  = {2},
+  pages   = {361--374},
+  doi     = {10.1002/bimj.201800395}
 }
 
 @misc{fda_bayesian_2026,
-    author = {{U.S. Food and Drug Administration}},
-    title = {Use of {Bayesian} Methodology in Clinical Trials of Drug and Biological Products: Draft Guidance for Industry},
-    year = {2026},
-    note = {Available at: \url{https://www.fda.gov/regulatory-information/search-fda-guidance-documents/use-bayesian-methodology-clinical-trials-drug-and-biological-products}}
+  author = {{U.S. Food and Drug Administration}},
+  title  = {Use of {Bayesian} Methodology in Clinical Trials of Drug and Biological Products: Draft Guidance for Industry},
+  year   = {2026},
+  note   = {Available at: \url{https://www.fda.gov/regulatory-information/search-fda-guidance-documents/use-bayesian-methodology-clinical-trials-drug-and-biological-products}}
 }
 
 @article{neuenschwander2010summarizing,
-  title={Summarizing historical information on controls in clinical trials},
-  author={Neuenschwander, Beat and Capkun-Niggli, Gorana and Branson, Michael and Spiegelhalter, David J},
-  journal={Clinical Trials},
-  volume={7},
-  number={1},
-  pages={5--18},
-  year={2010},
-  publisher={SAGE Publications Sage UK: London, England}
+  author  = {Neuenschwander, Beat and Capkun-Niggli, Gorana and Branson, Michael and Spiegelhalter, David J.},
+  title   = {Summarizing historical information on controls in clinical trials},
+  journal = {Clinical Trials},
+  year    = {2010},
+  volume  = {7},
+  number  = {1},
+  pages   = {5--18}
 }
 
 @article{schmidli_robust_2014,
-	title = {Robust Meta-Analytic-Predictive Priors in Clinical Trials with Historical Control Information},
-	volume = {70},
-	issn = {0006-341X},
-	url = {https://doi.org/10.1111/biom.12242},
-	doi = {10.1111/biom.12242},
-	abstract = {Historical information is always relevant for clinical trial design. Additionally, if incorporated in the analysis of a new trial, historical data allow to reduce the number of subjects. This decreases costs and trial duration, facilitates recruitment, and may be more ethical. Yet, under prior-data conflict, a too optimistic use of historical data may be inappropriate. We address this challenge by deriving a Bayesian meta-analytic-predictive prior from historical data, which is then combined with the new data. This prospective approach is equivalent to a meta-analytic-combined analysis of historical and new data if parameters are exchangeable across trials. The prospective Bayesian version requires a good approximation of the meta-analytic-predictive prior, which is not available analytically. We propose two- or three-component mixtures of standard priors, which allow for good approximations and, for the one-parameter exponential family, straightforward posterior calculations. Moreover, since one of the mixture components is usually vague, mixture priors will often be heavy-tailed and therefore robust. Further robustness and a more rapid reaction to prior-data conflicts can be achieved by adding an extra weakly-informative mixture component. Use of historical prior information is particularly attractive for adaptive trials, as the randomization ratio can then be changed in case of prior-data conflict. Both frequentist operating characteristics and posterior summaries for various data scenarios show that these designs have desirable properties. We illustrate the methodology for a phase {II} proof-of-concept trial with historical controls from four studies. Robust meta-analytic-predictive priors alleviate prior-data conflicts ‘ they should encourage better and more frequent use of historical data in clinical trials.},
-	pages = {1023--1032},
-	number = {4},
-	journal = {Biometrics},
-	shortjournal = {Biometrics},
-	author = {Schmidli, Heinz and Gsteiger, Sandro and Roychoudhury, Satrajit and O'Hagan, Anthony and Spiegelhalter, David and Neuenschwander, Beat},
-	urlyear = {2026},
-	year = {2014},
+  author  = {Schmidli, Heinz and Gsteiger, Sandro and Roychoudhury, Satrajit and O'Hagan, Anthony and Spiegelhalter, David and Neuenschwander, Beat},
+  title   = {Robust Meta-Analytic-Predictive Priors in Clinical Trials with Historical Control Information},
+  journal = {Biometrics},
+  year    = {2014},
+  volume  = {70},
+  number  = {4},
+  pages   = {1023--1032},
+  doi     = {10.1111/biom.12242}
 }
 
 @misc{neuenschwander_fixed_2023,
-	title = {On fixed and uncertain mixture prior weights},
-	url = {http://arxiv.org/abs/2306.15197},
-	doi = {10.48550/arXiv.2306.15197},
-	abstract = {This paper focuses on the specification of the weights for the components of mixture priors.},
-	number = {{arXiv}:2306.15197},
-	publisher = {{arXiv}},
-	author = {Neuenschwander, Beat and Wandel, Simon and Roychoudhury, Satrajit and Schmidli, Heinz},
-	urlyear = {2026},
-	year = {2023},
-	eprinttype = {arxiv},
-	eprint = {2306.15197 [stat]},
-	keywords = {Statistics - Applications, Statistics - Methodology},
-	file = {Preprint PDF:C\:\\Users\\Menelao\\Zotero\\storage\\87CT5EVP\\Neuenschwander et al. - 2023 - On fixed and uncertain mixture prior weights.pdf:application/pdf},
+  author = {Neuenschwander, Beat and Wandel, Simon and Roychoudhury, Satrajit and Schmidli, Heinz},
+  title  = {On fixed and uncertain mixture prior weights},
+  year   = {2023},
+  note   = {Preprint, arXiv:2306.15197}
 }
 
 @article{dimasi_innovation_2016,
-	title = {Innovation in the pharmaceutical industry: New estimates of {R\&D} costs},
-	volume = {47},
-	issn = {1879-1646},
-	doi = {10.1016/j.jhealeco.2016.01.012},
-	shorttitle = {Innovation in the pharmaceutical industry},
-	abstract = {The research and development costs of 106 randomly selected new drugs were obtained from a survey of 10 pharmaceutical firms. These data were used to estimate the average pre-tax cost of new drug and biologics development. The costs of compounds abandoned during testing were linked to the costs of compounds that obtained marketing approval. The estimated average out-of-pocket cost per approved new compound is \$1395 million (2013 dollars). Capitalizing out-of-pocket costs to the point of marketing approval at a real discount rate of 10.5\% yields a total pre-approval cost estimate of \$2558 million (2013 dollars). When compared to the results of the previous study in this series, total capitalized costs were shown to have increased at an annual rate of 8.5\% above general price inflation. Adding an estimate of post-approval R\&D costs increases the cost estimate to \$2870 million (2013 dollars).},
-	pages = {20--33},
-	journal = {Journal of Health Economics},
-	shortjournal = {J Health Econ},
-	author = {{DiMasi}, Joseph A. and Grabowski, Henry G. and Hansen, Ronald W.},
-	year = {2016},
-	keywords = {Biomedical Research, Capital Financing, Costs and Cost Analysis, Discount rate, Drug Industry, Innovation, Pharmaceutical industry, R\&D cost, Technical success rates, United States},
+  author  = {{DiMasi}, Joseph A. and Grabowski, Henry G. and Hansen, Ronald W.},
+  title   = {Innovation in the pharmaceutical industry: New estimates of {R\&D} costs},
+  journal = {Journal of Health Economics},
+  year    = {2016},
+  volume  = {47},
+  pages   = {20--33},
+  doi     = {10.1016/j.jhealeco.2016.01.012}
 }
 
 @article{freedman_scientific_1987,
-	title = {Scientific Value and Validity as Ethical Requirements for Research: A Proposed Explication},
-	volume = {9},
-	issn = {0193-7758},
-	url = {https://www.jstor.org/stable/3563623},
-	doi = {10.2307/3563623},
-	shorttitle = {Scientific Value and Validity as Ethical Requirements for Research},
-	pages = {7--10},
-	number = {6},
-	journal = {{IRB}: Ethics \& Human Research},
-	publisher = {Hastings Center},
-	author = {Freedman, Benjamin},
-	urlyear = {2026},
-	year = {1987},
-	file = {JSTOR Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\UQCZ8YAL\\Freedman - 1987 - Scientific Value and Validity as Ethical Requirements for Research A Proposed Explication.pdf:application/pdf},
+  author  = {Freedman, Benjamin},
+  title   = {Scientific Value and Validity as Ethical Requirements for Research: A Proposed Explication},
+  journal = {{IRB}: Ethics \& Human Research},
+  year    = {1987},
+  volume  = {9},
+  number  = {6},
+  pages   = {7--10},
+  doi     = {10.2307/3563623}
 }
 
 @article{world_medical_association_world_2025,
-	title = {{World Medical Association Declaration of Helsinki}: Ethical Principles for Medical Research Involving Human Participants},
-	volume = {333},
-	issn = {0098-7484},
-	url = {https://doi.org/10.1001/jama.2024.21972},
-	doi = {10.1001/jama.2024.21972},
-	shorttitle = {World Medical Association Declaration of Helsinki},
-	pages = {71--74},
-	number = {1},
-	journal = {{JAMA}},
-	shortjournal = {{JAMA}},
-	author = {{World Medical Association}},
-	urlyear = {2026},
-	year = {2025},
-	file = {Snapshot:C\:\\Users\\Menelao\\Zotero\\storage\\MRGCJBZQ\\jama.2024.html:text/html},
+  author  = {{World Medical Association}},
+  title   = {{World Medical Association Declaration of Helsinki}: Ethical Principles for Medical Research Involving Human Participants},
+  journal = {{JAMA}},
+  year    = {2025},
+  volume  = {333},
+  number  = {1},
+  pages   = {71--74},
+  doi     = {10.1001/jama.2024.21972}
 }
 
-
 @article{weber_applying_2021,
-	title = {Applying Meta-Analytic-Predictive Priors with the {R} {Bayesian} Evidence Synthesis Tools},
-	volume = {100},
-	rights = {Copyright (c) 2021 Sebastian Weber, Yue Li, John W. Seaman {III}, Tomoyuki Kakizume, Heinz Schmidli},
-	issn = {1548-7660},
-	url = {https://doi.org/10.18637/jss.v100.i19},
-	doi = {10.18637/jss.v100.i19},
-	abstract = {Use of historical data in clinical trial design and analysis has shown various advantages such as reduction of number of subjects and increase of study power. The metaanalytic-predictive ({MAP}) approach accounts with a hierarchical model for between-trial heterogeneity in order to derive an informative prior from historical data. In this paper, we introduce the package {RBesT} (R Bayesian evidence synthesis tools) which implements the {MAP} approach with normal (known sampling standard deviation), binomial and Poisson endpoints. The hierarchical {MAP} model is evaluated by Markov chain Monte Carlo ({MCMC}). The {MCMC} samples representing the {MAP} prior are approximated with parametric mixture densities which are obtained with the expectation maximization algorithm. The parametric mixture density representation facilitates easy communication of the {MAP} prior and enables fast and accurate analytical procedures to evaluate properties of trial designs with informative {MAP} priors. The paper first introduces the framework of robust Bayesian evidence synthesis in this setting and then explains how {RBesT} facilitates the derivation and evaluation of an informative {MAP} prior from historical control data. In addition we describe how the meta-analytic framework relates to further applications including probability of success calculations.},
-	pages = {1--32},
-	journal = {Journal of Statistical Software},
-	author = {Weber, Sebastian and Li, Yue and Seaman, III, John W. and Kakizume, Tomoyuki and Schmidli, Heinz},
-	urlyear = {2026},
-	year = {2021},
-	langid = {english},
-	keywords = {Bayesian inference, clinical trial, extrapolation, historical control, operating characteristics, prior, probability of success, robust analysis},
-	file = {Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\3TXA5C4X\\Weber et al. - 2021 - Applying Meta-Analytic-Predictive Priors with the R Bayesian Evidence Synthesis Tools.pdf:application/pdf},
+  author  = {Weber, Sebastian and Li, Yue and Seaman, III, John W. and Kakizume, Tomoyuki and Schmidli, Heinz},
+  title   = {Applying Meta-Analytic-Predictive Priors with the {R} {Bayesian} Evidence Synthesis Tools},
+  journal = {Journal of Statistical Software},
+  year    = {2021},
+  volume  = {100},
+  pages   = {1--32},
+  doi     = {10.18637/jss.v100.i19}
 }
 
 @article{viele_use_2014,
-	title = {Use of historical control data for assessing treatment effects in clinical trials},
-	volume = {13},
-	rights = {Copyright © 2013 John Wiley \& Sons, Ltd.},
-	issn = {1539-1612},
-	url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/pst.1589},
-	doi = {10.1002/pst.1589},
-	abstract = {{ABSTRACTClinical} trials rarely, if ever, occur in a vacuum. Generally, large amounts of clinical data are available prior to the start of a study, particularly on the current study's control arm. There is obvious appeal in using (i.e., ‘borrowing’) this information. With historical data providing information on the control arm, more trial resources can be devoted to the novel treatment while retaining accurate estimates of the current control arm parameters. This can result in more accurate point estimates, increased power, and reduced type I error in clinical trials, provided the historical information is sufficiently similar to the current control data. If this assumption of similarity is not satisfied, however, one can acquire increased mean square error of point estimates due to bias and either reduced power or increased type I error depending on the direction of the bias. In this manuscript, we review several methods for historical borrowing, illustrating how key parameters in each method affect borrowing behavior, and then, we compare these methods on the basis of mean square error, power and type I error. We emphasize two main themes. First, we discuss the idea of ‘dynamic’ (versus ‘static’) borrowing. Second, we emphasize the decision process involved in determining whether or not to include historical borrowing in terms of the perceived likelihood that the current control arm is sufficiently similar to the historical data. Our goal is to provide a clear review of the key issues involved in historical borrowing and provide a comparison of several methods useful for practitioners. Copyright © 2013 John Wiley \& Sons, Ltd.},
-	pages = {41--54},
-	number = {1},
-	journal = {Pharmaceutical Statistics},
-	author = {Viele, Kert and Berry, Scott and Neuenschwander, Beat and Amzal, Billy and Chen, Fang and Enas, Nathan and Hobbs, Brian and Ibrahim, Joseph G. and Kinnersley, Nelson and Lindborg, Stacy and Micallef, Sandrine and Roychoudhury, Satrajit and Thompson, Laura},
-	urlyear = {2026},
-	year = {2014},
-	langid = {english},
-	note = {\_eprint: https://onlinelibrary.wiley.com/doi/pdf/10.1002/pst.1589},
-	keywords = {Bayesian, borrowing, historical data, priors},
-	file = {Snapshot:C\:\\Users\\Menelao\\Zotero\\storage\\I9QUMFUZ\\pst.html:text/html},
+  author  = {Viele, Kert and Berry, Scott and Neuenschwander, Beat and Amzal, Billy and Chen, Fang and Enas, Nathan and Hobbs, Brian and Ibrahim, Joseph G. and Kinnersley, Nelson and Lindborg, Stacy and Micallef, Sandrine and Roychoudhury, Satrajit and Thompson, Laura},
+  title   = {Use of historical control data for assessing treatment effects in clinical trials},
+  journal = {Pharmaceutical Statistics},
+  year    = {2014},
+  volume  = {13},
+  number  = {1},
+  pages   = {41--54},
+  doi     = {10.1002/pst.1589}
 }
 
 @article{pocock_group_1977,
-	title = {Group sequential methods in the design and analysis of clinical trials},
-	volume = {64},
-	number = {2},
-	pages = {191--199},
-	journal = {Biometrika},
-	author = {Pocock, Stuart J.},
-	year = {1977},
+  author  = {Pocock, Stuart J.},
+  title   = {Group sequential methods in the design and analysis of clinical trials},
+  journal = {Biometrika},
+  year    = {1977},
+  volume  = {64},
+  number  = {2},
+  pages   = {191--199}
 }
 
 @article{obrien_multiple_1979,
-	title = {A multiple testing procedure for clinical trials},
-	volume = {35},
-	number = {3},
-	pages = {549--556},
-	journal = {Biometrics},
-	author = {O'Brien, Peter C. and Fleming, Thomas R.},
-	year = {1979},
+  author  = {O'Brien, Peter C. and Fleming, Thomas R.},
+  title   = {A multiple testing procedure for clinical trials},
+  journal = {Biometrics},
+  year    = {1979},
+  volume  = {35},
+  number  = {3},
+  pages   = {549--556}
 }
 
 @article{lan_demets_discrete_1983,
-	title = {Discrete sequential boundaries for clinical trials},
-	volume = {70},
-	number = {3},
-	pages = {659--663},
-	journal = {Biometrika},
-	author = {Lan, K. K. Gordon and DeMets, David L.},
-	year = {1983},
+  author  = {Lan, K. K. Gordon and DeMets, David L.},
+  title   = {Discrete sequential boundaries for clinical trials},
+  journal = {Biometrika},
+  year    = {1983},
+  volume  = {70},
+  number  = {3},
+  pages   = {659--663}
 }
 
 @book{jennison_group_1999,
-	title = {Group Sequential Methods with Applications to Clinical Trials},
-	isbn = {978-1-58488-858-1},
-	abstract = {Group sequential methods answer the needs of clinical trial monitoring committees who must assess the data available at an interim analysis. These interim results may provide grounds for terminating the study-effectively reducing costs-or may benefit the general patient population by allowing early dissemination of its findings. Group sequential methods provide a means to balance the ethical and financial advantages of stopping a study early against the risk of an incorrect conclusion.Group Sequential Methods with Applications to Clinical Trials describes group sequential stopping rules designed to reduce average study length and control Type I and {II} error probabilities. The authors present one-sided and two-sided tests, introduce several families of group sequential tests, and explain how to choose the most appropriate test and interim analysis schedule. Their topics include placebo-controlled randomized trials, bio-equivalence testing, crossover and longitudinal studies, and linear and generalized linear models.Research in group sequential analysis has progressed rapidly over the past 20 years. Group Sequential Methods with Applications to Clinical Trials surveys and extends current methods for planning and conducting interim analyses. It provides straightforward descriptions of group sequential hypothesis tests in a form suited for direct application to a wide variety of clinical trials. Medical statisticians engaged in any investigations planned with interim analyses will find this book a useful and important tool.},
-	pagetotal = {416},
-	publisher = {{CRC} Press},
-	author = {Jennison, Christopher and Turnbull, Bruce W.},
-	year = {1999},
-	langid = {english},
-	note = {Google-Books-{ID}: {qBrpTcAYtNQC}},
-	keywords = {Mathematics / Probability \& Statistics / General, Medical / Biostatistics, Medical / Pharmacology, Science / General},
+  author    = {Jennison, Christopher and Turnbull, Bruce W.},
+  title     = {Group Sequential Methods with Applications to Clinical Trials},
+  publisher = {CRC Press},
+  year      = {1999}
 }
 
 @article{evans_checking_2006,
-	title = {Checking for prior-data conflict},
-	volume = {1},
-	issn = {1936-0975, 1931-6690},
-	url = {https://projecteuclid.org/journals/bayesian-analysis/volume-1/issue-4/Checking-for-prior-data-conflict/10.1214/06-BA129.full},
-	doi = {10.1214/06-BA129},
-	abstract = {Inference proceeds from ingredients chosen by the analyst and data. To validate any inferences drawn it is essential that the inputs chosen be deemed appropriate for the data. In the Bayesian context these inputs consist of both the sampling model and the prior. There are thus two possibilities for failure: the data may not have arisen from the sampling model, or the prior may place most of its mass on parameter values that are not feasible in light of the data (referred to here as prior-data conflict). Failure of the sampling model can only be fixed by modifying the model, while prior-data conflict can be overcome if sufficient data is available. We examine how to assess whether or not a prior-data conflict exists, and how to assess when its effects can be ignored for inferences. The concept of prior-data conflict is seen to lead to a partial characterization of what is meant by a noninformative prior or a noninformative sequence of priors.},
-	pages = {893--914},
-	number = {4},
-	journal = {Bayesian Analysis},
-	publisher = {International Society for Bayesian Analysis},
-	author = {Evans, Michael and Moshonov, Hadas},
-	urlyear = {2026},
-	year = {2006},
-	langid = {english},
-	keywords = {ancillarity, hierarchically specified priors, prior-data conflict, sufficiency},
-	file = {Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\D38ZJGL5\\Evans e Moshonov - 2006 - Checking for prior-data conflict.pdf:application/pdf},
+  author  = {Evans, Michael and Moshonov, Hadas},
+  title   = {Checking for prior-data conflict},
+  journal = {Bayesian Analysis},
+  year    = {2006},
+  volume  = {1},
+  number  = {4},
+  pages   = {893--914},
+  doi     = {10.1214/06-BA129}
 }
 
 @article{pocock_combination_1976,
-	title = {The combination of randomized and historical controls in clinical trials},
-	volume = {29},
-	issn = {0021-9681},
-	url = {https://www.sciencedirect.com/science/article/pii/0021968176900448},
-	doi = {10.1016/0021-9681(76)90044-8},
-	abstract = {In many clinical trials the objective is to compare a new treatment with a standard control treatment, the design being to randomize equal numbers of patients onto the two treatments. However, there often exist acceptable historical data on the control treatment and this paper describes procedures for incorporating such historical controls into both the design and analysis of a randomized trial. The statistical model supposes that treatment evaluation consists of a single quantitative measure for each patient and the objective of the trial is to estimate the true difference in treatment means for this measure. In general, historical controls cannot be considered as reliable as randomized controls and this leads one to expect some bias in the historical data. This bias cannot be determined, even as regards its direction, and in the statistical model it is defined as a random variable with zero mean and variance to be specified. In practice, one might choose several values for this variance to represent varying degrees of mistrust, i.e. potential bias, in the historical data. As regards analysis, the best estimate of the control treatment mean is a weighted average of the means for the randomized and historical controls. This leads to a more accurate comparison with the new treatment than the use of randomized controls alone. In the design of a randomized trial the presence of historical data enables one to enter a reduced proportion of patients into a randomized control group, the precise amount of this reduction depending on the size of the historical data and also its potential bias. Examples from actual sequences of clinical trials run by the Eastern Co-operative Oncology Group illustrate the practical use of the methods. In conclusion, it is current practice in clinical trials to rely exclusively on either randomized controls or historical controls, but not both. The methods described in this paper provide an objective, quantitative approach for the combination of these two sources of control data and this should lead to a more efficient use of patients in the execution of clinical trials.},
-	pages = {175--188},
-	number = {3},
-	journal = {Journal of Chronic Diseases},
-	shortjournal = {Journal of Chronic Diseases},
-	author = {Pocock, Stuart J.},
-	urlyear = {2026},
-	year = {1976},
-	file = {ScienceDirect Snapshot:C\:\\Users\\Menelao\\Zotero\\storage\\NSZF68I7\\0021968176900448.html:text/html},
+  author  = {Pocock, Stuart J.},
+  title   = {The combination of randomized and historical controls in clinical trials},
+  journal = {Journal of Chronic Diseases},
+  year    = {1976},
+  volume  = {29},
+  number  = {3},
+  pages   = {175--188},
+  doi     = {10.1016/0021-9681(76)90044-8}
 }
 
 @article{ibrahim_power_2000,
-	title = {Power Prior Distributions for Regression Models},
-	volume = {15},
-	issn = {0883-4237},
-	url = {https://www.jstor.org/stable/2676676},
-	abstract = {We propose a general class of prior distributions for arbitrary regression models. We discuss parametric and semiparametric models. The prior specification for the regression coefficients focuses on observable quantities in that the elicitation is based on the availability of historical data D$_{\textrm{0}}$ and a scalar quantity a$_{\textrm{0}}$ quantifying the uncertainty in D$_{\textrm{0}}$. Then D$_{\textrm{0}}$ and a$_{\textrm{0}}$ are used to specify a prior for the regression coefficients in a semiautomatic fashion. The most natural specification of D$_{\textrm{0}}$ arises when the raw data from a similar previous study are available. The availability of historical data is quite common in clinical trials, carcinogenicity studies, and environmental studies, where large data bases are available from similar previous studies. Although the methodology we present here is quite general, we will focus only on using historical data from similar previous studies to construct the prior distributions. The prior distributions are based on the idea of raising the likelihood function of the historical data to the power a$_{\textrm{0}}$, where ≤ a$_{\textrm{0}}$ ≤ 1. We call such prior distributions power prior distributions. We examine the power prior for four commonly used classes of regression models. These include generalized linear models, generalized linear mixed models, semiparametric proportional hazards models, and cure rate models for survival data. For these classes of models, we discuss the construction of the power prior, prior elicitation issues, propriety conditions, model selection, and several other properties. For each class of models, we present real data sets to demonstrate the proposed methodology.},
-	pages = {46--60},
-	number = {1},
-	journal = {Statistical Science},
-	publisher = {Institute of Mathematical Statistics},
-	author = {Ibrahim, Joseph G. and Chen, Ming-Hui},
-	urlyear = {2026},
-	year = {2000},
-	file = {JSTOR Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\ETA2FWY6\\Ibrahim e Chen - 2000 - Power Prior Distributions for Regression Models.pdf:application/pdf},
+  author  = {Ibrahim, Joseph G. and Chen, Ming-Hui},
+  title   = {Power Prior Distributions for Regression Models},
+  journal = {Statistical Science},
+  year    = {2000},
+  volume  = {15},
+  number  = {1},
+  pages   = {46--60},
+  url     = {https://www.jstor.org/stable/2676676}
 }
 
 @article{goring_characteristics_2019,
-	title = {Characteristics of non-randomised studies using comparisons with external controls submitted for regulatory approval in the {USA} and {Europe}: a systematic review},
-	volume = {9},
-	rights = {© Author(s) (or their employer(s)) 2019. Re-use permitted under {CC} {BY}-{NC}. No commercial re-use. See rights and permissions. Published by {BMJ}.. This is an open access article distributed in accordance with the Creative Commons Attribution Non Commercial ({CC} {BY}-{NC} 4.0) license, which permits others to distribute, remix, adapt, build upon this work non-commercially, and license their derivative works on different terms, provided the original work is properly cited, appropriate credit is given, any changes made indicated, and the use is non-commercial. See: http://creativecommons.org/licenses/by-nc/4.0/.},
-	issn = {2044-6055, 2044-6055},
-	url = {https://bmjopen.bmj.com/content/9/2/e024895},
-	doi = {10.1136/bmjopen-2018-024895},
-	shorttitle = {Characteristics of non-randomised studies using comparisons with external controls submitted for regulatory approval in the {USA} and Europe},
-	abstract = {Objectives Non-randomised clinical trial designs involving comparisons against external controls or specific standards can be used to support regulatory submissions for indications in diseases that are rare, with high unmet need, without approved therapies and/or where placebo is considered unethical. The objective of this review was to summarise the characteristics of non-randomised trials submitted to the European Medicines Agency ({EMA}) or Food and Drug Administration ({FDA}) for indications in haematological cancers, haematological non-malignant conditions, stem cell transplants or rare metabolic diseases.
-Methods We conducted systematic searches of {EMA} databases of conditional approvals, exceptional circumstances, or orphan drug designations and {FDA} inventories of orphan drug designations, accelerated approvals, breakthrough therapy, fast-track and priority approvals. Products were included if reviewed by at least one agency between 2005 and 2017, the primary evidence base was non-randomised trial(s) and the indication was for haematological cancers, stem cell transplantation, haematological conditions or rare metabolic conditions.
-Results We identified 43 eligible indication-specific products using non-randomised study designs involving comparisons with external controls, submitted to the {EMA} (n=34) and/or {FDA} (n=41). Of the 43 indication-specific products, 4 involved matching external controls to the population of a non-randomised interventional study using individual patient-level data ({IPD}), 12 referred to external controls without {IPD} and 27 did not explicitly reference external controls. The {FDA} approved 98\% of submissions, with 56\% accelerated approvals; most required postapproval confirmatory randomised controlled trials ({RCT}). The {EMA} approved 79\% of submissions, with a quarter of approvals conditional on completion of a postapproval {RCT} or additional non-randomised trials.
-Conclusions There has been a large increase in submissions to the {EMA} and {FDA} using non-randomised study designs involving comparisons with external controls in recent years. This study demonstrated that regulators may be willing to approve such submissions, although approvals are often conditional on further confirmatory evidence from postapproval studies.},
-	pages = {e024895},
-	number = {2},
-	journal = {{BMJ} Open},
-	publisher = {British Medical Journal Publishing Group},
-	author = {Goring, Sarah and Taylor, Aliki and Müller, Kerstin and Li, Tina Jun Jian and Korol, Ellen E. and Levy, Adrian R. and Freemantle, Nick},
-	urlyear = {2026},
-	year = {2019},
-	langid = {english},
-	keywords = {external controls, non-randomised studies, regulatory submissions, systematic review},
-	file = {Full Text PDF:C\:\\Users\\Menelao\\Zotero\\storage\\4V8GH4GQ\\Goring et al. - 2019 - Characteristics of non-randomised studies using comparisons with external controls submitted for reg.pdf:application/pdf},
+  author  = {Goring, Sarah and Taylor, Aliki and M{\"u}ller, Kerstin and Li, Tina Jun Jian and Korol, Ellen E. and Levy, Adrian R. and Freemantle, Nick},
+  title   = {Characteristics of non-randomised studies using comparisons with external controls submitted for regulatory approval in the {USA} and {Europe}: a systematic review},
+  journal = {{BMJ} Open},
+  year    = {2019},
+  volume  = {9},
+  number  = {2},
+  pages   = {e024895},
+  doi     = {10.1136/bmjopen-2018-024895}
 }
-
-
 
 @article{micheloud_power_2022,
-	title = {Power Calculations for Replication Studies},
-	volume = {37},
-	issn = {0883-4237},
-	url = {https://www.jstor.org/stable/27368579},
-	abstract = {The reproducibility crisis has led to an increasing number of replication studies being conducted. Sample sizes for replication studies are often calculated using conditional power based on the effect estimate from the original study. However, this approach is not well suited as it ignores the uncertainty of the original result. Bayesian methods are used in clinical trials to incorporate prior information into power calculations. We propose to adapt this methodology to the replication framework and promote the use of predictive instead of conditional power in the design of replication studies. Moreover, we describe how extensions of the methodology to sequential clinical trials can be tailored to replication studies. Conditional and predictive power calculated at an interim analysis are compared and we argue that predictive power is a useful tool to decide whether to stop a replication study prematurely. A recent project on the replicability of social sciences is used to illustrate the properties of the different methods.},
-	pages = {369--379},
-	number = {3},
-	journal = {Statistical Science},
-	publisher = {Institute of Mathematical Statistics},
-	author = {Micheloud, Charlotte and Held, Leonhard},
-	urlyear = {2026},
-	year = {2022},
+  author  = {Micheloud, Charlotte and Held, Leonhard},
+  title   = {Power Calculations for Replication Studies},
+  journal = {Statistical Science},
+  year    = {2022},
+  volume  = {37},
+  number  = {3},
+  pages   = {369--379},
+  url     = {https://www.jstor.org/stable/27368579}
 }
-
-
-
 
 @article{spiegelhalter_monitoring_1986,
-	title = {Monitoring clinical trials: Conditional or predictive power?},
-	volume = {7},
-	issn = {0197-2456},
-	url = {https://www.sciencedirect.com/science/article/pii/0197245686900036},
-	doi = {10.1016/0197-2456(86)90003-6},
-	shorttitle = {Monitoring clinical trials},
-	abstract = {At an interim point in a clinical trial, trial organisers may wish to use the data on the initial series of patients to judge the likely consequences of further patient accrual. Halperin and colleagues (Controlled Clin Trials 3:311–323, 1982) have suggested calculating the power of a continued trial, conditional on the data observed so far and the null and alternative hypothesis specified at the start of the trial. Here we argue that this idea should be extended to obtain the predictive power of the trial, derived by averaging the conditional power with respect to the current belief about the unknown parameters. Although numerical methods are generally required for evaluating the necessary integrals, the results may be presented graphically and enable the statistician to answer the question: “With the data so far, what is the chance that the trial will end up showing a conclusive result?”},
-	pages = {8--17},
-	number = {1},
-	journal = {Controlled Clinical Trials},
-	shortjournal = {Controlled Clinical Trials},
-	author = {Spiegelhalter, David J. and Freedman, Laurence S. and Blackburn, Patrick R.},
-	urlyear = {2026},
-	year = {1986},
-	keywords = {posterior distribution, predictive distribution},
-	file = {ScienceDirect Snapshot:C\:\\Users\\Menelao\\Zotero\\storage\\AVQT68BU\\0197245686900036.html:text/html},
+  author  = {Spiegelhalter, David J. and Freedman, Laurence S. and Blackburn, Patrick R.},
+  title   = {Monitoring clinical trials: Conditional or predictive power?},
+  journal = {Controlled Clinical Trials},
+  year    = {1986},
+  volume  = {7},
+  number  = {1},
+  pages   = {8--17},
+  doi     = {10.1016/0197-2456(86)90003-6}
 }
-
 
 @article{ohagan_bayesian_2001,
-	title = {{Bayesian} Assessment of Sample Size for Clinical Trials of Cost-Effectiveness},
-	volume = {21},
-	issn = {0272-989X},
-	url = {https://journals.sagepub.com/action/showAbstract},
-	doi = {10.1177/0272989X0102100307},
-	abstract = {The authors present an analysis of the choice of sample sizes for demonstrating cost-effectiveness of a new treatment or procedure, when data on both cost and efficacy will be collected in a clinical trial. The Bayesian approach to statistics is employed, as well as a novel Bayesian criterion that provides insight into the sample size problem and offers a very flexible formulation.},
-	pages = {219--230},
-	number = {3},
-	journal = {Medical Decision Making},
-	shortjournal = {Med Decis Making},
-	publisher = {{SAGE} Publications Inc {STM}},
-	author = {O’Hagan, Anthony and Stevens, John W.},
-	urlyear = {2026},
-	year = {2001},
-	file = {SAGE PDF Full Text:C\:\\Users\\Menelao\\Zotero\\storage\\MNSV6B6U\\O’Hagan e Stevens - 2001 - Bayesian Assessment of Sample Size for Clinical Trials of Cost-Effectiveness.pdf:application/pdf},
+  author  = {O'Hagan, Anthony and Stevens, John W.},
+  title   = {Bayesian Assessment of Sample Size for Clinical Trials of Cost-Effectiveness},
+  journal = {Medical Decision Making},
+  year    = {2001},
+  volume  = {21},
+  number  = {3},
+  pages   = {219--230},
+  doi     = {10.1177/0272989X0102100307}
 }
-
-
-
 
 @article{spiegelhalter_predictive_1986,
-	title = {A predictive approach to selecting the size of a clinical trial, based on subjective clinical opinion},
-	volume = {5},
-	issn = {0277-6715},
-	doi = {10.1002/sim.4780050103},
-	abstract = {The 'textbook' approach to determining sample size in a clinical trial has some fundamental weaknesses which we discuss. We describe a new predictive method which takes account of prior clinical opinion about the treatment difference. The method adopts the point of clinical equivalence (determined by interviewing the clinical participants) as the null hypothesis. Decision rules at the end of the study are based on whether the interval estimate of the treatment difference (classical or Bayesian) includes the null hypothesis. The prior distribution is used to predict the probabilities of making the decisions to use one or other treatment or to reserve final judgement. It is recommended that sample size be chosen to control the predicted probability of the last of these decisions. An example is given from a multi-centre trial of superficial bladder cancer.},
-	pages = {1--13},
-	number = {1},
-	journal = {Statistics in Medicine},
-	shortjournal = {Stat Med},
-	author = {Spiegelhalter, D. J. and Freedman, L. S.},
-	year = {1986},
-	keywords = {Biometry, Clinical Trials as Topic, Humans, Probability, Therapeutic Equivalency},
+  author  = {Spiegelhalter, D. J. and Freedman, L. S.},
+  title   = {A predictive approach to selecting the size of a clinical trial, based on subjective clinical opinion},
+  journal = {Statistics in Medicine},
+  year    = {1986},
+  volume  = {5},
+  number  = {1},
+  pages   = {1--13},
+  doi     = {10.1002/sim.4780050103}
 }
-
-
 
 @article{wang_evaluating_2013,
-	location = {London, England},
-	title = {Evaluating and utilizing probability of study success in clinical development},
-	volume = {10},
-	issn = {1740-7753},
-	doi = {10.1177/1740774513478229},
-	abstract = {{BACKGROUND}: Drug development has become increasingly costly, lengthy, and risky. The call for better decision making in research and development has never been stronger. Analytic tools that utilize available data can inform decision makers of the risks and benefits of various decisions, which could lead to better and more informed decisions.
-{PURPOSE}: Through some real oncology examples, we will demonstrate how using available data to analytically evaluate probability of study success ({PrSS}) can lead to better decisions in clinical development.
-{METHODS}: The predictive power, or average conditional power, is used to quantify the {PrSS}. To calculate the probability, we follow a general two-step process: (1) use Bayesian modeling and appropriate assumptions to synthesize relevant data to derive the distribution of treatment effect and (2) evaluate the {PrSS} analytically or via trial simulation.
-{RESULTS}: We applied the procedure to several compounds in our oncology pipeline. The analysis informed decision making where {PrSS} was an important factor to consider.
-{LIMITATIONS}: When modeling the treatment effect, we made certain assumptions, including how two drugs work together and exchangeable treatment effects across studies. Those assumptions are reasonable for our specific situations but may not generalize well.
-{CONCLUSIONS}: From our experience, {PrSS} based on available data can help decision making in drug development, particularly the Go/No-Go decision after the proof of concept trial is completed. When applicable, we recommend this evaluation be regularly done in addition to the routine data analysis for clinical trials.},
-	pages = {407--413},
-	number = {3},
-	journal = {Clinical Trials},
-	shortjournal = {Clin Trials},
-	author = {Wang, Yanping and Fu, Haoda and Kulkarni, Pandurang and Kaiser, Christopher},
-	year = {2013},
-	keywords = {Antineoplastic Agents, Bayes Theorem, Clinical Trials as Topic, Decision Support Techniques, Drug Discovery, Probability, Randomized Controlled Trials as Topic, Research Design},
+  author  = {Wang, Yanping and Fu, Haoda and Kulkarni, Pandurang and Kaiser, Christopher},
+  title   = {Evaluating and utilizing probability of study success in clinical development},
+  journal = {Clinical Trials},
+  year    = {2013},
+  volume  = {10},
+  number  = {3},
+  pages   = {407--413},
+  doi     = {10.1177/1740774513478229}
 }
-
-
 
 @article{hueber2012secukinumab,
-  title={Secukinumab, a human anti-{IL-17A} monoclonal antibody, for moderate to severe {Crohn}'s disease: unexpected results of a randomised, double-blind placebo-controlled trial},
-  author={Hueber, Wolfgang and Sands, Bruce E and Lewitzky, Steve and Vandemeulebroecke, Marc and Reinisch, Walter and Higgins, Peter DR and Wehkamp, Jan and Feagan, Brian G and Yao, Michael D and Karczewski, Marek and others},
-  journal={Gut},
-  volume={61},
-  number={12},
-  pages={1693--1700},
-  year={2012},
-  publisher={BMJ Publishing Group}
+  author  = {Hueber, Wolfgang and Sands, Bruce E and Lewitzky, Steve and Vandemeulebroecke, Marc and Reinisch, Walter and Higgins, Peter DR and Wehkamp, Jan and Feagan, Brian G and Yao, Michael D and Karczewski, Marek and others},
+  title   = {Secukinumab, a human anti-{IL-17A} monoclonal antibody, for moderate to severe {Crohn}'s disease: unexpected results of a randomised, double-blind placebo-controlled trial},
+  journal = {Gut},
+  year    = {2012},
+  volume  = {61},
+  number  = {12},
+  pages   = {1693--1700}
 }
-
-
-
-
 
 %% ADDED NOT ON ZOTERO
 @article{richeldi2022trial,
-  title={Trial of a preferential phosphodiesterase 4B inhibitor for idiopathic pulmonary fibrosis},
-  author={Richeldi, Luca and Azuma, Arata and Cottin, Vincent and Hesslinger, Christian and Stowasser, Susanne and Valenzuela, Claudia and Wijsenbeek, Marlies S and Zoz, Donald F and Voss, Florian and Maher, Toby M},
-  journal={New England Journal of Medicine},
-  volume={386},
-  number={23},
-  pages={2178--2187},
-  year={2022},
-  publisher={Mass Medical Soc}
+  author  = {Richeldi, Luca and Azuma, Arata and Cottin, Vincent and Hesslinger, Christian and Stowasser, Susanne and Valenzuela, Claudia and Wijsenbeek, Marlies S and Zoz, Donald F and Voss, Florian and Maher, Toby M},
+  title   = {Trial of a preferential phosphodiesterase 4B inhibitor for idiopathic pulmonary fibrosis},
+  journal = {New England Journal of Medicine},
+  year    = {2022},
+  volume  = {386},
+  number  = {23},
+  pages   = {2178--2187}
 }
 
 
 
 @article{chen2024efficacy,
-  title={Efficacy and safety of mepolizumab in a {Chinese} population with severe asthma: a phase III, randomised, double-blind, placebo-controlled trial},
-  author={Chen, Ruchong and Wei, Liping and Dai, Yuanrong and Wang, Zaiyi and Yang, Danrong and Jin, Meiling and Xiong, Cui and Li, Ting and Hu, Shuling and Song, Jie and others},
-  journal={ERJ Open Research},
+author={Chen, Ruchong and Wei, Liping and Dai, Yuanrong and Wang, Zaiyi and Yang, Danrong and Jin, Meiling and Xiong, Cui and Li, Ting and Hu, Shuling and Song, Jie and others},
+  title={Efficacy and safety of mepolizumab in a {Chinese} population with severe asthma: a phase {III}, randomised, double-blind, placebo-controlled trial},
+  journal={ERJ open research},
   volume={10},
   number={3},
+  pages={00750--2023},
   year={2024},
   publisher={European Respiratory Society}
 }
 
-
-
 @article{held2025balancing,
-  title={Balancing Evidentiary Value and Sample Size of Adaptive Designs with Application to Animal Experiments},
-  author={Held, Leonhard and Balabdaoui, Fadoua and Fontana, Saverio and Pawel, Samuel},
-  journal={arXiv preprint arXiv:2511.17292},
-  year={2025}
+  author  = {Held, Leonhard and Balabdaoui, Fadoua and Fontana, Saverio and Pawel, Samuel},
+  title   = {Balancing Evidentiary Value and Sample Size of Adaptive Designs with Application to Animal Experiments},
+  journal = {arXiv preprint arXiv:2511.17292},
+  year    = {2025}
 }
 
 @article{herrmann2020new,
-  title={A new conditional performance score for the evaluation of adaptive group sequential designs},
-  author={Herrmann, Carolin and Pilz, Maximilian and Kieser, Meinhard and Rauch, Geraldine},
-  journal={Statistics in Medicine},
-  volume={39},
-  number={15},
-  pages={2067--2100},
-  year={2020},
-  publisher={Wiley Online Library}
+  author  = {Herrmann, Carolin and Pilz, Maximilian and Kieser, Meinhard and Rauch, Geraldine},
+  title   = {A new conditional performance score for the evaluation of adaptive group sequential designs},
+  journal = {Statistics in Medicine},
+  year    = {2020},
+  volume  = {39},
+  number  = {15},
+  pages   = {2067--2100}
 }
 
 @article{herrmann2022optimization,
-  title={Optimization of adaptive designs with respect to a performance score},
-  author={Herrmann, Carolin and Kieser, Meinhard and Rauch, Geraldine and Pilz, Maximilian},
-  journal={Biometrical Journal},
-  volume={64},
-  number={6},
-  pages={989--1006},
-  year={2022},
-  publisher={Wiley Online Library}
+  author  = {Herrmann, Carolin and Kieser, Meinhard and Rauch, Geraldine and Pilz, Maximilian},
+  title   = {Optimization of adaptive designs with respect to a performance score},
+  journal = {Biometrical Journal},
+  year    = {2022},
+  volume  = {64},
+  number  = {6},
+  pages   = {989--1006}
 }
 
-
 @article{glas2003diagnostic,
-  title={The diagnostic odds ratio: a single indicator of test performance},
-  author={Glas, Afina S and Lijmer, Jeroen G and Prins, Martin H and Bonsel, Gouke J and Bossuyt, Patrick MM},
-  journal={Journal of Clinical Epidemiology},
-  volume={56},
-  number={11},
-  pages={1129--1135},
-  year={2003},
-  publisher={Elsevier}
+  author  = {Glas, Afina S and Lijmer, Jeroen G and Prins, Martin H and Bonsel, Gouke J and Bossuyt, Patrick MM},
+  title   = {The diagnostic odds ratio: a single indicator of test performance},
+  journal = {Journal of Clinical Epidemiology},
+  year    = {2003},
+  volume  = {56},
+  number  = {11},
+  pages   = {1129--1135}
 }
 
 @article{zhu2017bayesian,
-  title={A Bayesian sequential design using alpha spending function to control type I error},
-  author={Zhu, Han and Yu, Qingzhao},
-  journal={Statistical methods in medical research},
-  volume={26},
-  number={5},
-  pages={2184--2196},
-  year={2017},
-  publisher={SAGE Publications Sage UK: London, England}
+  author  = {Zhu, Han and Yu, Qingzhao},
+  title   = {A {Bayesian} sequential design using alpha spending function to control type {I} error},
+  journal = {Statistical Methods in Medical Research},
+  year    = {2017},
+  volume  = {26},
+  number  = {5},
+  pages   = {2184--2196}
 }
 
 @article{fu2023covariate,
-  title={Covariate handling approaches in combination with dynamic borrowing for hybrid control studies},
-  author={Fu, Chenqi and Pang, Herbert and Zhou, Shouhao and Zhu, Jiawen},
-  journal={Pharmaceutical Statistics},
-  volume={22},
-  number={4},
-  pages={619--632},
-  year={2023},
-  publisher={Wiley Online Library}
+  author  = {Fu, Chenqi and Pang, Herbert and Zhou, Shouhao and Zhu, Jiawen},
+  title   = {Covariate handling approaches in combination with dynamic borrowing for hybrid control studies},
+  journal = {Pharmaceutical Statistics},
+  year    = {2023},
+  volume  = {22},
+  number  = {4},
+  pages   = {619--632}
 }
 
 @article{kopp2024simulating,
-  title={Simulating and reporting frequentist operating characteristics of clinical trials that borrow external information: towards a fair comparison in case of one-arm and hybrid control two-arm trials},
-  author={Kopp-Schneider, Annette and Wiesenfarth, Manuel and Held, Leonhard and Calderazzo, Silvia},
-  journal={Pharmaceutical Statistics},
-  volume={23},
-  number={1},
-  pages={4--19},
-  year={2024},
-  publisher={Wiley Online Library}
+  author  = {Kopp-Schneider, Annette and Wiesenfarth, Manuel and Held, Leonhard and Calderazzo, Silvia},
+  title   = {Simulating and reporting frequentist operating characteristics of clinical trials that borrow external information: towards a fair comparison in case of one-arm and hybrid control two-arm trials},
+  journal = {Pharmaceutical Statistics},
+  year    = {2024},
+  volume  = {23},
+  number  = {1},
+  pages   = {4--19}
 }
-
 
 @article{li2022hybrid,
-  title={Hybrid-control arm construction using historical trial data for an early-phase, randomized controlled trial in metastatic colorectal cancer},
-  author={Li, Chen and Ferro, Ana and Mhatre, Shivani K and Lu, Danny and Lawrance, Marcus and Li, Xiao and Li, Shi and Allen, Simon and Desai, Jayesh and Fakih, Marwan and others},
-  journal={Communications Medicine},
-  volume={2},
-  number={1},
-  pages={90},
-  year={2022},
-  publisher={Nature Publishing Group UK London}
+  author  = {Li, Chen and Ferro, Ana and Mhatre, Shivani K and Lu, Danny and Lawrance, Marcus and Li, Xiao and Li, Shi and Allen, Simon and Desai, Jayesh and Fakih, Marwan and others},
+  title   = {Hybrid-control arm construction using historical trial data for an early-phase, randomized controlled trial in metastatic colorectal cancer},
+  journal = {Communications Medicine},
+  year    = {2022},
+  volume  = {2},
+  number  = {1},
+  pages   = {90}
 }
 
-
 @article{ratta2026interplay,
-  title={On the interplay between prior weight and variance of the robustification component in Robust Mixture Prior {Bayesian} Dynamic Borrowing approach},
-  author={Ratta, Marco and Saint-Hilary, Ga{\"e}lle and Gasparini, Mauro and Mozgunov, Pavel},
-  journal={Statistics in Medicine},
-  volume={45},
-  number={13-14},
-  pages={e70616},
-  year={2026},
-  publisher={Wiley Online Library}
+  author  = {Ratta, Marco and Saint-Hilary, Ga{\"e}lle and Gasparini, Mauro and Mozgunov, Pavel},
+  title   = {On the interplay between prior weight and variance of the robustification component in Robust Mixture Prior {Bayesian} Dynamic Borrowing approach},
+  journal = {Statistics in Medicine},
+  year    = {2026},
+  volume  = {45},
+  number  = {13-14},
+  pages   = {e70616}
 }
 
 @article{neuenschwander2020predictively,
-  title={Predictively consistent prior effective sample sizes},
-  author={Neuenschwander, Beat and Weber, Sebastian and Schmidli, Heinz and O'Hagan, Anthony},
-  journal={Biometrics},
-  volume={76},
-  number={2},
-  pages={578--587},
-  year={2020},
-  publisher={Oxford University Press}
+  author  = {Neuenschwander, Beat and Weber, Sebastian and Schmidli, Heinz and O'Hagan, Anthony},
+  title   = {Predictively consistent prior effective sample sizes},
+  journal = {Biometrics},
+  year    = {2020},
+  volume  = {76},
+  number  = {2},
+  pages   = {578--587}
 }
 
 @article{staquet1979delta,
-  title={The delta and epsilon errors in the assessment of cancer clinical trials},
-  author={Staquet, M J and Rozencweig, M and Von Hoff, D D and Muggia, F M},
-  journal={Cancer Treatment Reports},
-  volume={63},
-  number={11-12},
-  pages={1917--1921},
-  year={1979}
+  author  = {Staquet, M J and Rozencweig, M and Von Hoff, D D and Muggia, F M},
+  title   = {The delta and epsilon errors in the assessment of cancer clinical trials},
+  journal = {Cancer Treatment Reports},
+  year    = {1979},
+  volume  = {63},
+  number  = {11-12},
+  pages   = {1917--1921}
 }
 
+
 @article{simon1982randomized,
-  title={Randomized clinical trials and research strategy},
-  author={Simon, Richard},
-  journal={Cancer Treatment Reports},
-  volume={66},
-  pages={1083--1087},
-  year={1982}
+  author  = {Simon, Richard},
+  title   = {Randomized clinical trials and research strategy},
+  journal = {Cancer Treatment Reports},
+  year    = {1982},
+  volume  = {66},
+  pages   = {1083--1087}
 }
 
 @article{ioannidis2005most,
-  title={Why most published research findings are false},
-  author={Ioannidis, John P A},
-  journal={PLoS Medicine},
-  volume={2},
-  number={8},
-  pages={e124},
-  year={2005},
-  publisher={Public Library of Science}
+  author  = {Ioannidis, John P A},
+  title   = {Why most published research findings are false},
+  journal = {PLoS Medicine},
+  year    = {2005},
+  volume  = {2},
+  number  = {8},
+  pages   = {e124}
 }
+
 @article{morita2008determining,
   author  = {Morita, Satoshi and Thall, Peter F. and M{\"u}ller, Peter},
   title   = {Determining the Effective Sample Size of a Parametric Prior},
@@ -886,41 +697,41 @@ Conclusions There has been a large increase in submissions to the {EMA} and {FDA
 }
 
 @article{haybittle_repeated_1971,
-	title = {Repeated assessment of results in clinical trials of cancer treatment},
-	volume = {44},
-	number = {526},
-	pages = {793--797},
-	journal = {The British Journal of Radiology},
-	author = {Haybittle, J. L.},
-	year = {1971},
+  author  = {Haybittle, J. L.},
+  title   = {Repeated assessment of results in clinical trials of cancer treatment},
+  journal = {The British Journal of Radiology},
+  year    = {1971},
+  volume  = {44},
+  number  = {526},
+  pages   = {793--797}
 }
 
 @article{peto_design_1976,
-	title = {Design and analysis of randomized clinical trials requiring prolonged observation of each patient. {I}. Introduction and design},
-	volume = {34},
-	number = {6},
-	pages = {585--612},
-	journal = {British Journal of Cancer},
-	author = {Peto, R. and Pike, M. C. and Armitage, P. and Breslow, N. E. and Cox, D. R. and Howard, S. V. and Mantel, N. and McPherson, K. and Peto, J. and Smith, P. G.},
-	year = {1976},
+  author  = {Peto, R. and Pike, M. C. and Armitage, P. and Breslow, N. E. and Cox, D. R. and Howard, S. V. and Mantel, N. and McPherson, K. and Peto, J. and Smith, P. G.},
+  title   = {Design and analysis of randomized clinical trials requiring prolonged observation of each patient. {I}. Introduction and design},
+  journal = {British Journal of Cancer},
+  year    = {1976},
+  volume  = {34},
+  number  = {6},
+  pages   = {585--612}
 }
 
 @article{kim_demets_design_1987,
-	title = {Design and analysis of group sequential tests based on the type {I} error spending rate function},
-	volume = {74},
-	number = {1},
-	pages = {149--154},
-	journal = {Biometrika},
-	author = {Kim, Kyungmann and DeMets, David L.},
-	year = {1987},
+  author  = {Kim, Kyungmann and DeMets, David L.},
+  title   = {Design and analysis of group sequential tests based on the type {I} error spending rate function},
+  journal = {Biometrika},
+  year    = {1987},
+  volume  = {74},
+  number  = {1},
+  pages   = {149--154}
 }
 
 @article{wang_approximately_1987,
-	title = {Approximately optimal one-parameter boundaries for group sequential trials},
-	volume = {43},
-	number = {1},
-	pages = {193--199},
-	journal = {Biometrics},
-	author = {Wang, Samuel K. and Tsiatis, Anastasios A.},
-	year = {1987},
+  author  = {Wang, Samuel K. and Tsiatis, Anastasios A.},
+  title   = {Approximately optimal one-parameter boundaries for group sequential trials},
+  journal = {Biometrics},
+  year    = {1987},
+  volume  = {43},
+  number  = {1},
+  pages   = {193--199}
 }

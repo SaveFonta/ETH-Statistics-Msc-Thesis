@@ -4,42 +4,47 @@
 \section{Overview}
 
 This thesis studied the design of Bayesian two arm trials with a normal endpoint that borrow
-historical information on the control arm, with the aim of balancing the evidentiary value a
-design produces against the number of patients it requires. The tool for that balance is the
-\textit{Experimental Unit Information Index} (EUII) \citep{held2025balancing}, which normalizes the
-\textit{diagnostic odds ratio} (DOR) by the number of patients enrolled and therefore places designs
-of different size, and designs whose size is random, on a common per patient scale.
+historical information on the control arm. Borrowing makes a trial smaller and reduces the number of
+patients, but it costs the frequentist guarantee that the type one error (T1E)
+rate is controlled at every value of the control parameter. 
 
-The starting point was the observation that a single normal analysis prior offers no protection
-against prior misspecification, that is, when the historical data disagree with the new trial.
-This motivated the use of the \textit{robust meta-analytic-predictive}
-(MAP) prior \citep{schmidli_robust_2014} and the \textit{average T1E rate} (avgT1E)
-\citep{best_beyond_2025}, which integrates the conditional T1E rate over a design prior on the
-control parameter rather than evaluating it at a single point.
+\citet{best_beyond_2025} restore that guarantee by integrating the conditional T1E
+over a design prior for the control parameter to obtain the \textit{average T1E rate} (avgT1E). An
+analogous \textit{average power} (avgPower) was developed here, and closed form expressions and
+properties were derived for both under normal priors, together with the sample size computation they
+imply. Because a single normal analysis prior offers no protection when the historical data disagree
+with the new trial, the analysis prior was then built as a \textit{robust meta-analytic-predictive}
+(MAP) prior \citep{schmidli_robust_2014}, for which the same metrics follow by numerical integration.
 
-Two decision criteria for declaring success were considered throughout: the \textit{single criterion}
-(SC), a standard test of statistical significance, and the \textit{dual criterion} (DC), which
-additionally requires the effect to exceed a clinically relevant threshold, the more conservative
-choice appropriate to a proof of concept trial.
+On top of these two metrics the \textit{Experimental Unit Information Index} (EUII)
+\citep{held2025balancing} was built in average form. It normalizes the \textit{diagnostic odds ratio}
+(DOR) by the number of patients a design needs, placing designs of different size, and designs whose
+size is random, on a common per patient scale. The framework was extended to \textit{dual criterion}
+(DC) designs, which additionally require the effect to exceed a clinically relevant threshold, and to
+Bayesian group sequential designs, which stop early for efficacy or for futility. Since adding interim
+looks inflates the avgT1E, a calibration algorithm was developed to place every design at a common
+avgT1E and avgPower before its EUII is read. A Phase II Crohn's disease trial served as the running
+example throughout the methodology and as the case study.
+
 
 \section{Methodological Contributions}
 
 \paragraph{An average power}
-The same idea extends avgT1E to an \textit{average power} (avgPower): integrating conditional power
-over the same design prior is the relevant notion of power in this setting
-(Section~\ref{subsec:metrics_bayesian}). Together, avgT1E and avgPower let the EUII be defined in
+Following from the avgT1E, an analogous avgPower, obtained by integrating
+the conditional power over the design prior, was defined
+(Section~\ref{subsec:metrics_bayesian}). Together, avgT1E and avgPower were used to build the EUII in
 average form.
 
 \paragraph{Closed forms and three properties}
 Closed form expressions for avgT1E and avgPower were derived under normal priors
-(Section~\ref{subsec:closedforms_normal}), with three
-properties. Average metrics are always pulled closer to $0.5$ than their conditional counterparts.
+(Section~\ref{subsec:closedforms_normal}), and three
+properties were established. Average metrics are always pulled closer to $0.5$ than their conditional counterparts.
 Under aligned analysis and design priors, avgT1E is controlled exactly at the nominal level. And as
 the design prior becomes vague, both avgT1E and avgPower converge to $0.5$, whatever the analysis
 prior.
 
 \paragraph{Sample size computation}
-A closed form for the sample size needed to reach a target average power is available for a single
+A closed form for the sample size needed to reach a target average power was obtained for a single
 normal analysis prior (Section~\ref{subsec:samplesize_closedform}). For the MAP prior and its robust
 extension no closed form exists, but since
 avgPower is monotone in $n_C$, numerical inversion gives the smallest adequate sample size.
@@ -60,7 +65,7 @@ finite limit as the effect size grows and a reference for reading finite sample 
 \paragraph{The framework does not extend to contrast borrowing}
 The framework does not transfer to borrowing on the treatment contrast, for three reasons
 (Section~\ref{subsec:contrast_limitation}). A prior on
-$\delta$ typically favours a beneficial effect and so conflicts with the null, forcing strict
+$\delta$ typically favors a beneficial effect and so conflicts with the null, forcing strict
 frequentist error control to discard the historical information. No exact analogue of the avgT1E
 control result exists in that setting. And the EUII itself cannot be built, since the
 metric proposed for this case, a Type III error, is a joint probability, not a conditional
@@ -73,7 +78,7 @@ Varying the design prior by switching, shifting its location, and scaling its sp
 (Section~\ref{sec:fixed_design}) showed that only
 a control mean better than $\pi_{\text{MAP}}$ assumes can inflate avgT1E, and that being wrong about
 where $\theta_C$ lies costs considerably more than being wrong about how uncertain it is. Raising
-the robustness weight reduced avgT1E under every form of conflict.
+the robustness weight reduces avgT1E under every form of conflict considered.
 
 \paragraph{The EUII is not a diagnostic for prior misspecification}
 Under misaligned priors, EUII stays close to its aligned value
@@ -84,36 +89,41 @@ design and a badly underpowered one can therefore achieve nearly the same EUII. 
 should be assessed through avgT1E and avgPower, not EUII, which should be used for comparing
 designs under a correctly specified prior.
 
-\paragraph{EUII for DC vs EUII for SC}
+\paragraph{EUII for DC versus EUII for SC}
 The EUII curves of the two criteria cross: the DC has the higher EUII for effects moderately above
 the decision value, the SC for large effects. Raising the success threshold lowers avgT1E by a
 fixed amount but grows the loss in avgPower with $\delta$, so the fixed gain dominates at moderate
 effects and the loss dominates at large ones, a crossing that also appears as a function of the
-control sample size (Section~\ref{sec:fixed_design}).
+control sample size (Section~\ref{sec:fixed_design}). 
+
+\paragraph{Interim analyses and futility raise the evidentiary value per patient}
+Every sequential design has a higher EUII than its fixed counterpart at the same $\delta$, and a second
+interim raises it further (Sections~\ref{sec:one_interim} and~\ref{sec:two_interim}) but inflates the avgT1E. 
+Adding a futility rule raises the EUII while leaving avgT1E and avgPower almost untouched, since it mostly remove
+trials that would have failed at the final analysis anyway.
 
 
-\paragraph{Calibration is what makes the comparison meaningful}
-Comparing sequential designs at a fixed nominal threshold is not a fair comparison. The calibration algorithm
-tunes every design, whatever its number of looks, its boundary shape, or whether it uses a futility
-rule, to the same average error rate and average power before its EUII is read
-(Section~\ref{sec:calibrated_comparison}). Once every design sits
-at the same error rates, the diagnostic odds ratio is approximately pinned, so any EUII difference
-that remains is attributable entirely to how the number of patients a design needs is distributed
-between a successful and an unsuccessful trial, not to a single expected sample size. Importantly, 
-every calibrated quantity is a Monte Carlo estimate, so the values
-reported are subject to simulation error and are not exact.
+\paragraph{A calibration algorithm for Bayesian group sequential designs}
+Comparing sequential designs at a fixed nominal threshold is not always a fair comparison, since designs 
+with different numbers of looks or different stopping rules would then have different avgT1E 
+and avgPower. A calibration algorithm was therefore developed that, for a chosen stopping rule 
+and number of looks, tunes the threshold together with the maximum sample size to reach a 
+specified avgT1E and avgPower (Section~\ref{sec:seq_calibration}).
+At a fixed target, more interim looks always gave a higher EUII (Section~\ref{sec:calibrated_sc}), and 
+among stopping rules at a fixed number of looks, Pocock's style constant threshold almost always gave the highest EUII (Section~\ref{sec:calibrated_shapes}).
+
 
 
 \section{A Design Workflow}
 \label{sec:workflow}
 The pieces developed in this thesis compose into a fixed order for planning a new trial in this framework.
 \begin{enumerate}
-    \item \textbf{Build $\pi_{\text{MAP}}$} from the historical arms, including only those studies that satisfy pre-specified
+    \item \textbf{Build $\pi_{\text{MAP}}$} from the historical arms, including only those studies that satisfy prespecified
     eligibility criteria, for example the ones defined by \citet{pocock_combination_1976}.
     \item \textbf{Choose $\omega$}, fixing the analysis prior $\pi_A$ and, with it, $n_A = \mathrm{ESS}(\pi_A)$.
     \item \textbf{Set the threshold} $p = 1 - \alpha^\ast$. No computation is required: exact under alignment, and, as shown in Section~\ref{sec:fixed_design}, conservative under $\pi_D = \pi_{\text{MAP}}$ for every $\omega > 0$.
     \item \textbf{Solve for $n_C$} at the target power under $\pi_D = \pi_{\text{MAP}}$, then $n_T = r_T n_C$.
-    \item \textbf{Stress test} $\omega$ against a declared \textit{drift}, by shifting $\pi_{\text{MAP}}$. If the worst case fails the desired tolerance, raise $\omega$ and return to step iii.
+    \item \textbf{Stress test} $\omega$ against a declared \textit{drift}, by shifting $\pi_{\text{MAP}}$. If the worst case fails the desired tolerance, raise $\omega$ and return to step ii.
 \end{enumerate}
 A mixture analysis prior changes step iv: control of avgT1E still holds under alignment,  but the closed 
 form of Section~\ref{subsec:samplesize_closedform} is no
@@ -129,24 +139,36 @@ Algorithm~\ref{alg:calibrate_design}, which recalibrates the threshold at every 
 
 \section{Future Work}
 
-A direction for future work is extending the endpoint beyond the normal case with known standard
+
+ A direction for future work is extending the framework to borrowing on the treatment contrast $\delta$
+directly, rather than on the control arm, addressing the issues that
+Section~\ref{subsec:contrast_limitation} leaves open. 
+
+
+A further direction is extending the endpoint beyond the normal case with known standard
 deviation $\sigma$ used throughout the thesis, or investigating the consequences of misspecifying
 $\sigma$. Moreover, the only priors considered are the MAP prior and its robust extension, but it
 would be interesting to test the framework using power priors and commensurate priors.
+
+
 
 The sensitivity analyses obtained by changing the design prior could also extend past the three
 perturbations reported here, for instance by reweighting the mixture components of
 $\pi_{\text{MAP}}$ or refitting it with one historical study left out at a time.
 
 Regarding Bayesian group sequential design, a more accurate comparison of EUII using calibrated DC
-designs, or varying the priors, could be performed, together with a futility boundary with a shape of
+designs, or varying the priors, could be performed, together with a futility boundary following a stopping rule of
 its own, calibrated jointly with the efficacy boundary. The timing of the interim analyses could
 likewise be optimized against the index rather than inherited from the protocol.
 
-Finally, since Bayesian group sequential designs with robust borrowing remain rare in practice, and
-the conclusions here rest on a single motivating trial, applying the design workflow of
-Section~\ref{sec:workflow} prospectively to further trials, or retrospectively to other completed
-studies, would test how well its conclusions generalize beyond the case considered here.
+Finally, Bayesian designs with robust borrowing remain underused in practice, but their uptake is
+expected to increase following the recent FDA guidance ``Use of Bayesian Methodology in Clinical
+Trials of Drug and Biological Products: Draft Guidance for Industry'' \citep{fda_bayesian_2026}. As
+these designs move into wider use, it becomes more important to understand how much evidentiary value they
+deliver, how sensitive avgT1E and avgPower are to the design prior they are evaluated under, and how much prior-data conflict the
+robustness weight $\omega$ can tolerate. The conclusions drawn here rest on a single motivating trial, so applying the design
+workflow of Section~\ref{sec:workflow} prospectively to new trials, or retrospectively to completed
+ones, would show how far they generalize.
 
 
 %%% Local Variables:

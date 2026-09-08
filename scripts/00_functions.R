@@ -6,9 +6,16 @@ library(RBesT)
 # -----------------------------------------------------
 # EXACT METHODS (fixed design, closed-form / numerical integration)
 # -----------------------------------------------------
+# Sign convention: arm 1 is the treatment and arm 2 the control, following RBesT,
+# and the treatment mean is taken as theta_T = theta_C + delta_new. The thesis
+# defines delta = theta_C - theta_T, with lower values better, so callers must pass
+# the negated effect, delta_new = -delta. All call sites do this.
+#
+# Ngrid is deliberately not a formal here. RBesT oc2S.normMix has its own Ngrid
+# argument, which reaches it through the dots below.
 
 avgoc2S.normMix <- function(
-  prior1, prior2, n1, n2, decision, delta, design_prior2,   eps = 1e-6, Ngrid = 10, ...
+  prior1, prior2, n1, n2, decision, delta, design_prior2, eps = 1e-6, ...
 ) {
 
   # Creates OC

@@ -1,57 +1,21 @@
 \newpage
 \subsection*{Abstract}
-\begin{comment}
 
-\note{TO DO: the final paragraph states the result of the calibrated comparison and is written once
-Section~\ref{sec:calibrated_comparison} has been read.}
+The interest in Bayesian designs that borrow historical information on the control arm is expected to increase following the
+recent FDA guidance ``Use of Bayesian Methodology in Clinical Trials of Drug and Biological Products: Draft Guidance for Industry''.
+Evaluating such designs is not straightforward, since borrowing breaks the frequentist guarantee of strict type one error (T1E) control. To address this,
+an average T1E, which integrates the conditional T1E over a design prior for the control parameter, was recently proposed. This thesis
+introduces an analogous average power, derives closed form expressions for both metrics under normal priors, obtains a closed form sample size formula
+for a single normal analysis prior, and characterizes their sensitivity to misspecification of the design prior.
+Prior-data conflict is handled by building the analysis prior as a robust meta-analytic-predictive (MAP) prior,
+a mixture of a historical component and a weakly informative one.
+The framework is then extended to dual criterion designs and to Bayesian group sequential designs. Designs are
+compared through the Experimental Unit Information Index (EUII), a recently proposed per-patient metric
+of evidentiary value which normalizes the diagnostic odds ratio
+by the number of patients required. 
+Because adding interim looks inflates the average T1E, an algorithm is proposed to calibrate designs to a common average T1E
+and average power before the EUII is read. A Phase II Crohn's disease trial motivates and illustrates the comparisons throughout.
 
-Comparing clinical trial designs is not straightforward when they differ in sample size,
-power and type one error at the same time, and it becomes harder still when the design is
-adaptive and the sample size is itself random. This thesis studies Bayesian two arm designs
-with a Normal endpoint that borrow historical information on the control arm, and evaluates
-them on a common per patient scale.
-
-Borrowing is carried out with meta analytic predictive priors and their robust mixture
-extensions. Designs are assessed through average operating characteristics, which separate
-the analysis prior used to form the posterior from the design prior used to describe the
-plausible true states of nature. Alongside the average type one error, we define an average
-power, the counterpart appropriate to control arm borrowing, since classical assurance averages
-over uncertainty in the treatment effect rather than over the control parameter. Closed form
-expressions for both metrics are derived under Normal priors, together with three properties of
-the averaged quantities. Average metrics lie closer to one half than their conditional
-counterparts, the average type one error is controlled exactly at the nominal level when the
-design and analysis priors coincide, and it degenerates to one half when the design prior
-becomes vague while borrowing remains active. Sample sizes are obtained in closed form for a
-single Normal analysis prior and by numerical inversion for mixtures, where no closed form
-exists.
-
-Designs are then compared through the experimental unit information index, which normalises
-the diagnostic odds ratio by the number of patients a design requires and therefore places
-designs of different size on the same footing. The framework is developed for fixed designs
-under both a single criterion and a dual criterion, and is then extended to group sequential
-designs with one and with two interim analyses. Thresholds and sample sizes are calibrated
-by simulation, using common random numbers so that the average type one error becomes a
-smooth monotone function of the threshold and can be inverted by root finding, with the
-threshold recalibrated at every candidate sample size.
-
-Two findings delimit how the index should be used. Under a design prior that conflicts with the
-analysis prior, the index barely moves even though power and type one error move substantially,
-because it is a ratio of odds and the two shifts largely cancel. A design that is badly optimistic
-and one that is badly underpowered can therefore reach nearly the same value, so sensitivity to
-prior conflict is better assessed through the average operating characteristics themselves. Under
-correctly specified priors the index does discriminate. Every sequential design considered lies
-above its fixed counterpart, futility stopping raises it further while leaving the error rates
-almost untouched, and the two criteria cross, with the dual criterion ahead for effects moderately
-above the decision value and the single criterion ahead for large ones. Adding interim analyses
-raises the index but inflates the average type one error, which is why designs are finally compared
-after calibration to common error rates rather than to a common threshold.
-
-\note{TO DO: one closing paragraph reporting what the calibrated comparison shows, and the resulting
-recommendation.}
-
-The methods are illustrated throughout on a running example in Crohn's disease.
-
-\end{comment}
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "MasterThesisSfS"

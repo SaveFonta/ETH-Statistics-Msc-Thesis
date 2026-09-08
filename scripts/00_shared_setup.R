@@ -71,6 +71,11 @@ sign.crit <- decision2S(pc = 0.95, qc = 0, lower.tail = TRUE)
 dual.crit <- decision2S(pc = c(0.95, 0.50), qc = c(0, -DV), lower.tail = TRUE)
 # Futility (interim looks only): Pr(delta < 40 | data) >= 0.90, i.e.
 #   Pr(theta_T - theta_C > -40) >= 0.90, hence the upper tail at qc = -40.
+# Written in the negated (RBesT) frame: arm 1 is the treatment, so the contrast is
+# theta_T - theta_C = -delta, and qc = -40 with lower.tail = FALSE tests
+# Pr(-delta > -40) >= 0.90, i.e. Pr(delta < 40) >= 0.90 in thesis notation.
+# NOTE: unlike the success rule in 00_functions.R, this does not go through the
+# lower_is_better switch. If that flag is ever set FALSE, update this line in step.
 fut.crit <- decision2S(pc = 0.90, qc = -40, lower.tail = FALSE)
 
 
