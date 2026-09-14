@@ -267,14 +267,15 @@ the conditional T1E rate is not a single constant, but varies pointwise as a fun
 
 
 \paragraph{Average power (avgPower)}
-When the true treatment effect is assumed to be a specific nonzero value ($\delta \neq 0$),  we obtain the average power (at $\delta$):  
+When the true treatment effect is assumed to be a specific nonzero value ($\delta \neq 0$), we obtain the average power (at $\delta$):  
 \begin{equation} \label{eq:avg-power}
   \avgPow(\delta) = \int_{-\infty}^{\infty} \Pr\left(\text{Success} \mid \theta_C, \theta_T = \theta_C - \delta\right) \pi_D(\theta_C) \, d\theta_C.
 \end{equation}
 \begin{remarkbox}
-\Remark We use the term \textit{average power} rather than \textit{assurance} for Equation~\eqref{eq:avg-power} to avoid confusion. \textit{Assurance} often
-implies marginalization over a prior distribution for the effect size $\delta$ \citep{ohagan_assurance_2005}. Because our framework fixes
+\Remark We use the term \textit{average power} rather than \textit{assurance} or \textit{predictive power} for Equation~\eqref{eq:avg-power} to avoid confusion. Both
+imply marginalization over a prior distribution for the effect size $\delta$ \citep{ohagan_assurance_2005, spiegelhalter_monitoring_1986}. Because our framework fixes
 $\delta$ and integrates solely over the control parameter space $\pi_D(\theta_C)$, \textit{average power} prevents ambiguity.
+An integral of this form, fixing $\delta$ and averaging over the control parameter, is computed by simulation in \citet{walley2015advantages}.
 \end{remarkbox}
 
 
@@ -1360,7 +1361,7 @@ unchanged.
 \section{Borrowing on the Treatment Contrast}
 \label{subsec:contrast_limitation}
 
-All the metrics developed above (average T1E rate, average power, and average EUII) assume borrowing on the control arm. Historical information could instead be placed directly on the treatment contrast $\delta$. We restrict the present work to borrowing on the control arm because the metrics do not transfer cleanly to that setting. We outline the three obstacles below.
+All the metrics used above (average T1E rate, average power, and average EUII) assume borrowing on the control arm. Historical information could instead be placed directly on the treatment contrast $\delta$. We restrict the present work to borrowing on the control arm because the metrics do not transfer cleanly to that setting. We outline the three obstacles below.
 
 \paragraph{The prior conflicts with the null}
 A prior placed on $\delta$ typically favors a beneficial effect, which directly conflicts with the null hypothesis. This conflict inflates the classical T1E rate and it has been shown that requiring strict frequentist control of it forces the historical information to be

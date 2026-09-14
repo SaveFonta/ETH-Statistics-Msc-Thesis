@@ -295,7 +295,8 @@ for the mixture priors used here the posterior is itself a mixture, and the quad
 The average power is nonetheless computable for any normal mixture by numerical integration, and it is monotone in $n_C$, so the 
 smallest adequate sample size follows from a bisection over the integers. Table~\ref{tab:samplesize_mix} reports it for a
 target average power of $80\%$ at $\delta = 60$ and allocation ratio $r_T = 2$, with the design prior
-fixed at $\pi_{\text{MAP}}$.
+fixed at $\pi_{\text{MAP}}$. Simulation algorithms have been proposed to perform sample size computation under a robust MAP
+prior \citep{qi2023sample}, but they rely on a Monte Carlo method rather than numerical integration.
 
 <<samplesize_mix_tab, echo=FALSE, results='asis', message=FALSE, warning=FALSE>>=
 suppressMessages(library(kableExtra))
@@ -1285,7 +1286,7 @@ tab_sc <- data.frame(
   "$\\avgTIE$"                 = formatC(sc_df$avgT1E,    format = "f", digits = 3),
   "$\\avgPow$"                 = formatC(sc_df$avgPower,  format = "f", digits = 3),
   "$\\Erw[N]$"                 = formatC(sc_df$EN,        format = "f", digits = 1),
-  "EUII"                       = cell_spec(formatC(sc_df$EUII, format = "f", digits = 4),
+  "EUII"                       = cell_spec(formatC(sc_df$EUII, format = "f", digits = 3),
                                             format = "latex", bold = sc_df$EUII == sc_euii_max),
   check.names = FALSE
 )
@@ -1349,11 +1350,11 @@ sh_ratio60_f  <- formatC((gcal("Two interims", 60, "euii") - gcal("Fixed", 60, "
 
 ## The two do not keep a fixed ranking across the grid: Pocock has the higher
 ## EUII at 50, 60, 70 and 90, but Wang Tsiatis has the higher one at 80.
-flat_eu50_f <- formatC(gsh("Pocock", 50, "euii"),         format = "f", digits = 4)
-pow_eu50_f  <- formatC(gsh("Wang Tsiatis", 50, "euii"), format = "f", digits = 4)
+flat_eu50_f <- formatC(gsh("Pocock", 50, "euii"),         format = "f", digits = 3)
+pow_eu50_f  <- formatC(gsh("Wang Tsiatis", 50, "euii"), format = "f", digits = 3)
 
-flat_eu80_f <- formatC(gsh("Pocock", 80, "euii"),         format = "f", digits = 4)
-pow_eu80_f  <- formatC(gsh("Wang Tsiatis", 80, "euii"), format = "f", digits = 4)
+flat_eu80_f <- formatC(gsh("Pocock", 80, "euii"),         format = "f", digits = 3)
+pow_eu80_f  <- formatC(gsh("Wang Tsiatis", 80, "euii"), format = "f", digits = 3)
 @
 
 
@@ -1371,7 +1372,7 @@ tab_sh <- data.frame(
   "$\\avgTIE$"   = formatC(sh_df_clean$avgT1E,   format = "f", digits = 3),
   "$\\avgPow$"   = formatC(sh_df_clean$avgPower, format = "f", digits = 3),
   "$\\Erw[N]$"   = formatC(sh_df_clean$EN,       format = "f", digits = 1),
-  "EUII"         = cell_spec(formatC(sh_df_clean$EUII, format = "f", digits = 4),
+  "EUII"         = cell_spec(formatC(sh_df_clean$EUII, format = "f", digits = 3),
                               format = "latex", bold = sh_df_clean$EUII == sh_euii_max),
   check.names = FALSE
 )
@@ -1426,7 +1427,7 @@ gain_sh <- fut_sh$gain
 fs <- function(shape, dt, futility, col) {
   fa_sh[[col]][as.character(fa_sh$Shape) == shape & fa_sh$DeltaTarget == dt & fa_sh$Futility == futility]
 }
-f4 <- function(x) formatC(x, format = "f", digits = 4)
+f3 <- function(x) formatC(x, format = "f", digits = 3)
 f2 <- function(x) formatC(x, format = "f", digits = 2)
 
 ## the crossing: Wang Tsiatis already has the higher EUII at 80 without futility
@@ -1464,11 +1465,11 @@ pow_powloss60_f  <- f2(pow_powloss60)
 The results are displayed in Figure~\ref{fig:plot_cal_futility_shapes}. The ordering is largely
 unchanged: Wang Tsiatis already has a higher EUII than Pocock at $\delta_{\text{target}} = 80$ without
 futility (Section~\ref{sec:calibrated_shapes}), $\Sexpr{pow_eu80_f}$ against $\Sexpr{flat_eu80_f}$, and
-with futility the difference gets larger, $\Sexpr{f4(pow_fut80)}$ against
-$\Sexpr{f4(flat_fut80)}$. At $\delta_{\text{target}} = 50$ the two stopping rules already have almost the same
+with futility the difference gets larger, $\Sexpr{f3(pow_fut80)}$ against
+$\Sexpr{f3(flat_fut80)}$. At $\delta_{\text{target}} = 50$ the two stopping rules already have almost the same
 EUII without futility, $\Sexpr{flat_eu50_f}$ against $\Sexpr{pow_eu50_f}$, and with futility Wang
-Tsiatis has the higher one by a small margin, $\Sexpr{f4(pow_fut50)}$ against
-$\Sexpr{f4(flat_fut50)}$. At this target the two are close enough that the ordering could plausibly
+Tsiatis has the higher one by a small margin, $\Sexpr{f3(pow_fut50)}$ against
+$\Sexpr{f3(flat_fut50)}$. At this target the two are close enough that the ordering could plausibly
 reflect Monte Carlo noise rather than a genuine difference. At every other target, $60$, $70$ and $90$,
 Pocock has the higher EUII with futility exactly as it does without it.
 

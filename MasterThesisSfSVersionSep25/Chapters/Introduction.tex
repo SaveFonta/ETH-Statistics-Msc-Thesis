@@ -9,7 +9,7 @@ rare diseases, poses a major obstacle to the development of new treatments. Furt
 active control arm, which raises significant ethical concerns regarding patient welfare when other effective treatments already exist \citep{freedman_scientific_1987, world_medical_association_world_2025}.
 
 Historically, the dominant statistical paradigm in the design of RCTs has been the frequentist approach. This framework evaluates long-run operating 
-characteristics, relying heavily on strict control of the type one error (T1E) rate. A fundamental limitation of this paradigm is that it treats every trial 
+characteristics, relying heavily on strict control of the type I error (T1E) rate. A fundamental limitation of this paradigm is that it treats every trial 
 in isolation, ignoring pre-existing information such as data from previous clinical phases or historical control arms that could otherwise 
 help the current study. 
 
@@ -27,7 +27,8 @@ evidenced by recent guidance on the use of Bayesian methodology in clinical tria
  
 
 \section{Bayesian Designs}
-The Bayesian framework formally incorporates historical information into the design through prior distributions that can be placed either directly 
+\label{subsec:bayesian_designs_intro}
+The Bayesian framework formally incorporates historical information into the design through prior distributions that can be placed either directly
 on the treatment effect or on one (or both) arms:
 
 \begin{itemize}
@@ -98,7 +99,7 @@ A limitation of standard trial designs is that success is defined by a single st
 it says nothing about whether the effect is large enough to be clinically meaningful, since a statistically significant result can arise from a modest, practically unimportant treatment difference.
 
 The \textit{dual criterion} (DC) addresses this by requiring two conditions rather than one. Developed for proof of concept (PoC)
-trials, where the decision is whether to continue development \citep{gsponer_practical_2014, fisch2015bayesian}, it
+trials, where the decision is whether to continue development \citep{gsponer_practical_2014, fisch2015bayesian, walley2015advantages}, it
 answers two distinct questions. The first asks whether the drug works at all, and demands high posterior confidence of a positive effect. The second asks whether the drug has a relevant clinical effect, and demands only moderate
 posterior confidence (usually 50\%) that the effect exceeds a target difference, the threshold below which a treatment is not worth developing further. 
 
@@ -173,9 +174,11 @@ and extends to Bayesian group sequential and dual criterion (DC) designs.
 The main objectives are listed below.
 
 \begin{itemize}
-    \item Building on the average T1E rate (avgT1E), develop an analogous \textit{average power} (avgPower) 
-    by integrating the power conditioned on the control parameter over the design prior. Derive closed form 
-    expressions and properties of both metrics under normal priors, together with the sample size computation 
+    \item Take the idea already behind \textit{assurance} and \textit{predictive power}
+    (Section~\ref{subsec:bayesian_designs_intro}), where power is averaged over a prior instead of being
+    evaluated at a single point, and apply it to the control parameter rather than to the treatment effect.
+    This gives an \textit{average power} (avgPower), the counterpart of the average T1E rate (avgT1E). Derive closed form
+    expressions and properties of both metrics under normal priors, together with the sample size computation
     they imply, and generalize the derivation to DC designs.
 
     \item Apply these metrics to a Crohn's disease PoC trial. Moving from the single normal case to a
